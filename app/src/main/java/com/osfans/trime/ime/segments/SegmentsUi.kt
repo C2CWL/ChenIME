@@ -6,7 +6,7 @@
 package com.osfans.trime.ime.segments
 
 import android.content.Context
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.bar.ui.ToolButton
 import splitties.dimensions.dp

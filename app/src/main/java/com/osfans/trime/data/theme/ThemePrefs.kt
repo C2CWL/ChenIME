@@ -8,7 +8,7 @@ package com.osfans.trime.data.theme
 import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.content.edit
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.prefs.PreferenceDelegateEnum
 import com.osfans.trime.data.prefs.PreferenceDelegateOwner
 

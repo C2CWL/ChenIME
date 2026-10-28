@@ -10,7 +10,7 @@ import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceScreen
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.prefs.PreferenceDelegateFragment
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.ui.main.settings.ColorPickerDialog

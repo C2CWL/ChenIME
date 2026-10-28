@@ -11,7 +11,7 @@ import android.widget.FrameLayout
 import androidx.transition.Transition
 import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.ime.broadcast.InputBroadcaster
 import org.kodein.di.DI
 import org.kodein.di.DIAware

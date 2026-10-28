@@ -30,6 +30,9 @@ interface RimeApi {
 
     suspend fun syncUserData(): Boolean
 
+    /** Flush and close native databases while a backup operation accesses user files. */
+    suspend fun <T> withUserDataClosed(block: () -> T): T
+
     suspend fun processKey(
         value: Int,
         modifiers: UInt = 0u,

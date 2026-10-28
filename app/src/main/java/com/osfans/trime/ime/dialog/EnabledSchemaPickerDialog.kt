@@ -7,7 +7,7 @@ package com.osfans.trime.ime.dialog
 import android.app.AlertDialog
 import android.content.Context
 import androidx.lifecycle.LifecycleCoroutineScope
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.core.RimeApi
 import kotlinx.coroutines.launch
 import splitties.systemservices.inputMethodManager

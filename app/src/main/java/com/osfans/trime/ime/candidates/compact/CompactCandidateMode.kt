@@ -5,7 +5,7 @@
 
 package com.osfans.trime.ime.candidates.compact
 
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.prefs.PreferenceDelegateEnum
 
 enum class CompactCandidateMode(

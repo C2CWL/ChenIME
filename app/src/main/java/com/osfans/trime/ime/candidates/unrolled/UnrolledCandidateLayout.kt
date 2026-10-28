@@ -7,7 +7,7 @@ package com.osfans.trime.ime.candidates.unrolled
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.constraintlayout.widget.ConstraintLayout
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import splitties.dimensions.dp

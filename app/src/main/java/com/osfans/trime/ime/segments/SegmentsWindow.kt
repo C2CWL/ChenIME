@@ -10,12 +10,12 @@ import android.content.ClipData
 import android.content.Intent
 import android.view.View
 import androidx.lifecycle.lifecycleScope
+import com.c2cwl.chenime.R
 import com.google.android.flexbox.AlignItems
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.flexbox.FlexboxLayoutManager
-import com.osfans.trime.R
 import com.osfans.trime.data.db.CollectionHelper
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope

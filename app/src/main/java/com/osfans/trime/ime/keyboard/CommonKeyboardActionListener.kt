@@ -11,7 +11,7 @@ import android.view.ContextThemeWrapper
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.core.KeyModifiers
 import com.osfans.trime.core.RimeApi
 import com.osfans.trime.core.RimeKeyEvent

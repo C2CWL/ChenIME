@@ -11,7 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Parcelable
 import android.provider.DocumentsContract
-import com.osfans.trime.BuildConfig
+import com.c2cwl.chenime.BuildConfig
 
 inline fun <reified T : Parcelable> Intent.parcelable(key: String): T? {
     // https://issuetracker.google.com/issues/240585930#comment6

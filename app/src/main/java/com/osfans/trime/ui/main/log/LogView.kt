@@ -13,7 +13,7 @@ import androidx.core.text.buildSpannedString
 import androidx.core.text.color
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.util.Logcat
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach

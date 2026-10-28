@@ -49,8 +49,6 @@ class AdvancedSettingsFragment : PreferenceDelegateFragment(AppPrefs.defaultInst
     }
 
     companion object {
-        private const val SETTINGS_ACTIVITY_NAME = "com.osfans.trime.MainLauncherAlias"
-
         fun showAppIcon(context: Context, enable: Boolean) {
             val state = if (enable) {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
@@ -58,7 +56,7 @@ class AdvancedSettingsFragment : PreferenceDelegateFragment(AppPrefs.defaultInst
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             }
             context.packageManager.setComponentEnabledSetting(
-                ComponentName(context, SETTINGS_ACTIVITY_NAME),
+                ComponentName(context, "${context.packageName}.MainLauncherAlias"),
                 state,
                 PackageManager.DONT_KILL_APP,
             )

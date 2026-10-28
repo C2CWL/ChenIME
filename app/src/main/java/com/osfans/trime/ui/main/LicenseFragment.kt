@@ -12,9 +12,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
+import com.c2cwl.chenime.R
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.entity.License
-import com.osfans.trime.R
 import com.osfans.trime.ui.common.PaddingPreferenceFragment
 import kotlinx.coroutines.launch
 

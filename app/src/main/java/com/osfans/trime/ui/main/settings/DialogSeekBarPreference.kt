@@ -11,7 +11,7 @@ import android.util.AttributeSet
 import android.widget.SeekBar
 import androidx.appcompat.app.AlertDialog
 import androidx.preference.DialogPreference
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import splitties.dimensions.dp
 import splitties.resources.resolveThemeAttribute
 import splitties.views.dsl.core.add

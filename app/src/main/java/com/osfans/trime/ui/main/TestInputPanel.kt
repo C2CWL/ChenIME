@@ -26,7 +26,7 @@ import androidx.core.view.isVisible
 import androidx.core.view.setPadding
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doAfterTextChanged
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import splitties.dimensions.dp
 import splitties.resources.drawable
 import splitties.resources.styledColor

@@ -40,6 +40,7 @@ class OpenCCDataPlugin : Plugin<Project> {
         val task =
             project.tasks.register<InstallOpenCCDataTask>(INSTALL_TASK) {
                 inputDir.set(project.dataBaseDir)
+                frostInputDir.set(project.file("data/rime-frost/opencc"))
                 outputDir.set(project.dataInstallDir)
             }
         // make sure OpenCC data have been installed before generating data checksums
@@ -64,6 +65,10 @@ class OpenCCDataPlugin : Plugin<Project> {
         @get:PathSensitive(PathSensitivity.RELATIVE)
         @get:InputDirectory
         abstract val inputDir: DirectoryProperty
+
+        @get:PathSensitive(PathSensitivity.RELATIVE)
+        @get:InputDirectory
+        abstract val frostInputDir: DirectoryProperty
 
         @get:OutputDirectory
         abstract val outputDir: DirectoryProperty
@@ -133,6 +138,8 @@ class OpenCCDataPlugin : Plugin<Project> {
                     "OpenCC's data/dictionary, or allow-list the name in UNAVAILABLE_DICTS " +
                     "when it cannot be produced at build time."
             }
+            // Keep the curated Frost converters through clean and incremental builds.
+            frostInputDir.get().asFile.copyRecursively(output, overwrite = true)
         }
 
         /** Every dictionary referenced as `file` by the given configs. */

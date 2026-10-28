@@ -11,7 +11,7 @@ import androidx.annotation.StringRes
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceGroup
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.ui.common.PaddingPreferenceFragment
 import com.osfans.trime.util.addCategory
 import com.osfans.trime.util.addPreference

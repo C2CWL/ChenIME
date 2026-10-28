@@ -32,7 +32,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
         tools:targetApi="29">
 
         <service
-            android:name=".ime.core.TrimeInputMethodService"
+            android:name="com.osfans.trime.ime.core.TrimeInputMethodService"
             android:directBootAware="true"
             android:exported="true"
             android:label="@string/trime_app_name"
@@ -46,7 +46,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
         </service>
 
         <provider
-            android:name=".provider.RimeDataProvider"
+            android:name="com.osfans.trime.provider.RimeDataProvider"
             android:authorities="${applicationId}.provider"
             android:exported="true"
             android:grantUriPermissions="true"
@@ -81,29 +81,29 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
         <!-- Settings activity -->
         <activity
-            android:name=".ui.main.MainActivity"
+            android:name="com.osfans.trime.ui.main.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.setup.SetupActivity"
+            android:name="com.osfans.trime.ui.setup.SetupActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ui.main.LogActivity"
+            android:name="com.osfans.trime.ui.main.LogActivity"
             android:directBootAware="true"
             android:exported="false"
             android:launchMode="singleTask"
-            android:parentActivityName=".ui.main.MainActivity" />
+            android:parentActivityName="com.osfans.trime.ui.main.MainActivity" />
 
         <activity
-            android:name=".ui.main.settings.theme.ThemeDiagnosticsActivity"
+            android:name="com.osfans.trime.ui.main.settings.theme.ThemeDiagnosticsActivity"
             android:exported="false"
-            android:parentActivityName=".ui.main.MainActivity" />
+            android:parentActivityName="com.osfans.trime.ui.main.MainActivity" />
 
         <activity
-            android:name=".ui.main.ClipEditActivity"
+            android:name="com.osfans.trime.ui.main.ClipEditActivity"
             android:autoRemoveFromRecents="true"
             android:directBootAware="true"
             android:excludeFromRecents="true"
@@ -115,10 +115,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
         <!-- Using an activity alias to disable/enable the app icon in the launcher -->
         <activity-alias
-            android:name="com.osfans.trime.MainLauncherAlias"
+            android:name="${applicationId}.MainLauncherAlias"
             android:exported="true"
             android:label="@string/trime_app_name"
-            android:targetActivity=".ui.main.MainActivity">
+            android:targetActivity="com.osfans.trime.ui.main.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

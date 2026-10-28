@@ -8,7 +8,7 @@ package com.osfans.trime.util
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
-import com.osfans.trime.BuildConfig
+import com.c2cwl.chenime.BuildConfig
 
 /**
  * Adapted from [fcitx5-android/DeviceInfo.kt](https://github.com/fcitx5-android/fcitx5-android/blob/e44c1c7/app/src/main/java/org/fcitx/fcitx5/android/utils/DeviceInfo.kt)

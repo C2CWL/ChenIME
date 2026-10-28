@@ -12,7 +12,7 @@ import android.os.Build
 import android.provider.Settings
 import android.view.inputmethod.InputMethodInfo
 import android.view.inputmethod.InputMethodSubtype
-import com.osfans.trime.BuildConfig
+import com.c2cwl.chenime.BuildConfig
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import splitties.systemservices.inputMethodManager
 import timber.log.Timber

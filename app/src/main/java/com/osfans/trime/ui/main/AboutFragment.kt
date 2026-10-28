@@ -11,8 +11,8 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
-import com.osfans.trime.BuildConfig
-import com.osfans.trime.R
+import com.c2cwl.chenime.BuildConfig
+import com.c2cwl.chenime.R
 import com.osfans.trime.ui.common.PaddingPreferenceFragment
 import com.osfans.trime.util.Const
 import com.osfans.trime.util.addCategory

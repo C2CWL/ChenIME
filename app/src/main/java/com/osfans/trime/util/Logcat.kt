@@ -5,7 +5,7 @@
 package com.osfans.trime.util
 
 import android.os.Process
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers

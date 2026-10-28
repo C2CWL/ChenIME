@@ -12,7 +12,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.ui.main.MainActivity
 import com.osfans.trime.ui.main.NavigationRoute
 import splitties.systemservices.notificationManager

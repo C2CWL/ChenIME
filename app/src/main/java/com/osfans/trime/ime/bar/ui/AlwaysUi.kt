@@ -10,7 +10,7 @@ import android.widget.ViewAnimator
 import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.ToolBar

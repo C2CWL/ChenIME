@@ -17,16 +17,16 @@ plugins {
 }
 
 android {
-    namespace = "com.osfans.trime"
+    namespace = "com.c2cwl.chenime"
     compileSdk = 37
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
-        applicationId = "com.osfans.trime"
+        applicationId = "com.c2cwl.chenime"
         minSdk = 21
         targetSdk = 37
-        versionCode = 20261101
-        versionName = "3.3.13"
+        versionCode = 20261102
+        versionName = "0.1.0-chen"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")

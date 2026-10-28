@@ -5,7 +5,7 @@
 
 package com.osfans.trime.ime.candidates.popup
 
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.prefs.PreferenceDelegateEnum
 
 enum class PopupCandidatesLayout(override val stringRes: Int) : PreferenceDelegateEnum {

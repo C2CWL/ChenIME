@@ -6,7 +6,7 @@
 
 package com.osfans.trime.core.data
 
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.prefs.PreferenceDelegateEnum
 
 enum class DataStorageMode(override val stringRes: Int) : PreferenceDelegateEnum {

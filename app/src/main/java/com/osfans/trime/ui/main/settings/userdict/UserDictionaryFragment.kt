@@ -12,7 +12,7 @@ import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.userdict.UserDictManager
 import com.osfans.trime.util.importErrorDialog
 import com.osfans.trime.util.item

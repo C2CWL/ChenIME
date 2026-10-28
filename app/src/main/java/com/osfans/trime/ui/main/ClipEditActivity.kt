@@ -11,10 +11,10 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import com.c2cwl.chenime.databinding.ActivityClipEditBinding
 import com.osfans.trime.data.db.ClipboardHelper
 import com.osfans.trime.data.db.CollectionHelper
 import com.osfans.trime.data.db.DatabaseBean
-import com.osfans.trime.databinding.ActivityClipEditBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel

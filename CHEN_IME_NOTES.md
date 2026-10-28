@@ -46,6 +46,9 @@ The `v0.1.0-chen` tag triggers `.github/workflows/release-ci.yml`.
 GitHub release signing requires `SIGNING_KEY`, `KEY_STORE_PASSWORD`, `ALIAS`, and
 `KEY_PASSWORD` repository secrets; locally available signing files do not set
 those secrets automatically.
+When any signing secret is missing, the release workflow builds unsigned APKs
+and labels the signing status in the GitHub Release. Those APKs require signing
+before installation. The release job has permission to upload its APKs and notes.
 
 Useful checks: `make style-lint`, `make check`, and `make release`.
 Use `BUILD_ABI=arm64-v8a make release` for a single-ABI local APK.

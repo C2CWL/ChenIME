@@ -17,6 +17,8 @@ jobs:
   build:
     needs: check
     runs-on: ubuntu-26.04
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -50,13 +52,22 @@ jobs:
           key: ${{ runner.os }}-trime-jni-release-${{ steps.cache-hash.outputs.native-cache-hash }}
 
       - name: Setup Keystore
+        id: signing
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          cat << EOF > keystore.properties
-          keyBase64=${{ secrets.SIGNING_KEY }}
-          storePassword=${{ secrets.KEY_STORE_PASSWORD }}
-          keyAlias=${{ secrets.ALIAS }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          EOF
+          if [ -n "$SIGNING_KEY" ] && [ -n "$KEY_STORE_PASSWORD" ] && [ -n "$ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            umask 077
+            printf 'keyBase64=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+              "$SIGNING_KEY" "$KEY_STORE_PASSWORD" "$ALIAS" "$KEY_PASSWORD" > keystore.properties
+            echo 'notice=APK 已由仓库签名密钥签名 / APKs signed with the repository signing key.' >> "$GITHUB_OUTPUT"
+          else
+            echo '::warning::Signing secrets are missing; release APKs will be unsigned.'
+            echo 'notice=未配置完整的 CI 签名 secrets：APK 未签名，需要签名后才能安装。 / CI signing secrets are incomplete: APKs are unsigned and must be signed before installation.' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build Trime
         run: make release
@@ -82,7 +93,11 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
-          body: ${{ steps.build_changelog.outputs.changelog }}
+          body: |
+            ${{ steps.signing.outputs.notice }}
+
+            ${{ steps.build_changelog.outputs.changelog }}
           working_directory: "app/build/outputs/apk/release/"
+          fail_on_unmatched_files: true
           files: |
             *.apk

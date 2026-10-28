@@ -10,7 +10,7 @@ import android.view.View
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.core.RimeApi
 import com.osfans.trime.core.RimeConfig
 import com.osfans.trime.core.RimeMessage

@@ -9,7 +9,7 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.core.Candidates
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.util.styledFloat

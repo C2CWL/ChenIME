@@ -5,7 +5,7 @@
 
 package com.osfans.trime.util
 
-import com.osfans.trime.BuildConfig
+import com.c2cwl.chenime.BuildConfig
 
 object Const {
     const val VERSION_NAME = "${BuildConfig.BUILD_VERSION_NAME}-${BuildConfig.BUILD_TYPE}"

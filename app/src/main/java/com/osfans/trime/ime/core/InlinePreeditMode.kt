@@ -6,7 +6,7 @@
 package com.osfans.trime.ime.core
 
 import androidx.annotation.StringRes
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.prefs.PreferenceDelegateEnum
 
 enum class InlinePreeditMode(

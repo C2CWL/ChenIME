@@ -5,7 +5,7 @@
 
 package com.osfans.trime.core
 
-import com.osfans.trime.BuildConfig
+import com.c2cwl.chenime.BuildConfig
 import com.osfans.trime.core.data.DataManager
 import com.osfans.trime.core.data.UserDataManager
 import com.osfans.trime.data.opencc.OpenCCDictManager
@@ -135,6 +135,17 @@ class Rime :
     override suspend fun updateConfig() = withRimeContext {
         exitRime()
         startRime(false)
+    }
+
+    override suspend fun <T> withUserDataClosed(block: () -> T): T = lock.withLock {
+        withRimeContext {
+            exitRime()
+            try {
+                block()
+            } finally {
+                startRime(false)
+            }
+        }
     }
 
     override suspend fun syncUserData(): Boolean = lock.withLock {

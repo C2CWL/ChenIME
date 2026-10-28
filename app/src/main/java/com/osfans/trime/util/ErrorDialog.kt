@@ -7,7 +7,7 @@ package com.osfans.trime.util
 
 import android.content.Context
 import androidx.appcompat.app.AlertDialog
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

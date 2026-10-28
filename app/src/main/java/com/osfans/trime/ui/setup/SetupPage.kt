@@ -7,7 +7,7 @@ package com.osfans.trime.ui.setup
 
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.core.data.UserDataManager
 import com.osfans.trime.util.InputMethodUtils
 

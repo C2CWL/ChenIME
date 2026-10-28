@@ -8,7 +8,7 @@ package com.osfans.trime.ui.common
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin

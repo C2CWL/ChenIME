@@ -11,7 +11,7 @@ import android.widget.PopupMenu
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.db.DatabaseBean
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.util.DeviceUtils

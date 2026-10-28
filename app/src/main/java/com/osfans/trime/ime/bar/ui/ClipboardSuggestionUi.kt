@@ -6,7 +6,7 @@ package com.osfans.trime.ime.bar.ui
 
 import android.content.Context
 import android.text.TextUtils
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.keyboard.GestureFrame
 import com.osfans.trime.util.rippleDrawable

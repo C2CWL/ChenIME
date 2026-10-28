@@ -8,7 +8,7 @@ package com.osfans.trime.ime.clipboard
 import android.content.Context
 import android.text.TextUtils
 import android.view.View
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.keyboard.GestureFrame

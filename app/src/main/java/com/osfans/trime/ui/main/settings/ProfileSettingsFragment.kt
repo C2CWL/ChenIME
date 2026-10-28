@@ -8,15 +8,17 @@ package com.osfans.trime.ui.main.settings
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.SwitchPreferenceCompat
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.core.data.DataManager
 import com.osfans.trime.core.data.DataStorageMode
+import com.osfans.trime.core.data.UserDataBackup
 import com.osfans.trime.core.data.UserDataManager
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.prefs.PreferenceDelegate
@@ -30,9 +32,13 @@ import com.osfans.trime.util.buildDocumentsProviderIntent
 import com.osfans.trime.util.customFormatTimeInDefault
 import com.osfans.trime.util.toast
 import io.github.whiredplanck.storageaccess.StorageAccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ProfileSettingsFragment : PaddingPreferenceFragment() {
     private val viewModel: MainViewModel by activityViewModels()
@@ -72,6 +78,52 @@ class ProfileSettingsFragment : PaddingPreferenceFragment() {
     private lateinit var editSyncIntervalPreference: EditTextIntPreference
 
     private val storageAccess = StorageAccess(this)
+
+    private var backupInProgress = false
+
+    private val exportBackup = registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        uri?.let { runBackup(it, importing = false) }
+    }
+
+    private val importBackup = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { runBackup(it, importing = true) }
+    }
+
+    private fun runBackup(uri: Uri, importing: Boolean) {
+        if (backupInProgress) return
+        backupInProgress = true
+        val ctx = requireContext()
+        lifecycleScope.launch {
+            try {
+                withLoadingDialog(ctx) {
+                    withContext(Dispatchers.IO) {
+                        viewModel.rime.runOnReady {
+                            if (importing) {
+                                requireNotNull(ctx.contentResolver.openInputStream(uri)).use {
+                                    UserDataBackup.restore(this, it)
+                                }
+                            } else {
+                                requireNotNull(ctx.contentResolver.openOutputStream(uri, "wt")).use {
+                                    UserDataBackup.export(this, it)
+                                }
+                            }
+                        }
+                    }
+                }
+                ctx.toast(if (importing) R.string.import_user_data_success else R.string.export_user_data_success)
+                if (importing) {
+                    AdvancedSettingsFragment.showAppIcon(ctx, AppPrefs.defaultInstance().advanced.showAppIcon.getValue())
+                    requireActivity().recreate()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                ctx.toast(if (importing) R.string.import_user_data_failure else R.string.export_user_data_failure)
+            } finally {
+                backupInProgress = false
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -247,6 +299,23 @@ class ProfileSettingsFragment : PaddingPreferenceFragment() {
             }
             addCategory(R.string.synchronization) {
                 isIconSpaceReserved = false
+                addPreference(R.string.export_user_data, R.string.export_user_data_summary) {
+                    if (!backupInProgress) {
+                        val date = SimpleDateFormat("yyyyMMdd", Locale.ROOT).format(Date())
+                        exportBackup.launch("chenime-backup_$date.zip")
+                    }
+                }
+                addPreference(R.string.import_user_data) {
+                    if (!backupInProgress) {
+                        AlertDialog.Builder(ctx)
+                            .setTitle(R.string.import_user_data)
+                            .setMessage(R.string.import_user_data_confirm)
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .setPositiveButton(android.R.string.ok) { _, _ ->
+                                importBackup.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
+                            }.show()
+                    }
+                }
                 addPreference(R.string.sync_user_data_immediately) {
                     lifecycleScope.launch {
                         withLoadingDialog(ctx) {

@@ -1,0 +1,501 @@
+# SPDX-FileCopyrightText: 2026 Rime community
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Visual references: user attachments (讯飞), Images #1 and #2.
+# Keep Settings > Keyboard > Hide key symbols disabled.
+# Inherits standard fonts, actions and preview settings from tongwenfeng.
+config_version: '1.0'
+name: 讯飞深色
+author: Trime community; based on tongwenfeng
+style:
+  __include: tongwenfeng:/style
+  horizontal_gap: 4
+  vertical_gap: 8
+  round_corner: 8
+  keyboard_height: 280
+  key_height: 56
+  key_text_size: 25
+  key_long_text_size: 18
+  symbol_text_size: 11
+  key_text_offset_y: 5
+  candidate_view_height: 44
+  enter_labels:
+    go: 前往
+    done: 完成
+    next: 下个
+    pre: 上个
+    search: 搜索
+    send: 发送
+    default: 完成
+fallback_colors:
+  __include: tongwenfeng:/fallback_colors
+preset_color_schemes:
+  default:
+    name: 讯飞深色
+    dark_scheme: default
+    light_scheme: default
+    back_color: '0xff1b1b1b'
+    keyboard_back_color: '0xff1b1b1b'
+    root_background: '0xff1b1b1b'
+    candidate_background: '0xff1b1b1b'
+    text_back_color: '0xff1b1b1b'
+    liquid_keyboard_background: '0xff1b1b1b'
+    key_back_color: '0xff444444'
+    preview_back_color: '0xff444444'
+    key_text_color: '0xfff5f5f5'
+    candidate_text_color: '0xfff5f5f5'
+    text_color: '0xfff5f5f5'
+    preview_text_color: '0xfff5f5f5'
+    hilited_key_text_color: '0xfff5f5f5'
+    hilited_candidate_text_color: '0xfff5f5f5'
+    key_symbol_color: '0xffaaaaaa'
+    comment_text_color: '0xffaaaaaa'
+    label_color: '0xffaaaaaa'
+    off_key_back_color: '0xff2c2c2c'
+    off_key_text_color: '0xfff5f5f5'
+    hilited_key_back_color: '0xff3f7fff'
+    hilited_candidate_back_color: '0xff3f7fff'
+    on_key_back_color: '0xff3f7fff'
+    accent: '0xff3f7fff'
+    hilited_key_symbol_color: '0xffffffff'
+    on_key_text_color: '0xffffffff'
+    key_border_color: '0xff1b1b1b'
+    border_color: '0xff1b1b1b'
+    candidate_separator_color: '0xff1b1b1b'
+tool_bar:
+  button_spacing: 8
+  primary_button:
+    foreground:
+      style: "↶"
+      normal: candidate_text_color
+      padding: 8
+    action: undo
+  # Secondary buttons are arranged from right to left.
+  buttons:
+  - foreground:
+      style: "⋯"
+      normal: candidate_text_color
+      padding: 8
+    action: menu_keyboard
+  - foreground:
+      style: ic@clipboard
+      normal: candidate_text_color
+      padding: 8
+    action: clipboard_window
+  - foreground:
+      style: ic@cursor_text
+      normal: candidate_text_color
+      padding: 8
+    action: Keyboard_editor
+  - foreground:
+      style: "↷"
+      normal: candidate_text_color
+      padding: 8
+    action: redo
+preset_keys:
+  __include: tongwenfeng:/preset_keys
+  Keyboard_layout:
+    label: 布局
+    send: Eisu_toggle
+    select: .next
+  Ifly_symbols:
+    label: 符
+    send: FUNCTION
+    command: liquid_keyboard
+    option: 常用
+  Ifly_back:
+    label: 返回
+    send: Eisu_toggle
+    select: default
+  Ifly_clear_all:
+    label: 全清
+    text: "{Escape}{Control+a}{BackSpace}"
+  Ifly_space:
+    slide_cursor: true
+    label: 空格
+    send: space
+    functional: false
+    repeatable: false
+  Ifly_symbol_q:
+    label: '1'
+    commit: '1'
+  Ifly_symbol_w:
+    label: '2'
+    commit: '2'
+  Ifly_symbol_e:
+    label: '3'
+    commit: '3'
+  Ifly_symbol_r:
+    label: '4'
+    commit: '4'
+  Ifly_symbol_t:
+    label: '5'
+    commit: '5'
+  Ifly_symbol_y:
+    label: '6'
+    commit: '6'
+  Ifly_symbol_u:
+    label: '7'
+    commit: '7'
+  Ifly_symbol_i:
+    label: '8'
+    commit: '8'
+  Ifly_symbol_o:
+    label: '9'
+    commit: '9'
+  Ifly_symbol_p:
+    label: '0'
+    commit: '0'
+  Ifly_symbol_a:
+    label: '~'
+    commit: '~'
+  Ifly_symbol_s:
+    label: '!'
+    commit: '!'
+  Ifly_symbol_d:
+    label: '@'
+    commit: '@'
+  Ifly_symbol_f:
+    label: /
+    commit: /
+  Ifly_symbol_g:
+    label: '%'
+    commit: '%'
+  Ifly_symbol_h:
+    label: “
+    commit: “
+  Ifly_symbol_j:
+    label: ”
+    commit: ”
+  Ifly_symbol_k:
+    label: '*'
+    commit: '*'
+  Ifly_symbol_l:
+    label: '?'
+    commit: '?'
+  Ifly_symbol_z:
+    label: (
+    commit: (
+  Ifly_symbol_x:
+    label: )
+    commit: )
+  Ifly_symbol_c:
+    label: '-'
+    commit: '-'
+  Ifly_symbol_v:
+    label: _
+    commit: _
+  Ifly_symbol_b:
+    label: ':'
+    commit: ':'
+  Ifly_symbol_n:
+    label: ;
+    commit: ;
+  Ifly_symbol_m:
+    label: '`'
+    commit: '`'
+preset_keyboards:
+  default:
+    name: 讯飞26键
+    ascii_mode: 0
+    reset_ascii_mode: false
+    lock: true
+    width: 10
+    label_transform: uppercase
+    keys:
+    - click: q
+      label_symbol: '1'
+      long_click: Ifly_symbol_q
+    - click: w
+      label_symbol: '2'
+      long_click: Ifly_symbol_w
+    - click: e
+      label_symbol: '3'
+      long_click: Ifly_symbol_e
+    - click: r
+      label_symbol: '4'
+      long_click: Ifly_symbol_r
+    - click: t
+      label_symbol: '5'
+      long_click: Ifly_symbol_t
+    - click: y
+      label_symbol: '6'
+      long_click: Ifly_symbol_y
+    - click: u
+      label_symbol: '7'
+      long_click: Ifly_symbol_u
+    - click: i
+      label_symbol: '8'
+      long_click: Ifly_symbol_i
+    - click: o
+      label_symbol: '9'
+      long_click: Ifly_symbol_o
+    - click: p
+      label_symbol: '0'
+      long_click: Ifly_symbol_p
+    - width: 5
+    - click: a
+      label_symbol: '~'
+      long_click: Ifly_symbol_a
+    - click: s
+      label_symbol: '!'
+      long_click: Ifly_symbol_s
+    - click: d
+      label_symbol: '@'
+      long_click: Ifly_symbol_d
+    - click: f
+      label_symbol: /
+      long_click: Ifly_symbol_f
+    - click: g
+      label_symbol: '%'
+      long_click: Ifly_symbol_g
+    - click: h
+      label_symbol: “
+      long_click: Ifly_symbol_h
+    - click: j
+      label_symbol: ”
+      long_click: Ifly_symbol_j
+    - click: k
+      label_symbol: '*'
+      long_click: Ifly_symbol_k
+    - click: l
+      label_symbol: '?'
+      long_click: Ifly_symbol_l
+    - width: 5
+    - click: Shift_L
+      label: ⇧
+      width: 15
+      key_back_color: off_key_back_color
+    - click: z
+      label_symbol: (
+      long_click: Ifly_symbol_z
+    - click: x
+      label_symbol: )
+      long_click: Ifly_symbol_x
+    - click: c
+      label_symbol: '-'
+      long_click: Ifly_symbol_c
+    - click: v
+      label_symbol: _
+      long_click: Ifly_symbol_v
+    - click: b
+      label_symbol: ':'
+      long_click: Ifly_symbol_b
+    - click: n
+      label_symbol: ;
+      long_click: Ifly_symbol_n
+    - click: m
+      label_symbol: '`'
+      long_click: Ifly_symbol_m
+    - click: BackSpace
+      swipe_up: Ifly_clear_all
+      label: ⌫
+      width: 15
+      key_back_color: off_key_back_color
+    - click: Keyboard_number
+      width: 12.5
+      key_back_color: off_key_back_color
+    - click: Ifly_symbols
+      width: 12.5
+      key_back_color: off_key_back_color
+    - click: ','
+      label: ，
+      width: 10
+    - click: Ifly_space
+      long_click: Mode_switch
+      swipe_left: Left
+      swipe_right: Right
+      width: 35
+    - click: .
+      label: 。
+      width: 10
+    - click: Return
+      width: 20
+      key_back_color: accent
+  number:
+    name: 讯飞数字
+    ascii_mode: 1
+    keys:
+    - click: plus
+      width: 15
+      key_back_color: off_key_back_color
+    - click: '1'
+      width: 23
+    - click: '2'
+      width: 23
+    - click: '3'
+      width: 23
+    - click: BackSpace
+      swipe_up: Ifly_clear_all
+      width: 16
+      key_back_color: off_key_back_color
+      label: ⌫
+    - click: minus
+      width: 15
+      key_back_color: off_key_back_color
+    - click: '4'
+      width: 23
+    - click: '5'
+      width: 23
+    - click: '6'
+      width: 23
+    - click: Ifly_space
+      long_click: Mode_switch
+      swipe_left: Left
+      swipe_right: Right
+      width: 16
+      key_back_color: off_key_back_color
+    - click: slash
+      width: 15
+      key_back_color: off_key_back_color
+    - click: '7'
+      width: 23
+    - click: '8'
+      width: 23
+    - click: '9'
+      width: 23
+    - click: Return
+      width: 16
+      key_back_color: accent
+    - click: Ifly_back
+      width: 15
+      key_back_color: accent
+    - click: comma
+      width: 23
+    - click: '0'
+      width: 23
+    - click: period
+      width: 23
+    - click: at
+      width: 16
+      key_back_color: off_key_back_color
+  editor:
+    name: 编辑
+    ascii_mode: 1
+    width: 25
+    keys:
+    - click: select_all
+    - click: Home
+    - click: Up
+    - click: End
+    - click: cut
+    - click: Left
+    - click: Down
+    - click: Right
+    - click: copy
+    - click: undo
+    - click: redo
+    - click: paste
+    - click: Ifly_back
+    - click: Ifly_space
+      long_click: Mode_switch
+      swipe_left: Left
+      swipe_right: Right
+    - click: BackSpace
+      swipe_up: Ifly_clear_all
+    - click: Return
+liquid_keyboard:
+  row: 4
+  row_land: 4
+  key_height: 48
+  single_width: 56
+  vertical_gap: 6
+  margin_x: 4
+  fixed_key_bar:
+    position: left
+    keys:
+    - liquid_keyboard_exit
+    - space1
+    - BackSpace
+    - Return
+  keyboards:
+  - common
+  - cn
+  - en
+  - web
+  - math
+  - email
+  - special
+  common:
+    name: 常用
+    type: SINGLE
+    keys: ，。？！、：；…—～·（）《》“”‘’
+  cn:
+    name: 中文
+    type: SINGLE
+    keys: ，。？！、：；“”‘’（）【】《》〈〉「」『』……——
+  en:
+    name: 英文
+    type: SINGLE
+    keys:
+    - ','
+    - .
+    - '?'
+    - '!'
+    - ':'
+    - ;
+    - ''''
+    - '"'
+    - (
+    - )
+    - '['
+    - ']'
+    - '{'
+    - '}'
+    - '-'
+    - _
+    - /
+    - '@'
+    - '#'
+    - '&'
+    - '*'
+    - +
+  web:
+    name: 网址
+    type: SINGLE
+    keys:
+    - www.
+    - https://
+    - http://
+    - .com
+    - .cn
+    - .net
+    - .org
+    - .com.cn
+    - /
+    - .
+    - ':'
+    - '?'
+    - '='
+    - '&'
+    - '%'
+    - '#'
+    - '-'
+    - _
+  math:
+    name: 数学
+    type: SINGLE
+    keys: ＋－×÷＝≠≈±%‰<>≤≥∞√π()[]{}
+  email:
+    name: 邮箱
+    type: SINGLE
+    keys:
+    - '@'
+    - .com
+    - .cn
+    - .net
+    - .org
+    - '@qq.com'
+    - '@163.com'
+    - '@126.com'
+    - '@gmail.com'
+    - '@outlook.com'
+    - '@hotmail.com'
+    - '@icloud.com'
+    - '-'
+    - _
+    - .
+  special:
+    name: 特殊
+    type: SINGLE
+    keys: ☆★○●□■◇◆♡♥→←↑↓℃￥$€£©®™§

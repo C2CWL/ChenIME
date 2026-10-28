@@ -8,7 +8,7 @@ package com.osfans.trime.ui.main.settings.userdict
 import android.content.Context
 import android.content.res.ColorStateList
 import android.view.ViewGroup
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import splitties.dimensions.dp
 import splitties.resources.drawable
 import splitties.resources.resolveThemeAttribute

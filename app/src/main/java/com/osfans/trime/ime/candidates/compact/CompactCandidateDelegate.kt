@@ -11,8 +11,8 @@ import android.graphics.drawable.shapes.RectShape
 import android.view.ContextThemeWrapper
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
+import com.c2cwl.chenime.R
 import com.google.android.flexbox.FlexboxLayoutManager
-import com.osfans.trime.R
 import com.osfans.trime.core.Candidates
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady

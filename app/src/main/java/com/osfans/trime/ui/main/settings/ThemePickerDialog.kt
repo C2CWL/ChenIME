@@ -8,7 +8,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.widget.Toast
 import androidx.lifecycle.LifecycleCoroutineScope
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.core.data.UserDataManager
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.util.toast

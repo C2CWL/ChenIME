@@ -17,10 +17,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
+import com.c2cwl.chenime.databinding.ActivityThemeDiagnosticsBinding
 import com.osfans.trime.data.theme.ThemeDiagnostics
 import com.osfans.trime.data.theme.ThemeManager
-import com.osfans.trime.databinding.ActivityThemeDiagnosticsBinding
 import com.osfans.trime.util.DeviceInfo
 import com.osfans.trime.util.toast
 import splitties.systemservices.clipboardManager

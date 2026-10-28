@@ -4,7 +4,15 @@ SPDX-FileCopyrightText: 2015 - 2024 Rime community
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# Trime
+# Chen IME / 尘输入法
+
+Chen IME is a Trime fork with bundled 白霜拼音 and ZIP backup/restore.
+Package: `com.c2cwl.chenime`. Download Chen IME builds from
+[this fork's releases](https://github.com/C2CWL/trime/releases).
+See [Chen IME notes](CHEN_IME_NOTES.md) for setup, backup, and signing details.
+The documentation below describes the upstream Trime project and its channels.
+
+## Trime upstream
 
 Rime IME for Android
 

@@ -9,7 +9,7 @@ import android.app.AlertDialog
 import android.os.Bundle
 import androidx.fragment.app.activityViewModels
 import androidx.preference.Preference
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.ui.common.PaddingPreferenceFragment
 import com.osfans.trime.util.AppUtils
 import com.osfans.trime.util.Logcat

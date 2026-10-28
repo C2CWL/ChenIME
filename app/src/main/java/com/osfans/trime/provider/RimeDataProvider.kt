@@ -15,7 +15,7 @@ import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
 import android.webkit.MimeTypeMap
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException

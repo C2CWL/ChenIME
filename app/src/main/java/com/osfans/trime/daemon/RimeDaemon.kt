@@ -7,7 +7,7 @@ package com.osfans.trime.daemon
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.TrimeApplication
 import com.osfans.trime.core.Rime
 import com.osfans.trime.core.RimeApi

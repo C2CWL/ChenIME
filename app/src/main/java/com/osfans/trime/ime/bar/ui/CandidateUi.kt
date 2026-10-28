@@ -6,7 +6,7 @@ package com.osfans.trime.ime.bar.ui
 
 import android.content.Context
 import android.view.View
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import splitties.dimensions.dp

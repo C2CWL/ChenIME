@@ -10,10 +10,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.osfans.trime.R
+import com.c2cwl.chenime.R
+import com.c2cwl.chenime.databinding.FragmentSetupBinding
 import com.osfans.trime.core.data.DataStorageMode
 import com.osfans.trime.data.prefs.AppPrefs
-import com.osfans.trime.databinding.FragmentSetupBinding
 import com.osfans.trime.util.serializable
 
 class SetupFragment : Fragment() {

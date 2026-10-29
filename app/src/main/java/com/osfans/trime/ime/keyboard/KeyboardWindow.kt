@@ -114,7 +114,7 @@ class KeyboardWindow(di: DI) :
     private fun detachCurrentView() {
         currentKeyboardView?.also {
             it.onDetach()
-            it.visibility = View.INVISIBLE
+            keyboardView.removeView(it)
         }
         activeKeyboard?.lastAsciiMode = rime.run { statusCached }.isAsciiMode
     }
@@ -196,32 +196,9 @@ class KeyboardWindow(di: DI) :
 
         view.let {
             keyboardView.apply {
-                if (it.parent == null) add(it, lParams(matchParent, matchParent))
-                it.visibility = View.VISIBLE
+                add(it, lParams(matchParent, matchParent))
             }
         }
-    }
-
-    private var warmupGeneration = 0
-
-    /** Warm one layout per frame without changing the active keyboard or Rime mode. */
-    fun precreatePanels() {
-        val generation = ++warmupGeneration
-        val targets = presetKeyboardIds.iterator()
-        val width = computeAllowedWidth()
-        fun next() {
-            if (generation != warmupGeneration || !keyboardView.isAttachedToWindow || !targets.hasNext()) return
-            val id = targets.next()
-            if (id !in cachedKeyboards) {
-                val keyboard = Keyboard(context, theme, width, selectKeyboardConfig(id))
-                val view = KeyboardView(context, theme, keyboard, popup, service, keyboardActionListener, enterKeyDisplay)
-                view.visibility = View.INVISIBLE
-                cachedKeyboards[id] = keyboard to view
-                keyboardView.apply { add(view, lParams(matchParent, matchParent)) }
-            }
-            keyboardView.postOnAnimation { next() }
-        }
-        next()
     }
 
     private fun smartMatchKeyboard(): String {
@@ -305,7 +282,6 @@ class KeyboardWindow(di: DI) :
             cachedKeyboards.remove(id)?.second?.let { keyboardView.removeView(it) }
         }
         attachKeyboard(id)
-        precreatePanels()
     }
 
     /** Repaints the keyboard after a color-scheme switch; keys re-resolve their colors. */

@@ -9,7 +9,6 @@ import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.FrameLayout
 import com.c2cwl.chenime.R
-import com.osfans.trime.ime.bar.InputBarDelegate
 import com.osfans.trime.ime.broadcast.InputBroadcaster
 import com.osfans.trime.ime.clipboard.ClipboardWindow
 import com.osfans.trime.ime.core.TrimeInputMethodService
@@ -42,7 +41,6 @@ class BoardWindowManager(override val di: DI) : DIAware {
     }
 
     fun destroy() {
-        destroyed = true
         currentWindow?.onDetached()
         cachedResidentWindows.values.forEach { (window, _) ->
             window.onDestroyed()
@@ -56,26 +54,6 @@ class BoardWindowManager(override val di: DI) : DIAware {
 
     private var currentWindow: BoardWindow? = null
     private var currentView: View? = null
-
-    private var destroyed = false
-
-    /** Called after the first keyboard frame; resident roots stay measured but do not draw. */
-    fun precreatePanels() {
-        if (destroyed) return
-        switchOptionWindow
-        clipboardWindow
-        cachedResidentWindows.toMap().forEach { (key, entry) ->
-            if (entry.second == null) {
-                val root = entry.first.onCreateView()
-                root.visibility = View.INVISIBLE
-                view.apply { add(root, lParams(matchParent, matchParent)) }
-                cachedResidentWindows[key] = entry.first to root
-                val bar: InputBarDelegate by instance()
-                bar.precreateWindowBar(entry.first)
-                entry.first.refreshColors()
-            }
-        }
-    }
 
     fun <R> cacheResidentWindow(
         window: R,
@@ -119,7 +97,7 @@ class BoardWindowManager(override val di: DI) : DIAware {
             val oldWindow = currentWindow!!
             val oldView = currentView!!
             oldWindow.onDetached()
-            if (oldWindow is ResidentWindow) oldView.visibility = View.INVISIBLE else view.removeView(oldView)
+            view.removeView(oldView)
             broadcaster.onWindowDetached(oldWindow)
             Timber.d("Detach $oldWindow")
             if (oldWindow !is ResidentWindow) {
@@ -129,8 +107,7 @@ class BoardWindowManager(override val di: DI) : DIAware {
         if (window is ResidentWindow) {
             window.beforeAttached()
         }
-        if (newView.parent == null) view.apply { add(newView, lParams(matchParent, matchParent)) }
-        newView.visibility = View.VISIBLE
+        view.apply { add(newView, lParams(matchParent, matchParent)) }
         currentView = newView
         Timber.d("Attach $window")
         window.onAttached()

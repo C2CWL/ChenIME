@@ -33,9 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.instance
@@ -200,14 +198,10 @@ class ClipboardWindow(di: DI) :
                 else -> collectionPage
             }
         }
-        // Construct both page roots during warmup, rather than on the first tab switch.
-        clipboardPage
-        collectionPage
         viewPager.apply {
             offscreenPageLimit = 1
             adapter = clipboardPagesAdapter
         }
-        startData(warmup = true)
         titleUi.apply {
             tabLayout.onConfigureTab(viewPager) { tabUi, position ->
                 configureTab(tabUi, position)
@@ -271,33 +265,17 @@ class ClipboardWindow(di: DI) :
     override fun onAttached() {
         clipboardLayout.viewPager.setCurrentItem(selectedTab, false)
         refreshColors()
-        startData(warmup = false)
+        startData()
     }
 
-    private fun startData(warmup: Boolean) {
+    private fun startData() {
         clipboardBeansSubmitJob?.cancel()
         collectionBeansSubmitJob?.cancel()
         clipboardBeansSubmitJob = service.lifecycleScope.launch {
-            coroutineScope {
-                val submit = launch {
-                    clipboardBeansPager.collectLatest { clipboardBeansAdapter.submitData(it) }
-                }
-                if (warmup) {
-                    clipboardBeansAdapter.onPagesUpdatedFlow.first()
-                    submit.cancel()
-                }
-            }
+            clipboardBeansPager.collectLatest { clipboardBeansAdapter.submitData(it) }
         }
         collectionBeansSubmitJob = service.lifecycleScope.launch {
-            coroutineScope {
-                val submit = launch {
-                    collectionBeansPager.collectLatest { collectionBeansAdapter.submitData(it) }
-                }
-                if (warmup) {
-                    collectionBeansAdapter.onPagesUpdatedFlow.first()
-                    submit.cancel()
-                }
-            }
+            collectionBeansPager.collectLatest { collectionBeansAdapter.submitData(it) }
         }
     }
 

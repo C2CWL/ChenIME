@@ -200,7 +200,7 @@ preset_keys:
     commit: '~'
   Ifly_symbol_s:
     label: '!'
-    commit: '!'
+    send: exclam
   Ifly_symbol_d:
     label: '@'
     commit: '@'
@@ -221,7 +221,7 @@ preset_keys:
     commit: '*'
   Ifly_symbol_l:
     label: '?'
-    commit: '?'
+    send: question
   Ifly_symbol_z:
     label: (
     commit: (
@@ -236,10 +236,10 @@ preset_keys:
     commit: _
   Ifly_symbol_b:
     label: ':'
-    commit: ':'
+    send: colon
   Ifly_symbol_n:
     label: ;
-    commit: ;
+    send: semicolon
   Ifly_symbol_m:
     label: 、
     commit: 、

@@ -95,7 +95,6 @@ class LiquidWindow(di: DI) :
 
     override fun onCreateView(): View = LiquidLayout(context, scope, commonKeyboardActionListener).apply {
         liquidLayout = this
-        service.lifecycleScope.launch { adapter.prepareTextLayouts(context) }
         tabsUi.apply {
             setTags(scope.theme.liquidKeyboard.getTagList())
             setOnTabClickListener { i ->

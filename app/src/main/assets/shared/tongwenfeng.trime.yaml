@@ -1125,7 +1125,7 @@ preset_keyboards:
       - {click: d, long_click: '#', popup: ['#', Letter_commit_d, Letter_commit_D], key_back_color: bh2, key_text_color: th2}
       - {click: f, long_click: '$', popup: ['$', Letter_commit_f, Letter_commit_F], key_back_color: bh2, key_text_color: th2}
       - {click: g, long_click: '%', popup: ['%', Letter_commit_g, Letter_commit_G], swipe_down: "date_time", key_back_color: bh2, key_text_color: th2}
-      - {click: h, long_click: '!', popup: ['!', Letter_commit_h, Letter_commit_H], swipe_down: "+", key_back_color: bh2, key_text_color: th2}
+      - {click: h, long_click: Hint_exclam, popup: [Hint_exclam, Letter_commit_h, Letter_commit_H], swipe_down: "+", key_back_color: bh2, key_text_color: th2}
       - {click: j, long_click: '&', popup: ['&', Letter_commit_j, Letter_commit_J], swipe_down: "-", key_back_color: bh2, key_text_color: th2}
       - {click: k, long_click: '*', popup: ['*', Letter_commit_k, Letter_commit_K], swipe_down: "_", key_back_color: bh2, key_text_color: th2}
       - {click: l, long_click: '(){Left}', popup: ['(){Left}', Letter_commit_l, Letter_commit_L], swipe_down: "=", key_back_color: bh2, key_text_color: th2}
@@ -1136,9 +1136,9 @@ preset_keyboards:
       - {click: x, long_click: cut, popup: [cut, Letter_commit_x, Letter_commit_X], swipe_down: '{}{Left}', key_back_color: bh3, key_text_color: th3}
       - {click: c, long_click: copy, popup: [copy, Letter_commit_c, Letter_commit_C], swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
       - {click: v, long_click: paste_clip, popup: [paste_clip, Letter_commit_v, Letter_commit_V], swipe_down: paste, key_back_color: bh3, key_text_color: th3}
-      - {click: b, long_click: ";", popup: [";", Letter_commit_b, Letter_commit_B], swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
-      - {click: n, long_click: ":", popup: [":", Letter_commit_n, Letter_commit_N], key_back_color: bh3, key_text_color: th3}
-      - {click: m, long_click: '?', popup: ['?', Letter_commit_m, Letter_commit_M], swipe_down: "|", key_back_color: bh3, key_text_color: th3}
+      - {click: b, long_click: Hint_semicolon, popup: [Hint_semicolon, Letter_commit_b, Letter_commit_B], swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
+      - {click: n, long_click: Hint_colon, popup: [Hint_colon, Letter_commit_n, Letter_commit_N], key_back_color: bh3, key_text_color: th3}
+      - {click: m, long_click: Hint_question, popup: [Hint_question, Letter_commit_m, Letter_commit_M], swipe_down: "|", key_back_color: bh3, key_text_color: th3}
       - {click: BackSpace2, swipe_up: Ifly_clear_all, swipe_down: restore_cleared, width: 15, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_number, long_click: Menu, width: 12.5, key_back_color: bgn, key_text_color: tgn}
@@ -1175,7 +1175,7 @@ preset_keyboards:
       - {click: d, long_click: '#', popup: ['#', Letter_commit_d, Letter_commit_D], key_back_color: bh2, key_text_color: th2}
       - {click: f, long_click: '$', popup: ['$', Letter_commit_f, Letter_commit_F], key_back_color: bh2, key_text_color: th2}
       - {click: g, long_click: '%', popup: ['%', Letter_commit_g, Letter_commit_G], swipe_down: "date_time", key_back_color: bh2, key_text_color: th2}
-      - {click: h, long_click: '!', popup: ['!', Letter_commit_h, Letter_commit_H], swipe_down: "+", key_back_color: bh2, key_text_color: th2}
+      - {click: h, long_click: Hint_exclam, popup: [Hint_exclam, Letter_commit_h, Letter_commit_H], swipe_down: "+", key_back_color: bh2, key_text_color: th2}
       - {click: j, long_click: '&', popup: ['&', Letter_commit_j, Letter_commit_J], swipe_down: "-", key_back_color: bh2, key_text_color: th2}
       - {click: k, long_click: '*', popup: ['*', Letter_commit_k, Letter_commit_K], swipe_down: "_", key_back_color: bh2, key_text_color: th2}
       - {click: l, long_click: '(){Left}', popup: ['(){Left}', Letter_commit_l, Letter_commit_L], swipe_down: "=", key_back_color: bh2, key_text_color: th2}
@@ -1186,9 +1186,9 @@ preset_keyboards:
       - {click: x, long_click: cut, popup: [cut, Letter_commit_x, Letter_commit_X], swipe_down: '{}{Left}', key_back_color: bh3, key_text_color: th3}
       - {click: c, long_click: copy, popup: [copy, Letter_commit_c, Letter_commit_C], swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
       - {click: v, long_click: paste_clip, popup: [paste_clip, Letter_commit_v, Letter_commit_V], swipe_down: paste, key_back_color: bh3, key_text_color: th3}
-      - {click: b, long_click: ";", popup: [";", Letter_commit_b, Letter_commit_B], swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
-      - {click: n, long_click: ":", popup: [":", Letter_commit_n, Letter_commit_N], key_back_color: bh3, key_text_color: th3}
-      - {click: m, long_click: '?', popup: ['?', Letter_commit_m, Letter_commit_M], swipe_down: "|", key_back_color: bh3, key_text_color: th3}
+      - {click: b, long_click: Hint_semicolon, popup: [Hint_semicolon, Letter_commit_b, Letter_commit_B], swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
+      - {click: n, long_click: Hint_colon, popup: [Hint_colon, Letter_commit_n, Letter_commit_N], key_back_color: bh3, key_text_color: th3}
+      - {click: m, long_click: Hint_question, popup: [Hint_question, Letter_commit_m, Letter_commit_M], swipe_down: "|", key_back_color: bh3, key_text_color: th3}
       - {click: BackSpace, swipe_up: Ifly_clear_all, swipe_down: restore_cleared, width: 15, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_number, long_click: Menu, width: 12.5, key_back_color: bgn, key_text_color: tgn}
@@ -3991,6 +3991,11 @@ preset_keyboards:
 
 
 preset_keys:
+  # Route only unambiguous hint punctuation through Rime.
+  Hint_exclam: {label: "!", send: exclam}
+  Hint_question: {label: "?", send: question}
+  Hint_semicolon: {label: ";", send: semicolon}
+  Hint_colon: {label: ":", send: colon}
   # Literal letter choices for the 26-key long-press picker.
   Letter_commit_a: {label: "a", commit: "a"}
   Letter_commit_b: {label: "b", commit: "b"}

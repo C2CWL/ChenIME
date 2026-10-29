@@ -245,13 +245,6 @@ class InputView(
                 }
             }
 
-        // Queue warmup after the first traversal so keyboard presentation wins.
-        keyboardView.postOnAnimation {
-            keyboardView.post {
-                windowManager.precreatePanels()
-                keyboardWindow.precreatePanels()
-            }
-        }
         updateKeyboardSize()
 
         add(

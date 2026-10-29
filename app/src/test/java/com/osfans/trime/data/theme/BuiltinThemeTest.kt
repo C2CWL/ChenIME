@@ -93,6 +93,41 @@ class BuiltinThemeTest :
                     }
                 }
 
+                // Only unambiguous punctuation hints and popup choices go through Rime.
+                // 标准 keeps ? on M and paired parentheses on L.
+                val punctuation = if (id == "iflytek.trime") {
+                    mapOf(
+                        "s" to "exclam",
+                        "l" to "question",
+                        "b" to "colon",
+                        "n" to "semicolon",
+                    )
+                } else {
+                    mapOf(
+                        "h" to "exclam",
+                        "b" to "semicolon",
+                        "n" to "colon",
+                        "m" to "question",
+                    )
+                }
+                for (layout in letterLayouts) {
+                    val keys = theme.presetKeyboards.getValue(layout).keys
+                    for ((letter, send) in punctuation) {
+                        val key = keys.single { it.click == KeyActionToken.Plain(letter) }
+                        val token = (key.longClick as KeyActionToken.Plain).token
+                        key.popup.contains(token) shouldBe true
+                        val action = theme.presetKeys.getValue(token)
+                        action.send shouldBe send
+                        action.commit shouldBe ""
+                        action.text shouldBe ""
+                    }
+                    if (id == "tongwenfeng.trime") {
+                        val l = keys.single { it.click == KeyActionToken.Plain("l") }
+                        l.longClick shouldBe KeyActionToken.Plain("(){Left}")
+                        l.popup.first() shouldBe "(){Left}"
+                    }
+                }
+
                 theme.presetKeys.getValue("Ifly_separator").send shouldBe "apostrophe"
                 theme.presetKeys.getValue("Return").label shouldBe "ic@keyboard_return"
                 theme.toolBar.buttons.first { it.action == "Keyboard_editor" }
@@ -266,6 +301,18 @@ class BuiltinThemeTest :
                 ThemeLoader.loadFromSource(id, file, sources).shouldBeInstanceOf<ThemeLoader.ThemeLoadResult.Success>()
                 ThemeLoader.loadSourceNode(id, file, sources)?.get("name")?.string shouldBe name
             }
+        }
+
+        "Frost question punctuation is Chinese in both shape modes" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
+            val defaults = ThemeYaml.parser.parseToYamlNode(root.resolve("default.yaml").readText())
+            val punctuation = ThemeYaml.parser.parseToYamlNode(root.resolve("punctuation.yaml").readText())
+            for (shape in listOf("full_shape", "half_shape")) {
+                schema["punctuator"]?.get(shape)?.get("__include")?.string shouldBe "default:/punctuator/$shape"
+                defaults["punctuator"]?.get(shape)?.get("__include")?.string shouldBe "punctuation:/$shape"
+                punctuation[shape]?.get("?")?.get("commit")?.string shouldBe "？"
+            }
+            punctuation["ascii_style"]?.get("?")?.get("commit")?.string shouldBe "?"
         }
 
         "Frost defaults native correction off through a bundled patch" {

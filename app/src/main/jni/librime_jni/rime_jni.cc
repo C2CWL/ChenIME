@@ -387,8 +387,8 @@ Java_com_osfans_trime_core_Rime_simulateRimeKeySequence(JNIEnv* env,
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_osfans_trime_core_Rime_insertRimeCompositionText(JNIEnv* env,
-                                                       jclass /* thiz */,
-                                                       jstring text) {
+                                                          jclass /* thiz */,
+                                                          jstring text) {
   return Rime::Instance().insertCompositionText(CString(env, text));
 }
 

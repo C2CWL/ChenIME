@@ -9,7 +9,6 @@ import android.app.Dialog
 import android.content.Intent
 import android.view.ContextThemeWrapper
 import android.view.KeyEvent
-import android.view.inputmethod.ExtractedTextRequest
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
@@ -235,19 +234,10 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
                     } else {
                         val connection = service.currentInputConnection ?: return@postRimeJob
                         val deleted = ClearTextStrategy.clear(object : ClearTextStrategy.Editor {
-                            override fun snapshot(): ClearTextStrategy.Snapshot? {
-                                val value = connection.getExtractedText(ExtractedTextRequest(), 0) ?: return null
-                                return value.text?.let {
-                                    ClearTextStrategy.Snapshot(it.toString(), value.startOffset, value.partialStartOffset >= 0)
-                                }
-                            }
-                            override fun select(start: Int, end: Int) = connection.setSelection(start, end)
-                            override fun selectAll() = connection.performContextMenuAction(android.R.id.selectAll)
                             override fun selected() = connection.getSelectedText(0)?.toString()
                             override fun replace() = connection.commitText("", 1)
-                            override fun before() = connection.getTextBeforeCursor(4096, 0)?.toString()
-                            override fun after() = connection.getTextAfterCursor(4096, 0)?.toString()
-                            override fun delete(before: Int, after: Int) = connection.deleteSurroundingText(before, after)
+                            override fun before(length: Int) = connection.getTextBeforeCursor(length, 0)?.toString()
+                            override fun delete(before: Int) = connection.deleteSurroundingText(before, 0)
                         })
                         clearedText.save(deleted, false)
                     }

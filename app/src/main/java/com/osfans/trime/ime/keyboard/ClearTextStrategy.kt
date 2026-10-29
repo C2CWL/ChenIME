@@ -5,60 +5,37 @@ package com.osfans.trime.ime.keyboard
 
 /** Editor operations are queried afresh; no monitored/cached ExtractedText is used. */
 internal object ClearTextStrategy {
-    data class Snapshot(val text: String, val start: Int, val partial: Boolean)
+    private const val CHUNK_SIZE = 4096
+    private const val MAX_DELETIONS = 256
 
     interface Editor {
-        fun snapshot(): Snapshot?
-        fun select(start: Int, end: Int): Boolean
-        fun selectAll(): Boolean
         fun selected(): String?
         fun replace(): Boolean
-        fun before(): String?
-        fun after(): String?
-        fun delete(before: Int, after: Int): Boolean
+        fun before(length: Int): String?
+        fun delete(before: Int): Boolean
     }
 
     fun clear(editor: Editor): String {
-        val deleted = StringBuilder()
-        var reliable = true
-        fun result() = if (reliable) deleted.toString() else ""
-        fun replaceSelection(): Boolean {
-            val selected = editor.selected()
-            if (!editor.replace()) return false
-            if (!selected.isNullOrEmpty() && editor.selected() == selected) return false
-            if (selected != null) deleted.append(selected)
-            return true
+        val selected = editor.selected()
+        if (!selected.isNullOrEmpty()) {
+            if (!editor.replace() || editor.selected() == selected) return ""
+            return selected
         }
-        fun empty(): Boolean = editor.before() == "" && editor.after() == "" && editor.selected().isNullOrEmpty() &&
-            editor.snapshot()?.text.isNullOrEmpty()
 
-        val snapshot = editor.snapshot()
-        if (snapshot != null && snapshot.start == 0 && !snapshot.partial && snapshot.text.isNotEmpty()) {
-            // Check the actual selection before trusting offsets from an editor snapshot.
-            if (editor.select(0, snapshot.text.length) && editor.selected() == snapshot.text) {
-                replaceSelection()
-                if (empty()) return result()
-            }
+        val deleted = StringBuilder()
+        repeat(MAX_DELETIONS) {
+            val before = editor.before(CHUNK_SIZE) ?: return deleted.toString()
+            if (before.isEmpty()) return deleted.toString()
+            // Leave a leading low surrogate for the next chunk, together with its high surrogate.
+            val chunk = if (before.first().isLowSurrogate()) before.drop(1) else before
+            if (chunk.isEmpty() || !editor.delete(chunk.length)) return deleted.toString()
+            val remaining = editor.before(CHUNK_SIZE) ?: return deleted.toString()
+            // Full windows can legitimately be identical (for example, repeated spaces).
+            if (before.length < CHUNK_SIZE && remaining == before) return deleted.toString()
+            deleted.insert(0, chunk)
+            if (remaining.isEmpty()) return deleted.toString()
         }
-        if (editor.selectAll()) {
-            replaceSelection()
-            if (empty()) return result()
-        }
-        // Limited surrounding-text windows require repeated queries, in both directions.
-        // Bound work even when an editor lies about successful deletion or never updates.
-        repeat(256) {
-            val selected = editor.selected()
-            if (!selected.isNullOrEmpty()) {
-                if (!replaceSelection()) return result()
-            }
-            val before = editor.before().orEmpty()
-            val after = editor.after().orEmpty()
-            if (before.isEmpty() && after.isEmpty()) return result()
-            if (!editor.delete(before.length, after.length)) return result()
-            if (editor.before() == before && editor.after() == after) reliable = false
-            deleted.insert(0, before)
-            deleted.append(after)
-        }
-        return result()
+        // Preserve all chunks accepted before reaching the work bound.
+        return deleted.toString()
     }
 }

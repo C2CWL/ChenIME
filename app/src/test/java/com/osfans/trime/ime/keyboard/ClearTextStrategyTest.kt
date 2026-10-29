@@ -8,78 +8,137 @@ import io.kotest.matchers.shouldBe
 
 class ClearTextStrategyTest :
     StringSpec({
-        "null partial stale and full snapshots all clear committed text" {
-            for (mode in 0..3) {
-                val editor = ClearEditor("committed text", mode)
-                ClearTextStrategy.clear(editor) shouldBe "committed text"
-                editor.text shouldBe ""
-            }
+        "deletion before the cursor preserves text after it" {
+            val editor = ClearEditor("before|after", 6)
+            ClearTextStrategy.clear(editor) shouldBe "before"
+            editor.text shouldBe "|after"
+            editor.start shouldBe 0
         }
-        "chunk fallback clears both sides of cursor and an existing selection" {
-            val editor = ClearEditor("abcdefghijklmnop", 0, false)
-            editor.start = 5
-            editor.end = 8
-            ClearTextStrategy.clear(editor) shouldBe "abcdefghijklmnop"
-            editor.text shouldBe ""
+        "only the non-empty selection is deleted and saved" {
+            val editor = ClearEditor("before selected after", 7, 15)
+            ClearTextStrategy.clear(editor) shouldBe "selected"
+            editor.text shouldBe "before  after"
+            editor.start shouldBe 7
+            editor.calls shouldBe 0
         }
-        "a truncated snapshot is verified and remaining text cleared" {
-            val editor = ClearEditor("prefix and remaining text", 4)
-            ClearTextStrategy.clear(editor) shouldBe "prefix and remaining text"
-            editor.text shouldBe ""
+        "text longer than a chunk is saved in its original order" {
+            val before = "abcdef".repeat(5000)
+            val editor = ClearEditor(before + "after", before.length)
+            ClearTextStrategy.clear(editor) shouldBe before
+            editor.text shouldBe "after"
         }
-        "large text clears beyond one surrounding text window" {
-            val editor = ClearEditor("abcdef".repeat(5000), 0, false)
-            editor.chunk = 4096
-            ClearTextStrategy.clear(editor) shouldBe "abcdef".repeat(5000)
-            editor.text shouldBe ""
+        "identical full chunks are not mistaken for a non-deleting editor" {
+            val before = " ".repeat(10000)
+            val editor = ClearEditor(before + "after", before.length)
+            ClearTextStrategy.clear(editor) shouldBe before
+            editor.text shouldBe "after"
         }
-        "selection unavailable still uses select all and replacement" {
-            val editor = ClearEditor("committed", 0)
-            editor.hideSelection = true
+        "surrogate pairs at chunk boundaries are deleted together" {
+            val before = "prefix😀" + "x".repeat(4095)
+            val editor = ClearEditor(before + "😃after", before.length)
+            ClearTextStrategy.clear(editor) shouldBe before
+            editor.text shouldBe "😃after"
+            editor.splitSurrogate shouldBe false
+        }
+        "emoji selection is saved exactly" {
+            val editor = ClearEditor("a😀b", 1, 3)
+            ClearTextStrategy.clear(editor) shouldBe "😀"
+            editor.text shouldBe "ab"
+        }
+        "a cursor at the start leaves the field untouched" {
+            val editor = ClearEditor("after", 0)
             ClearTextStrategy.clear(editor) shouldBe ""
-            editor.text shouldBe ""
+            editor.text shouldBe "after"
+            editor.calls shouldBe 0
         }
-        "unresponsive editor is bounded" {
-            val editor = ClearEditor("text", 0, false)
+        "a non-deleting editor does not save an unverified chunk" {
+            val editor = ClearEditor("text")
             editor.stuck = true
             ClearTextStrategy.clear(editor) shouldBe ""
+            editor.text shouldBe "text"
+            editor.calls shouldBe 1
+        }
+        "failure after the first chunk preserves only the confirmed deletion" {
+            val chunk = "x".repeat(4096)
+            for (failure in listOf("before", "verification", "delete", "unchanged")) {
+                val editor = ClearEditor("prefix" + chunk)
+                val failingEditor = object : ClearTextStrategy.Editor by editor {
+                    var reads = 0
+
+                    override fun before(length: Int): String? {
+                        reads++
+                        if (failure == "before" && reads == 3) return null
+                        if (failure == "verification" && reads == 4) return null
+                        return editor.before(length)
+                    }
+
+                    override fun delete(before: Int): Boolean {
+                        if (editor.calls == 1) {
+                            if (failure == "delete") return false
+                            if (failure == "unchanged") editor.stuck = true
+                        }
+                        return editor.delete(before)
+                    }
+                }
+                ClearTextStrategy.clear(failingEditor) shouldBe chunk
+            }
+        }
+        "reaching the deletion bound preserves everything deleted" {
+            val deleted = "x".repeat(4096 * 256)
+            val editor = ClearEditor("prefix" + deleted)
+            ClearTextStrategy.clear(editor) shouldBe deleted
+            editor.text shouldBe "prefix"
             editor.calls shouldBe 256
+        }
+        "failed deletion does not save text" {
+            val editor = ClearEditor("before after", 6)
+            editor.rejectDelete = true
+            ClearTextStrategy.clear(editor) shouldBe ""
+            editor.text shouldBe "before after"
+        }
+        "restoring cleared text at the cursor round-trips before text and selections" {
+            val original = "prefix😀 selected😃 after"
+            for ((start, end) in listOf(10 to 10, 9 to 19)) {
+                val editor = ClearEditor(original, start, end)
+                val saved = ClearTextStrategy.clear(editor)
+                editor.commit(saved)
+                editor.text shouldBe original
+                editor.start shouldBe end
+            }
         }
     })
 
-private class ClearEditor(var text: String, val mode: Int, val all: Boolean = true) : ClearTextStrategy.Editor {
-    var start = text.length / 2
-    var end = start
+private class ClearEditor(var text: String, var start: Int = text.length, var end: Int = start) : ClearTextStrategy.Editor {
     var stuck = false
+    var rejectDelete = false
     var calls = 0
-    var chunk = 3
-    var hideSelection = false
-    override fun snapshot() = when (mode) {
-        1 -> ClearTextStrategy.Snapshot(text, 3, true)
-        2 -> ClearTextStrategy.Snapshot("stale", 0, false)
-        3 -> ClearTextStrategy.Snapshot(text, 0, false)
-        4 -> ClearTextStrategy.Snapshot(text.take(6), 0, false)
-        else -> null
-    }
-    override fun select(start: Int, end: Int): Boolean {
-        this.start = start.coerceAtMost(text.length)
-        this.end = end.coerceAtMost(text.length)
-        return true
-    }
-    override fun selectAll() = all.also { if (it) select(0, text.length) }
-    override fun selected() = if (hideSelection) null else text.substring(start, end)
+    var splitSurrogate = false
+
+    override fun selected() = text.substring(start, end)
+
     override fun replace(): Boolean {
-        text = text.removeRange(start, end)
-        end = start
+        commit("")
         return true
     }
-    override fun before() = text.substring(0, start).takeLast(chunk)
-    override fun after() = text.substring(end).take(chunk)
-    override fun delete(before: Int, after: Int): Boolean {
+
+    fun commit(value: String) {
+        text = text.replaceRange(start, end, value)
+        start += value.length
+        end = start
+    }
+
+    override fun before(length: Int) = text.substring(0, start).takeLast(length)
+
+    override fun delete(before: Int): Boolean {
         calls++
+        if (rejectDelete) return false
         if (!stuck) {
-            text = text.removeRange(start - before, end + after)
-            start -= before
+            val boundary = start - before
+            if (boundary > 0 && text[boundary].isLowSurrogate() && text[boundary - 1].isHighSurrogate()) {
+                splitSurrogate = true
+            }
+            text = text.removeRange(boundary, start)
+            start = boundary
             end = start
         }
         return true

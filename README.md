@@ -6,9 +6,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Chen IME / 尘输入法
 
-Chen IME is a Trime fork with bundled 白霜拼音 and ZIP backup/restore.
-Package: `com.c2cwl.chenime`. Download Chen IME builds from
-[this fork's releases](https://github.com/C2CWL/trime/releases).
+Chen IME (尘输入法) is a personal Trime-based Android IME with bundled 白霜拼音 and ZIP backup/restore.
+Package: `com.c2cwl.chenime`. Homepage: [C2CWL/ChenIME](https://github.com/C2CWL/ChenIME).
+Download builds from [ChenIME releases](https://github.com/C2CWL/ChenIME/releases).
 See [Chen IME notes](CHEN_IME_NOTES.md) for setup, backup, and signing details.
 The documentation below describes the upstream Trime project and its channels.
 

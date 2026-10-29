@@ -291,6 +291,8 @@ class Key(
     fun getCode(behavior: KeyBehavior): Int = getAction(behavior)!!.code
 
     fun getLabel(): String = when {
+        label.isIconFont && keyAction == click -> label
+
         label.isNotEmpty() &&
             keyAction == click &&
             !keyActions.containsKey(KeyBehavior.ASCII) &&

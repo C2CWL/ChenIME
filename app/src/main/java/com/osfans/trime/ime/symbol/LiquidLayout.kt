@@ -6,6 +6,8 @@ package com.osfans.trime.ime.symbol
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Rect
+import android.view.View
 import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.setPadding
@@ -16,6 +18,9 @@ import com.osfans.trime.data.theme.model.KeyActionToken
 import com.osfans.trime.data.theme.model.LiquidKeyboard
 import com.osfans.trime.ime.broadcast.EnterKeyDisplayDelegate
 import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
+import com.osfans.trime.ime.keyboard.KeyBehavior
+import com.osfans.trime.ime.popup.PopupAction
+import com.osfans.trime.ime.popup.PopupDelegate
 import org.kodein.di.instance
 import splitties.dimensions.dp
 import splitties.views.dsl.constraintlayout.above
@@ -53,6 +58,7 @@ class LiquidLayout(
     // TODO: 继承一个键盘视图嵌入到这里，而不是自定义一个视图
     // The fixed-key items, kept so their colors can be refreshed on scheme switches.
     private val enterKeyDisplay: EnterKeyDisplayDelegate by commonKeyboardActionListener.instance()
+    private val popup: PopupDelegate by commonKeyboardActionListener.instance()
     private var lockKey: LiquidItemUi? = null
     private var enterKey: LiquidItemUi? = null
 
@@ -110,6 +116,35 @@ class LiquidLayout(
                                 commonKeyboardActionListener.listener.onAction(
                                     theme.resolveAction(presetKeyName),
                                 )
+                            }
+                            if (presetKey?.send == "BackSpace") {
+                                id = View.generateViewId()
+                                hasClearSwipe = true
+                                onSwipeUp = {
+                                    commonKeyboardActionListener.listener.onAction(theme.resolveAction("Ifly_clear_all"))
+                                }
+                                onSwipeDown = {
+                                    commonKeyboardActionListener.listener.onAction(theme.resolveAction("restore_cleared"))
+                                }
+                                onSwipe = { behavior ->
+                                    val hint = when (behavior) {
+                                        KeyBehavior.SWIPE_UP -> com.c2cwl.chenime.R.string.swipe_clear
+                                        KeyBehavior.SWIPE_DOWN -> com.c2cwl.chenime.R.string.swipe_restore_clear
+                                        else -> null
+                                    }
+                                    if (hint == null) {
+                                        popup.listener.onPopupAction(PopupAction.DismissAction(id))
+                                    } else {
+                                        val location = IntArray(2)
+                                        getLocationInWindow(location)
+                                        val bounds = Rect(location[0], location[1], location[0] + width, location[1] + height)
+                                        popup.listener.onPopupAction(
+                                            PopupAction.PreviewAction(id, context.getString(hint), bounds, capsule = true),
+                                        )
+                                    }
+                                }
+                                onRelease = { _, _ -> popup.listener.onPopupAction(PopupAction.DismissAction(id)) }
+                                onCancel = { popup.listener.onPopupAction(PopupAction.DismissAction(id)) }
                             }
                         }
                         return@Array ui.root

@@ -45,7 +45,17 @@ class BuiltinThemeTest :
                 val deleteKeys = theme.presetKeyboards.values.flatMap { it.keys }
                     .filter { (it.click as? KeyActionToken.Plain)?.token in setOf("BackSpace", "BackSpace2") }
                 deleteKeys.isNotEmpty() shouldBe true
+                for (name in listOf("BackSpace", "BackSpace2")) {
+                    theme.presetKeys.getValue(name).label shouldBe "ic@backspace_outline"
+                    theme.presetKeys.getValue(name).repeatable shouldBe true
+                    theme.presetKeys.getValue(name).send shouldBe "BackSpace"
+                }
+                theme.presetKeys.getValue("BackSpace2").slideDelete shouldBe true
+                theme.liquidKeyboard.fixedKeyBar.keys.contains("BackSpace") shouldBe true
+                theme.presetKeys.getValue("restore_cleared").command shouldBe "restore_cleared"
                 deleteKeys.forEach {
+                    val name = (it.click as KeyActionToken.Plain).token
+                    it.label.ifEmpty { theme.presetKeys.getValue(name).label } shouldBe "ic@backspace_outline"
                     it.swipeUp shouldBe KeyActionToken.Plain("Ifly_clear_all")
                     it.swipeDown shouldBe KeyActionToken.Plain("restore_cleared")
                 }
@@ -164,9 +174,9 @@ class BuiltinThemeTest :
                 layouts.getValue("number").asciiMode shouldBe 1
                 val symbolAction = KeyActionToken.Plain(if (id == "iflytek.trime") "Ifly_symbols" else "Keyboard_bqrw")
                 val mainWidths = if (id == "iflytek.trime") {
-                    listOf(14.0, 11.5, 44.5, 10.0, 20.0)
+                    listOf(18.0, 13.0, 39.0, 10.0, 20.0)
                 } else {
-                    listOf(14.0, 11.5, 39.5, 10.0, 10.0, 15.0)
+                    listOf(18.0, 13.0, 34.0, 10.0, 10.0, 15.0)
                 }
                 for (layout in letterLayouts) {
                     val keyboard = layouts.getValue(layout)
@@ -180,9 +190,9 @@ class BuiltinThemeTest :
                 }
                 val numberKeys = layouts.getValue("number").keys
                 val numberWidths = if (id == "iflytek.trime") {
-                    listOf(12.0, 25.0, 25.0, 25.0, 13.0)
+                    listOf(18.0, 23.5, 23.5, 23.5, 11.5)
                 } else {
-                    listOf(13.5, 13.5, 20.0, 20.0, 20.0, 13.0)
+                    listOf(18.0, 11.5, 19.5, 19.5, 19.5, 12.0)
                 }
                 numberKeys.size shouldBe numberWidths.size * 4
                 numberKeys.chunked(numberWidths.size).forEach { row ->

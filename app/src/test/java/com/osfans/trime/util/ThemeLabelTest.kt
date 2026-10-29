@@ -14,6 +14,7 @@ class ThemeLabelTest :
         }
 
         "icon labels use the Iconics namespace and a readable fallback" {
+            parseThemeLabel("ic@backspace_outline") shouldBe ThemeLabel("cmd_backspace_outline", "退格")
             parseThemeLabel("ic@keyboard_return") shouldBe ThemeLabel("cmd_keyboard_return", "回车")
             parseThemeLabel("ic@keyboard_return", "发送") shouldBe ThemeLabel("cmd_keyboard_return", "发送")
             parseThemeLabel("ic@missing", "返回") shouldBe ThemeLabel("cmd_missing", "返回")

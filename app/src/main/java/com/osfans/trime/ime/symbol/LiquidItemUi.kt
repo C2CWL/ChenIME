@@ -7,9 +7,14 @@ package com.osfans.trime.ime.symbol
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.Typeface
 import android.graphics.drawable.StateListDrawable
+import android.text.Spanned
+import android.text.style.ImageSpan
 import android.widget.TextView
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.text.PrecomputedTextCompat
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
@@ -34,7 +39,7 @@ class LiquidItemUi(
 ) : Ui {
     private val theme: Theme get() = scope.theme
 
-    val mainText = view(::TextView) {
+    val mainText: TextView = view(::LiquidLabelView) {
         gravity = gravityCenter
         isSingleLine = true
         isClickable = false
@@ -126,5 +131,17 @@ class LiquidItemUi(
             ctx.dp(theme.style.keyBorder),
             ctx.dp(theme.style.roundCorner),
         )
+    }
+}
+
+/** ImageSpan drawables do not inherit TextView's stateful text colors. */
+private class LiquidLabelView(context: Context) : AppCompatTextView(context) {
+    override fun drawableStateChanged() {
+        super.drawableStateChanged()
+        val label = text as? Spanned ?: return
+        label.getSpans(0, label.length, ImageSpan::class.java).forEach {
+            it.drawable.colorFilter = PorterDuffColorFilter(currentTextColor, PorterDuff.Mode.SRC_IN)
+        }
+        invalidate()
     }
 }

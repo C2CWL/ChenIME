@@ -23,6 +23,11 @@ internal fun inputStartKeyboard(
 internal class KeyboardAsciiState {
     private var savedMode: Boolean? = null
 
+    /** An explicit language change starts a new non-ASCII letter mode. */
+    fun reset() {
+        savedMode = false
+    }
+
     fun select(temporary: Boolean, currentMode: Boolean): Boolean = if (temporary) {
         if (savedMode == null) savedMode = currentMode
         true

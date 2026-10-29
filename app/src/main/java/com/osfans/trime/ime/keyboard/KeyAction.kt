@@ -135,7 +135,8 @@ class KeyAction(
     fun getLabel(keyboard: Keyboard): String {
         ensureLabels()
         if (states.isNotEmpty() && toggle.isNotEmpty()) {
-            return states[if (runtimeOptions[toggle]) 1 else 0]
+            val enabled = EnglishMode.optionEnabled(toggle, runtimeOptions[toggle], rime.run { statusCached }.schemaId)
+            return states[if (enabled) 1 else 0]
         }
         if (keyboard.isOnlyShiftOn) {
             val asciiMode = rime.run { statusCached }.isAsciiMode

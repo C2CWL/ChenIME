@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
 import com.osfans.trime.core.Candidates
 import com.osfans.trime.core.RimeMessage
+import com.osfans.trime.core.SchemaItem
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.db.ClipboardHelper
@@ -36,6 +37,7 @@ import com.osfans.trime.ime.candidates.compact.CompactCandidateDelegate
 import com.osfans.trime.ime.candidates.unrolled.window.FlexboxUnrolledCandidateWindow
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
+import com.osfans.trime.ime.keyboard.EnglishMode
 import com.osfans.trime.ime.keyboard.KeyBehavior
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
@@ -367,7 +369,10 @@ class InputBarDelegate(override val di: DI) :
         val options = alwaysUi.toggleOptions()
         if (options.isEmpty()) return
         rime.launchOnReady { api ->
-            val states = options.associateWith { api.getRuntimeOption(it) }
+            val states = options.associateWith {
+                val enabled = api.getRuntimeOption(it)
+                EnglishMode.optionEnabled(it, enabled, api.statusCached.schemaId)
+            }
             ContextCompat.getMainExecutor(context).execute {
                 states.forEach { (option, enabled) ->
                     alwaysUi.updateButtonsStyle(option, enabled)
@@ -376,7 +381,12 @@ class InputBarDelegate(override val di: DI) :
         }
     }
 
+    override fun onRimeSchemaUpdated(schema: SchemaItem) {
+        syncToolbarOptionStates()
+    }
+
     override fun onRimeOptionUpdated(value: RimeMessage.OptionMessage.Data) {
-        alwaysUi.updateButtonsStyle(value.option, value.value)
+        val enabled = EnglishMode.optionEnabled(value.option, value.value, rime.run { statusCached }.schemaId)
+        alwaysUi.updateButtonsStyle(value.option, enabled)
     }
 }

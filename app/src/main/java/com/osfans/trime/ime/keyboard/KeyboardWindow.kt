@@ -82,9 +82,13 @@ class KeyboardWindow(di: DI) :
     private var lastKeyboardId = ""
     private var lastLockKeyboardId = ""
     private val keyboardAsciiState = KeyboardAsciiState()
+    private var keyboardSchemaId = rime.run { statusCached }.schemaId
     private val cachedKeyboards = mutableMapOf<String, Pair<Keyboard, KeyboardView>>()
     private val activeKeyboard: Keyboard? get() = cachedKeyboards[currentKeyboardId]?.first
     private val currentKeyboardView: KeyboardView? get() = cachedKeyboards[currentKeyboardId]?.second
+
+    val isForcedAsciiLayout: Boolean
+        get() = currentKeyboardId == "number" || currentKeyboardId == "editor" || activeKeyboard?.asciiMode == true
 
     private val keyboardActionListener = commonKeyboardActionListener.listener
 
@@ -184,7 +188,8 @@ class KeyboardWindow(di: DI) :
             val temporary = target == "number" || target == "editor" || it.asciiMode
             service.postRimeJob {
                 val currentMode = statusCached.isAsciiMode
-                val targetMode = keyboardAsciiState.select(temporary, currentMode)
+                val restoredMode = keyboardAsciiState.select(temporary, currentMode)
+                val targetMode = EnglishMode.keyboardAsciiMode(statusCached.schemaId, temporary, restoredMode)
                 if (currentMode != targetMode) {
                     commitComposition()
                     setKeyboardAsciiMode(targetMode)
@@ -306,8 +311,8 @@ class KeyboardWindow(di: DI) :
     private fun dispatchCapsState(setShift: (Boolean, Boolean) -> Unit) {
         val status = rime.run { statusCached }
         // TODO: 启用自动首句大写后，点击方向键时，保持Shift锁定状态功能将无法生效
-        if (theme.style.autoCaps == true && status.isAsciiMode && currentKeyboardView?.isCapsOn == false) {
-            setShift(false, cursorCapsMode != 0)
+        if (theme.style.autoCaps == true && EnglishMode.isEnglish(status.schemaId, status.isAsciiMode) && currentKeyboardView?.isCapsOn == false) {
+            setShift(false, cursorCapsMode != 0 && !(status.schemaId == EnglishMode.SCHEMA && status.isComposing))
         }
     }
 
@@ -329,7 +334,20 @@ class KeyboardWindow(di: DI) :
     }
 
     override fun onRimeSchemaUpdated(schema: SchemaItem) {
-        switchKeyboard(".default")
+        val keepKeyboard = EnglishMode.keepsKeyboard(keyboardSchemaId, schema.id)
+        keyboardSchemaId = schema.id
+        if (keepKeyboard) {
+            if (schema.id == EnglishMode.CHINESE_SCHEMA) activeKeyboard?.resetShift()
+            dispatchCapsState { on, shifted -> activeKeyboard?.setShifted(on, shifted) }
+            currentKeyboardView?.invalidateAllKeys()
+        } else {
+            switchKeyboard(".default")
+        }
+    }
+
+    /** Called in the serialized Rime job alongside an explicit language change. */
+    fun resetLetterAsciiMode() {
+        keyboardAsciiState.reset()
     }
 
     fun invalidateOptionLabels() {
@@ -356,8 +374,10 @@ class KeyboardWindow(di: DI) :
             }
 
             option == "ascii_mode" && !value.value -> {
-                // 回到中文时，释放 Shift 锁定
-                activeKeyboard?.resetShift()
+                if (rime.run { statusCached }.schemaId != EnglishMode.SCHEMA) {
+                    // 回到中文时，释放 Shift 锁定
+                    activeKeyboard?.resetShift()
+                }
             }
         }
         currentKeyboardView?.invalidateAllKeys()

@@ -41,16 +41,17 @@ class KeyboardAppearanceMigrationTest :
             } as SharedPreferences
             migrateKeyboardAppearance(shared)
             keys.forEach { values[it] shouldBe false }
-            values["show_key_popup"] shouldBe true
-            values["show_key_popup"] = false
+            values["show_key_popup"] shouldBe null
+            values["show_key_popup"] = true
             keys.forEach { values[it] = true }
             migrateKeyboardAppearance(shared)
             keys.forEach { values[it] shouldBe true }
-            values["show_key_popup"] shouldBe false
-            // An older installation already has v2; the new preview migration still runs.
+            values["show_key_popup"] shouldBe true
+            // An older installation must also retain an explicitly disabled preview.
+            values["show_key_popup"] = false
             values["keyboard_preview_defaults_v1"] = false
             migrateKeyboardAppearance(shared)
-            values["show_key_popup"] shouldBe true
+            values["show_key_popup"] shouldBe false
             keys.forEach { values[it] shouldBe true }
         }
     })

@@ -8,6 +8,7 @@ import android.graphics.Rect
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.lifecycle.lifecycleScope
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
@@ -78,7 +79,7 @@ class PopupDelegate(override val di: DI) : DIAware {
                 dismissJobs.remove(viewId)?.cancel()
             }
             lastShowTime = System.currentTimeMillis()
-            this.capsule = capsule
+            if (this.capsule != capsule) this.capsule = capsule
             setText(content)
             placePopup(this, bounds)
             return
@@ -99,14 +100,33 @@ class PopupDelegate(override val di: DI) : DIAware {
         val v = ui.root
         val entryWidth = if (ui.capsule) context.dp(112) else popupWidth
         val entryHeight = if (ui.capsule) context.dp(36) else popupHeight
-        (v.parent as? ViewGroup)?.removeView(v)
-        root.apply {
-            add(
+        // align popup bottom with key border bottom
+        val top = if (ui.capsule) bounds.top - entryHeight - context.dp(8) - rootBounds.top else bounds.bottom - popupHeight - popupBottomMargin - rootBounds.top
+        val left = ((bounds.left + bounds.right - entryWidth) / 2 - rootBounds.left).coerceIn(0, (rootBounds.width() - entryWidth).coerceAtLeast(0))
+        if (v.parent === root) {
+            val params = v.layoutParams as FrameLayout.LayoutParams
+            if (
+                params.width != entryWidth ||
+                params.height != entryHeight ||
+                params.topMargin != top ||
+                params.leftMargin != left
+            ) {
+                params.width = entryWidth
+                params.height = entryHeight
+                params.topMargin = top
+                params.leftMargin = left
+                v.layoutParams = params
+            }
+        } else {
+            (v.parent as? ViewGroup)?.removeView(v)
+            root.add(
                 v,
-                lParams(entryWidth, entryHeight) {
-                    // align popup bottom with key border bottom
-                    topMargin = if (ui.capsule) bounds.top - entryHeight - context.dp(8) - rootBounds.top else bounds.bottom - popupHeight - popupBottomMargin - rootBounds.top
-                    leftMargin = ((bounds.left + bounds.right - entryWidth) / 2 - rootBounds.left).coerceIn(0, (rootBounds.width() - entryWidth).coerceAtLeast(0))
+                root.lParams(
+                    entryWidth,
+                    entryHeight,
+                ) {
+                    topMargin = top
+                    leftMargin = left
                 },
             )
         }

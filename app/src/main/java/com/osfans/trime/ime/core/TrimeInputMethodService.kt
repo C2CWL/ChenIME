@@ -48,7 +48,6 @@ import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.composition.CandidatesView
-import com.osfans.trime.ime.keyboard.CommitHistory
 import com.osfans.trime.ime.keyboard.InputFeedbackManager
 import com.osfans.trime.ime.keyboard.UndoRedoShortcut
 import com.osfans.trime.ime.keyboard.sendUndoRedoCombination
@@ -547,7 +546,6 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         restarting: Boolean,
     ) {
         composingText = ""
-        commitHistory.clear()
         Timber.d("onStartInput: restarting=$restarting")
         val isNullType = attribute.inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_NULL
         postRimeJob {
@@ -656,26 +654,14 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         InputFeedbackManager.finishInput()
     }
 
-    private val commitHistory = CommitHistory()
-
     fun commitText(text: String) {
         val ic = currentInputConnection ?: return
 
         // when composing text equals commit content, finish composing text as-is
-        val selected = !ic.getSelectedText(0).isNullOrEmpty()
-        val committed = if (composingText.isNotEmpty() && composingText == text) {
+        if (composingText.isNotEmpty() && composingText == text) {
             ic.finishComposingText()
         } else {
             ic.commitText(text, 1)
-        }
-        if (committed && !selected) {
-            commitHistory.record(
-                text,
-                ic.getTextBeforeCursor(CommitHistory.MAX_TEXT + CommitHistory.CONTEXT, 0)?.toString(),
-                ic.getTextAfterCursor(CommitHistory.CONTEXT, 0)?.toString(),
-            )
-        } else {
-            commitHistory.clear()
         }
         lastCommittedText = text
         composingText = ""

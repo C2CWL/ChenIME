@@ -390,6 +390,12 @@ class Keyboard(
         on: Boolean,
         keycode: Int,
     ): Boolean {
+        if (keycode == KeyEvent.META_SHIFT_ON) {
+            val state = ShiftState(modifier.hasFlag(keycode), mShiftKey?.isOn == true).press(on)
+            // Key.setOn toggles an existing lock; apply the desired state explicitly.
+            mShiftKey?.let { if (it.isOn != state.locked) it.setOn(state.locked) }
+            return setModifier(keycode, state.shifted)
+        }
         val keyDown = !modifier.hasFlag(keycode)
         val modifierKey =
             when (keycode) {
@@ -412,7 +418,10 @@ class Keyboard(
     fun refreshModifier(): Boolean {
         // 这里改为了一次性重置全部修饰键状态并返回TRUE刷新UI，可能有bug
         var result = false
-        if (mShiftKey != null && !mShiftKey!!.isOn) result = result || setModifier(KeyEvent.META_SHIFT_ON, false)
+        if (mShiftKey != null) {
+            val state = ShiftState(modifier.hasFlag(KeyEvent.META_SHIFT_ON), mShiftKey!!.isOn).afterKey()
+            result = setModifier(KeyEvent.META_SHIFT_ON, state.shifted)
+        }
         if (mAltKey != null && !mAltKey!!.isOn) result = result || setModifier(KeyEvent.META_ALT_ON, false)
         if (mCtrlKey != null && !mCtrlKey!!.isOn) result = result || setModifier(KeyEvent.META_CTRL_ON, false)
         if (mMetaKey != null && !mMetaKey!!.isOn) result = result || setModifier(KeyEvent.META_META_ON, false)

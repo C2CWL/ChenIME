@@ -280,7 +280,7 @@ class Key(
         return keyActions[KeyBehavior.ASCII].takeIf { asciiMode }
             ?: keyActions[KeyBehavior.PAGING]?.takeIf { paging }
             ?: keyActions[KeyBehavior.HAS_MENU]?.takeIf { hasMenu }
-            ?: keyActions[KeyBehavior.COMPOSING]?.takeIf { composing }
+            ?: keyActions[KeyBehavior.COMPOSING]?.takeIf { useComposingAction(composing, isShift, isOn) }
     }
 
     private fun checkKeyAction(sendBindings: Boolean): KeyAction? = checkKeyAction().takeIf { sendBindings }

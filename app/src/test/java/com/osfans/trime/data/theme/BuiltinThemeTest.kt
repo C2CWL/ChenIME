@@ -36,6 +36,16 @@ class BuiltinThemeTest :
                 val node = ThemeYaml.parser.parseToYamlNode(file.readText())
                 val theme = ThemeLoader.decodeSource(id, node) { resource -> sources.load(resource, null) }
                 theme.name shouldBe name
+                theme.presetKeys.getValue("Shift_L").shiftLock shouldBe "long"
+                theme.presetKeys.getValue("Shift_L3").shiftLock shouldBe "click"
+                // Check every resolved Shift, including inherited English layouts.
+                val shifts = theme.presetKeyboards.values.flatMap { it.keys }
+                    .filter { it.click == KeyActionToken.Plain("Shift_L") }
+                shifts.isNotEmpty() shouldBe true
+                shifts.forEach {
+                    it.longClick shouldBe KeyActionToken.Plain("Shift_L")
+                    it.doubleClick shouldBe KeyActionToken.Plain("Shift_L3")
+                }
                 theme.presetKeys.getValue("undo").send shouldBe "Control+z"
                 theme.presetKeys.getValue("redo").send shouldBe "Control+Shift+z"
                 val clear = theme.presetKeys.getValue("Ifly_clear_all")
@@ -218,6 +228,8 @@ class BuiltinThemeTest :
                 for (layout in letterLayouts) {
                     val shift = layouts.getValue(layout).keys.first { it.click == KeyActionToken.Plain("Shift_L") }
                     shift.composing shouldBe if (id == "iflytek.trime") KeyActionToken.Plain("Ifly_separator") else null
+                    shift.longClick shouldBe KeyActionToken.Plain("Shift_L")
+                    shift.doubleClick shouldBe KeyActionToken.Plain("Shift_L3")
                     theme.presetKeys.getValue("Shift_L").send shouldBe "Shift_L"
                 }
                 for (trigger in listOf("open", "focus", "Send", "backspace", "swipe clear")) {

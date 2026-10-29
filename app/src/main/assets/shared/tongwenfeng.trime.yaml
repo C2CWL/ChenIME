@@ -1180,7 +1180,7 @@ preset_keyboards:
       - {click: l, long_click: '(){Left}', popup: ['(){Left}', Letter_commit_l, Letter_commit_L], swipe_down: "=", key_back_color: bh2, key_text_color: th2}
       - {width: 5, key_back_color: bh2, key_text_color: th2}
 
-      - {click: Shift_L, width: 15, hilited_key_back_color: benter, key_back_color: bbs, key_text_color: tbs}
+      - {click: Shift_L, long_click: Shift_L, double_click: Shift_L3, width: 15, hilited_key_back_color: benter, key_back_color: bbs, key_text_color: tbs}
       - {click: z, long_click: '`', popup: ['`', Letter_commit_z, Letter_commit_Z], swipe_down: '[]{Left}', key_back_color: bh3, key_text_color: th3}
       - {click: x, long_click: cut, popup: [cut, Letter_commit_x, Letter_commit_X], swipe_down: '{}{Left}', key_back_color: bh3, key_text_color: th3}
       - {click: c, long_click: copy, popup: [copy, Letter_commit_c, Letter_commit_C], swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
@@ -4064,7 +4064,7 @@ preset_keys:
   VOLUME_UP: {label: 音量+, send: VOLUME_UP}
   VOLUME_MUTE: {label: 静音, send: VOLUME_MUTE}
   # 编辑
-  Shift_L: {label: Shift, preview: '⇪', functional: false, send: Shift_L}
+  Shift_L: {label: Shift, preview: '⇪', functional: false, send: Shift_L, shift_lock: long}
   Shift_L3: {label: Shift, preview: '⇪', functional: false, send: Shift_L, shift_lock: click}
   Return: { label: ic@keyboard_return, preview: '↩', functional: false, send: Return }
   Return1: {label: ic@keyboard_return, preview: '↩', functional: false, send: Return}

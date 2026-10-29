@@ -299,8 +299,10 @@ class KeyView(
         val label = key.getLabel().let {
             if (it == "enter_labels") {
                 keyboardView.labelEnter
+            } else if (key.isShift && key.isOn) {
+                "ic@apple_keyboard_caps"
             } else if (it == "ic@apple_keyboard_shift" && keyboard.isShifted) {
-                if (key.isOn) "ic@apple_keyboard_caps" else "ic@arrow_up_bold"
+                "ic@arrow_up_bold"
             } else {
                 keyLabelForDisplay(it, keyboardView.uppercaseKeyLabels, keyboard.isShifted)
             }

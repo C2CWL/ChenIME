@@ -186,6 +186,7 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
                     "set_theme" -> handleTheme(arg)
                     "broadcast" -> service.sendBroadcast(Intent(arg))
                     "clipboard" -> handleClipboard()
+                    "clear_all" -> handleClearAll()
                     "commit" -> service.commitText(arg)
                     "date" -> service.commitText(customFormatDateTime(arg))
                     "run" -> handleRunCommand(arg)
@@ -195,6 +196,17 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
                     "switch_hide_key_symbol" -> switchHideKeySymbol()
                     "switch_hide_key_hint" -> switchHideKeyHint()
                     else -> handleIntentAction(action.command, arg)
+                }
+            }
+
+            private fun handleClearAll() {
+                service.postRimeJob {
+                    if (statusCached.isComposing) {
+                        clearComposition()
+                    } else {
+                        service.sendDownUpKeyEvent(KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON)
+                        service.sendDownUpKeyEvent(KeyEvent.KEYCODE_DEL, 0)
+                    }
                 }
             }
 

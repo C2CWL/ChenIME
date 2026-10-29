@@ -45,8 +45,6 @@ object UserDataManager {
       patch:
         schema_list:
           - schema: rime_frost
-          - schema: luna_pinyin
-          - schema: luna_pinyin_simp
     """
 
     private val lock = Mutex()

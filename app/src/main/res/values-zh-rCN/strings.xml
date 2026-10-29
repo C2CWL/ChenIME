@@ -216,7 +216,8 @@
     <string name="vertical_reverse">纵向倒序</string>
     <string name="ascii_switch_tips">切换中英文模式时显示提示</string>
     <string name="key_double_tap_timeout">按键双击超时</string>
-    <string name="key_slide_step_size">按键滑动步长</string>
+    <string name="key_slide_step_size">滑动速度</string>
+    <string name="key_slide_step_size_message">空格键滑动光标和退格键滑动删除时，每个字符所需的滑动距离。数值越大，滑动越慢。</string>
     <string name="horizontal_candidate_style">横向候选词样式</string>
     <string name="horizontal_candidate_never_fill">从不填充宽度</string>
     <string name="horizontal_candidate_auto_fill">按需填充宽度</string>
@@ -258,4 +259,6 @@
     <string name="import_user_data_success">用户数据已恢复并部署</string>
     <string name="export_user_data_failure">导出失败，请检查目标位置及剩余空间</string>
     <string name="import_user_data_failure">导入或部署失败，请确认这是有效的尘输入法备份</string>
+    <string name="uppercase_key_labels">键面字母大写显示</string>
+    <string name="uppercase_key_labels_summary">开启显示大写字母，关闭显示小写字母，不影响输入内容。</string>
 </resources>

@@ -19,7 +19,7 @@ class ThemePrefs(
         string(
             R.string.selected_theme,
             SELECTED_THEME,
-            "trime",
+            "iflytek.trime",
             R.string.selected_theme_summary,
         )
 
@@ -61,7 +61,7 @@ class ThemePrefs(
         switch(
             R.string.follow_system_day_night_color,
             FOLLOW_SYSTEM_DAY_NIGHT,
-            false,
+            true,
         )
 
     companion object {

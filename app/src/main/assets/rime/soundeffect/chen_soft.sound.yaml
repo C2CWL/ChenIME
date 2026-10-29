@@ -1,0 +1,8 @@
+# Original synthesized sounds and descriptor: CC0-1.0
+name: 轻柔
+folder: chen_soft
+sound: [click.wav, special.wav]
+keyset:
+  - keys: [KEYCODE_SPACE, KEYCODE_ENTER, KEYCODE_DEL]
+    inOrder: true
+    sounds: [1]

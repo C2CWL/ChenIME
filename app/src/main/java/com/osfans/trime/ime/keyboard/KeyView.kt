@@ -40,6 +40,8 @@ class KeyView(
     private val popup: PopupDelegate
         get() = keyboardView.popup
 
+    private var deleteGesture = DeleteGesture()
+
     private val deletedTextBuffer = ArrayDeque<String>()
 
     private var keyPressed = false
@@ -81,6 +83,7 @@ class KeyView(
         hasPopup = key.popup.isNotEmpty()
 
         onPress = {
+            deleteGesture = DeleteGesture()
             if (keyboard.firstPressedKeyIndex == -1) keyboard.firstPressedKeyIndex = id
             setPressedState(true)
             key.getCode(KeyBehavior.CLICK).let { keyboardActionListener.onPress(it) }
@@ -135,19 +138,29 @@ class KeyView(
                     delta < 0 -> keyboardActionListener.onAction(theme.resolveAction("Left"))
                 }
             } else if (isSlideDelete) {
-                val ic = service.currentInputConnection
-                when {
-                    delta < 0 -> {
-                        val beforeText = ic.getTextBeforeCursor(1, 0) ?: ""
-                        if (beforeText.isNotEmpty()) {
-                            deletedTextBuffer.addFirst(beforeText.toString())
-                            ic.deleteSurroundingText(1, 0)
-                        }
+                val gesture = deleteGesture
+                service.postRimeJob {
+                    // Latch for the whole gesture: later steps must not reach the editor
+                    // after the first step has cleared preedit.
+                    val isComposing = statusCached.isComposing
+                    if (gesture.consume(isComposing)) {
+                        if (isComposing) clearComposition()
+                        return@postRimeJob
                     }
+                    val ic = service.currentInputConnection ?: return@postRimeJob
+                    when {
+                        delta < 0 -> {
+                            val beforeText = ic.getTextBeforeCursor(1, 0) ?: ""
+                            if (beforeText.isNotEmpty()) {
+                                deletedTextBuffer.addFirst(beforeText.toString())
+                                ic.deleteSurroundingText(1, 0)
+                            }
+                        }
 
-                    delta > 0 -> {
-                        if (deletedTextBuffer.isNotEmpty()) {
-                            ic.commitText(deletedTextBuffer.removeFirst(), 1)
+                        delta > 0 -> {
+                            if (deletedTextBuffer.isNotEmpty()) {
+                                ic.commitText(deletedTextBuffer.removeFirst(), 1)
+                            }
                         }
                     }
                 }
@@ -174,7 +187,7 @@ class KeyView(
         }
 
         onCancel = {
-            deletedTextBuffer.clear()
+            service.postRimeJob { deletedTextBuffer.clear() }
             setPressedState(false)
             dismissPopupPreview()
         }
@@ -272,7 +285,11 @@ class KeyView(
         drawBackground(canvas, key)
 
         val label = key.getLabel().let {
-            if (it == "enter_labels") keyboardView.labelEnter else it
+            if (it == "enter_labels") {
+                keyboardView.labelEnter
+            } else {
+                keyLabelForDisplay(it, keyboardView.uppercaseKeyLabels, keyboard.isShifted)
+            }
         }
 
         if (label.isNotEmpty()) {

@@ -1069,8 +1069,20 @@ tool_bar:
       option_styles: ["ic@moon_full", "ic@moon_new"]
     action: Zenkaku_Hankaku
 
+  undo_button: &undo_button
+    foreground:
+      style: "↶"
+      normal: candidate_text_color
+    action: undo
+
+  redo_button: &redo_button
+    foreground:
+      style: "↷"
+      normal: candidate_text_color
+    action: redo
+
   # 右侧按钮列表（从右向左排列）
-  buttons: [ *hide_button, *emoji_button, *clipboard_button, *edit_button, *ascii_mode_button, *full_shape_button ]
+  buttons: [ *hide_button, *emoji_button, *clipboard_button, *edit_button, *ascii_mode_button, *full_shape_button, *redo_button, *undo_button ]
 
 #键盘布局
 preset_keyboards:
@@ -1081,38 +1093,38 @@ preset_keyboards:
   #  height: 48
     ascii_mode: 0
     keys:
-      - {click: q, long_click: 1, key_back_color: bh1, key_text_color: th1}
-      - {click: w, long_click: 2, key_back_color: bh1, key_text_color: th1}
-      - {click: e, long_click: 3, key_back_color: bh1, key_text_color: th1}
-      - {click: r, long_click: 4, key_back_color: bh1, key_text_color: th1}
-      - {click: t, long_click: 5, key_back_color: bh1, key_text_color: th1}
-      - {click: y, long_click: 6, key_back_color: bh1, key_text_color: th1}
-      - {click: u, long_click: 7, key_back_color: bh1, key_text_color: th1}
-      - {click: i, long_click: 8, key_back_color: bh1, key_text_color: th1}
-      - {click: o, long_click: 9, key_back_color: bh1, key_text_color: th1}
-      - {click: p, long_click: 0, key_back_color: bh1, key_text_color: th1}
+      - {click: q, long_click: 1, popup: [1, Letter_commit_q, Letter_commit_Q], key_back_color: bh1, key_text_color: th1}
+      - {click: w, long_click: 2, popup: [2, Letter_commit_w, Letter_commit_W], key_back_color: bh1, key_text_color: th1}
+      - {click: e, long_click: 3, popup: [3, Letter_commit_e, Letter_commit_E], key_back_color: bh1, key_text_color: th1}
+      - {click: r, long_click: 4, popup: [4, Letter_commit_r, Letter_commit_R], key_back_color: bh1, key_text_color: th1}
+      - {click: t, long_click: 5, popup: [5, Letter_commit_t, Letter_commit_T], key_back_color: bh1, key_text_color: th1}
+      - {click: y, long_click: 6, popup: [6, Letter_commit_y, Letter_commit_Y], key_back_color: bh1, key_text_color: th1}
+      - {click: u, long_click: 7, popup: [7, Letter_commit_u, Letter_commit_U], key_back_color: bh1, key_text_color: th1}
+      - {click: i, long_click: 8, popup: [8, Letter_commit_i, Letter_commit_I], key_back_color: bh1, key_text_color: th1}
+      - {click: o, long_click: 9, popup: [9, Letter_commit_o, Letter_commit_O], key_back_color: bh1, key_text_color: th1}
+      - {click: p, long_click: 0, popup: [0, Letter_commit_p, Letter_commit_P], key_back_color: bh1, key_text_color: th1}
 
       - {width: 5, key_back_color: bh2, key_text_color: th2}
-      - {click: a, long_click: select_all, key_back_color: bh2, key_text_color: th2}
-      - {click: s, long_click: '@', key_back_color: bh2, key_text_color: th2}
-      - {click: d, long_click: '#', key_back_color: bh2, key_text_color: th2}
-      - {click: f, long_click: '$', key_back_color: bh2, key_text_color: th2}
-      - {click: g, long_click: '%', swipe_down: "date_time", key_back_color: bh2, key_text_color: th2}
-      - {click: h, long_click: '!', swipe_down: "+", key_back_color: bh2, key_text_color: th2}
-      - {click: j, long_click: '&', swipe_down: "-", key_back_color: bh2, key_text_color: th2}
-      - {click: k, long_click: '*', swipe_down: "_", key_back_color: bh2, key_text_color: th2}
-      - {click: l, long_click: '(){Left}', swipe_down: "=", key_back_color: bh2, key_text_color: th2}
+      - {click: a, long_click: select_all, popup: [select_all, Letter_commit_a, Letter_commit_A], key_back_color: bh2, key_text_color: th2}
+      - {click: s, long_click: '@', popup: ['@', Letter_commit_s, Letter_commit_S], key_back_color: bh2, key_text_color: th2}
+      - {click: d, long_click: '#', popup: ['#', Letter_commit_d, Letter_commit_D], key_back_color: bh2, key_text_color: th2}
+      - {click: f, long_click: '$', popup: ['$', Letter_commit_f, Letter_commit_F], key_back_color: bh2, key_text_color: th2}
+      - {click: g, long_click: '%', popup: ['%', Letter_commit_g, Letter_commit_G], swipe_down: "date_time", key_back_color: bh2, key_text_color: th2}
+      - {click: h, long_click: '!', popup: ['!', Letter_commit_h, Letter_commit_H], swipe_down: "+", key_back_color: bh2, key_text_color: th2}
+      - {click: j, long_click: '&', popup: ['&', Letter_commit_j, Letter_commit_J], swipe_down: "-", key_back_color: bh2, key_text_color: th2}
+      - {click: k, long_click: '*', popup: ['*', Letter_commit_k, Letter_commit_K], swipe_down: "_", key_back_color: bh2, key_text_color: th2}
+      - {click: l, long_click: '(){Left}', popup: ['(){Left}', Letter_commit_l, Letter_commit_L], swipe_down: "=", key_back_color: bh2, key_text_color: th2}
       - {width: 5, key_back_color: bh2, key_text_color: th2}
 
       - {click: Shift_L, label_symbol: " ", long_click: Shift_L, double_click: Shift_L3, composing: delimiter, width: 15, hilited_key_back_color: benter, key_back_color: bbs, key_text_color: tbs}
-      - {click: z, long_click: '`', swipe_down: '[]{Left}', key_back_color: bh3, key_text_color: th3}
-      - {click: x, long_click: cut, swipe_down: '{}{Left}', key_back_color: bh3, key_text_color: th3}
-      - {click: c, long_click: copy, swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
-      - {click: v, long_click: paste_clip, swipe_down: paste, key_back_color: bh3, key_text_color: th3}
-      - {click: b, long_click: ";", swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
-      - {click: n, long_click: ":", key_back_color: bh3, key_text_color: th3}
-      - {click: m, long_click: '?', swipe_down: "|", key_back_color: bh3, key_text_color: th3}
-      - {click: BackSpace2, width: 15, key_back_color: bbs, key_text_color: tbs}
+      - {click: z, long_click: '`', popup: ['`', Letter_commit_z, Letter_commit_Z], swipe_down: '[]{Left}', key_back_color: bh3, key_text_color: th3}
+      - {click: x, long_click: cut, popup: [cut, Letter_commit_x, Letter_commit_X], swipe_down: '{}{Left}', key_back_color: bh3, key_text_color: th3}
+      - {click: c, long_click: copy, popup: [copy, Letter_commit_c, Letter_commit_C], swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
+      - {click: v, long_click: paste_clip, popup: [paste_clip, Letter_commit_v, Letter_commit_V], swipe_down: paste, key_back_color: bh3, key_text_color: th3}
+      - {click: b, long_click: ";", popup: [";", Letter_commit_b, Letter_commit_B], swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
+      - {click: n, long_click: ":", popup: [":", Letter_commit_n, Letter_commit_N], key_back_color: bh3, key_text_color: th3}
+      - {click: m, long_click: '?', popup: ['?', Letter_commit_m, Letter_commit_M], swipe_down: "|", key_back_color: bh3, key_text_color: th3}
+      - {click: BackSpace2, swipe_up: Ifly_clear_all, width: 15, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_number, long_click: Menu, width: 12.5, key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_bqrw, label_symbol: "简洁", long_click: "{hide_key_symbol}{hide_key_hint}", swipe_down: Color_switch, swipe_up: Color_switch, width: 12.5, key_text_size: "18", key_back_color: bgn, key_text_color: tgn}
@@ -1130,38 +1142,38 @@ preset_keyboards:
     ascii_mode: 1
     keys:
     
-      - {click: q, long_click: 1, key_back_color: bh1, key_text_color: th1}
-      - {click: w, long_click: 2, key_back_color: bh1, key_text_color: th1}
-      - {click: e, long_click: 3, key_back_color: bh1, key_text_color: th1}
-      - {click: r, long_click: 4, key_back_color: bh1, key_text_color: th1}
-      - {click: t, long_click: 5, key_back_color: bh1, key_text_color: th1}
-      - {click: y, long_click: 6, key_back_color: bh1, key_text_color: th1}
-      - {click: u, long_click: 7, key_back_color: bh1, key_text_color: th1}
-      - {click: i, long_click: 8, key_back_color: bh1, key_text_color: th1}
-      - {click: o, long_click: 9, key_back_color: bh1, key_text_color: th1}
-      - {click: p, long_click: 0, key_back_color: bh1, key_text_color: th1}
+      - {click: q, long_click: 1, popup: [1, Letter_commit_q, Letter_commit_Q], key_back_color: bh1, key_text_color: th1}
+      - {click: w, long_click: 2, popup: [2, Letter_commit_w, Letter_commit_W], key_back_color: bh1, key_text_color: th1}
+      - {click: e, long_click: 3, popup: [3, Letter_commit_e, Letter_commit_E], key_back_color: bh1, key_text_color: th1}
+      - {click: r, long_click: 4, popup: [4, Letter_commit_r, Letter_commit_R], key_back_color: bh1, key_text_color: th1}
+      - {click: t, long_click: 5, popup: [5, Letter_commit_t, Letter_commit_T], key_back_color: bh1, key_text_color: th1}
+      - {click: y, long_click: 6, popup: [6, Letter_commit_y, Letter_commit_Y], key_back_color: bh1, key_text_color: th1}
+      - {click: u, long_click: 7, popup: [7, Letter_commit_u, Letter_commit_U], key_back_color: bh1, key_text_color: th1}
+      - {click: i, long_click: 8, popup: [8, Letter_commit_i, Letter_commit_I], key_back_color: bh1, key_text_color: th1}
+      - {click: o, long_click: 9, popup: [9, Letter_commit_o, Letter_commit_O], key_back_color: bh1, key_text_color: th1}
+      - {click: p, long_click: 0, popup: [0, Letter_commit_p, Letter_commit_P], key_back_color: bh1, key_text_color: th1}
 
       - {width: 5, key_back_color: bh2, key_text_color: th2}
-      - {click: a, long_click: select_all, key_back_color: bh2, key_text_color: th2}
-      - {click: s, long_click: '@', key_back_color: bh2, key_text_color: th2}
-      - {click: d, long_click: '#', key_back_color: bh2, key_text_color: th2}
-      - {click: f, long_click: '$', key_back_color: bh2, key_text_color: th2}
-      - {click: g, long_click: '%', swipe_down: "date_time", key_back_color: bh2, key_text_color: th2}
-      - {click: h, long_click: '!', swipe_down: "+", key_back_color: bh2, key_text_color: th2}
-      - {click: j, long_click: '&', swipe_down: "-", key_back_color: bh2, key_text_color: th2}
-      - {click: k, long_click: '*', swipe_down: "_", key_back_color: bh2, key_text_color: th2}
-      - {click: l, long_click: '(){Left}', swipe_down: "=", key_back_color: bh2, key_text_color: th2}
+      - {click: a, long_click: select_all, popup: [select_all, Letter_commit_a, Letter_commit_A], key_back_color: bh2, key_text_color: th2}
+      - {click: s, long_click: '@', popup: ['@', Letter_commit_s, Letter_commit_S], key_back_color: bh2, key_text_color: th2}
+      - {click: d, long_click: '#', popup: ['#', Letter_commit_d, Letter_commit_D], key_back_color: bh2, key_text_color: th2}
+      - {click: f, long_click: '$', popup: ['$', Letter_commit_f, Letter_commit_F], key_back_color: bh2, key_text_color: th2}
+      - {click: g, long_click: '%', popup: ['%', Letter_commit_g, Letter_commit_G], swipe_down: "date_time", key_back_color: bh2, key_text_color: th2}
+      - {click: h, long_click: '!', popup: ['!', Letter_commit_h, Letter_commit_H], swipe_down: "+", key_back_color: bh2, key_text_color: th2}
+      - {click: j, long_click: '&', popup: ['&', Letter_commit_j, Letter_commit_J], swipe_down: "-", key_back_color: bh2, key_text_color: th2}
+      - {click: k, long_click: '*', popup: ['*', Letter_commit_k, Letter_commit_K], swipe_down: "_", key_back_color: bh2, key_text_color: th2}
+      - {click: l, long_click: '(){Left}', popup: ['(){Left}', Letter_commit_l, Letter_commit_L], swipe_down: "=", key_back_color: bh2, key_text_color: th2}
       - {width: 5, key_back_color: bh2, key_text_color: th2}
 
       - {click: Shift_L, composing: delimiter, width: 15, hilited_key_back_color: benter, key_back_color: bbs, key_text_color: tbs}
-      - {click: z, long_click: '`', swipe_down: '[]{Left}', key_back_color: bh3, key_text_color: th3}
-      - {click: x, long_click: cut, swipe_down: '{}{Left}', key_back_color: bh3, key_text_color: th3}
-      - {click: c, long_click: copy, swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
-      - {click: v, long_click: paste_clip, swipe_down: paste, key_back_color: bh3, key_text_color: th3}
-      - {click: b, long_click: ";", swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
-      - {click: n, long_click: ":", key_back_color: bh3, key_text_color: th3}
-      - {click: m, long_click: '?', swipe_down: "|", key_back_color: bh3, key_text_color: th3}
-      - {click: BackSpace, width: 15, key_back_color: bbs, key_text_color: tbs}
+      - {click: z, long_click: '`', popup: ['`', Letter_commit_z, Letter_commit_Z], swipe_down: '[]{Left}', key_back_color: bh3, key_text_color: th3}
+      - {click: x, long_click: cut, popup: [cut, Letter_commit_x, Letter_commit_X], swipe_down: '{}{Left}', key_back_color: bh3, key_text_color: th3}
+      - {click: c, long_click: copy, popup: [copy, Letter_commit_c, Letter_commit_C], swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
+      - {click: v, long_click: paste_clip, popup: [paste_clip, Letter_commit_v, Letter_commit_V], swipe_down: paste, key_back_color: bh3, key_text_color: th3}
+      - {click: b, long_click: ";", popup: [";", Letter_commit_b, Letter_commit_B], swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
+      - {click: n, long_click: ":", popup: [":", Letter_commit_n, Letter_commit_N], key_back_color: bh3, key_text_color: th3}
+      - {click: m, long_click: '?', popup: ['?', Letter_commit_m, Letter_commit_M], swipe_down: "|", key_back_color: bh3, key_text_color: th3}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, width: 15, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_number, long_click: Menu, width: 12.5, key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_bqrw, long_click: Theme_settings, width: 12.5, key_text_size: "18", key_back_color: bgn, key_text_color: tgn}
@@ -1174,6 +1186,7 @@ preset_keyboards:
   number:
     author: "暖暖"
     name: 数字+
+    lock: true
     width: 16.6
    # height: 48
     ascii_mode: 1
@@ -1198,7 +1211,7 @@ preset_keyboards:
       - {click: 7, long_click: select_all}
       - {click: 8, long_click: copy}
       - {click: 9, long_click: paste_clip, swipe_down: paste}
-      - {click: BackSpace, key_back_color: bbs, key_text_color: tbs}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_default, long_click: ':', key_back_color: bgn, key_text_color: 'tgn'}
       - {click: '/', long_click: '\', key_back_color: bgn, key_text_color: tgn}
@@ -1228,7 +1241,7 @@ preset_keyboards:
       - {click: Home}
       - {click: Down}
       - {click: End}
-      - {click: BackSpace, key_back_color: gnb, key_text_color: gnt, width: 19}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, key_back_color: gnb, key_text_color: gnt, width: 19}
       - {click: paste}
       - {click: undo}
       - {click: Tab1}
@@ -1285,7 +1298,7 @@ preset_keyboards:
       - {click: 假名, long_click: 片假名, key_text_size: "16", symbol_text_size: '8'}
       - {click: 麻将, long_click: 骰子, key_text_size: "16", symbol_text_size: '8'}
       - {click: 象棋, long_click: 扑克, key_text_size: "16", symbol_text_size: '8'}
-      - {click: BackSpace, composing: Escape, width: 16, key_back_color: bbs, key_text_color: tbs}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, composing: Escape, width: 16, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_default, composing: Page_Down, width: 16, key_back_color: bgn, key_text_color: tgn}
       - {click: '备用', composing: Left, width: 16, key_back_color: bgn, key_text_color: tgn}
@@ -1357,7 +1370,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqrw2:
     author: "风花絮"
@@ -1421,7 +1434,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqrw3:
     author: "风花絮"
@@ -1485,7 +1498,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqrw4:
     author: "风花絮"
@@ -1549,7 +1562,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqrw5:
     author: "风花絮"
@@ -1613,7 +1626,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqrw6:
     author: "风花絮"
@@ -1677,7 +1690,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqt1:
     author: "风花絮"
@@ -1741,7 +1754,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqt2:
     author: "风花絮"
@@ -1805,7 +1818,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqt3:
     author: "风花絮"
@@ -1869,7 +1882,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqt4:
     author: "风花絮"
@@ -1933,7 +1946,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqz1:
     author: "风花絮"
@@ -1997,7 +2010,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqz2:
     author: "风花絮"
@@ -2061,7 +2074,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqz3:
     author: "风花絮"
@@ -2125,7 +2138,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqz4:
     author: "风花絮"
@@ -2189,7 +2202,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqz5:
     author: "风花絮"
@@ -2253,7 +2266,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqqz6:
     author: "风花絮"
@@ -2317,7 +2330,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqpt1:
     author: "风花絮"
@@ -2381,7 +2394,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqpt2:
     author: "风花絮"
@@ -2445,7 +2458,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqhd1:
     author: "风花絮"
@@ -2509,7 +2522,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqhd2:
     author: "风花絮"
@@ -2573,7 +2586,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqhc1:
     author: "风花絮"
@@ -2637,7 +2650,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqhc2:
     author: "风花絮"
@@ -2701,7 +2714,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqhc3:
     author: "风花絮"
@@ -2765,7 +2778,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqlx1:
     author: "风花絮"
@@ -2829,7 +2842,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqlx2:
     author: "风花絮"
@@ -2893,7 +2906,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqlx3:
     author: "风花絮"
@@ -2957,7 +2970,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqlx4:
     author: "风花絮"
@@ -3021,7 +3034,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqlx5:
     author: "风花絮"
@@ -3085,7 +3098,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqlx6:
     author: "风花絮"
@@ -3149,7 +3162,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqkj1:
     author: "风花絮"
@@ -3213,7 +3226,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqkj2:
     author: "风花絮"
@@ -3277,7 +3290,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqkj3:
     author: "风花絮"
@@ -3341,7 +3354,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqkj4:
     author: "风花絮"
@@ -3405,7 +3418,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqkj5:
     author: "风花絮"
@@ -3469,7 +3482,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqfh1:
     author: "风花絮"
@@ -3534,7 +3547,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
   bqfh2:
     author: "风花絮"
     name: 表情键2
@@ -3597,7 +3610,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   bqfh3:
     author: "风花絮"
@@ -3644,7 +3657,7 @@ preset_keyboards:
     - {label: '英文', click: Keyboard_bqsy2, width: 16.5, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
     - {label: '表情', click: Keyboard_bqsy3, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
     - {label: '颜文', click: Keyboard_bqsy4, width: 16.5, key_text_size: "14", key_back_color: bgn, key_text_color: tgn}
-    - {click: BackSpace, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
+    - {click: BackSpace, swipe_up: Ifly_clear_all, width: 17, key_text_size: "14", key_back_color: benter, key_text_color: tenter}
 
   kao_happy:
     name: 颜文字键盘-开心
@@ -3683,7 +3696,7 @@ preset_keyboards:
       - {click: Keyboard_kaoi, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaos, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaom, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
-      - {click: BackSpace, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
   kao_fond:
     name: 颜文字键盘-喜欢
     author: "llx"
@@ -3722,7 +3735,7 @@ preset_keyboards:
       - {click: Keyboard_kaoi, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaos, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaom, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
-      - {click: BackSpace, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
   kao_sad:
     name: 颜文字键盘-伤心
     author: "llx"
@@ -3761,7 +3774,7 @@ preset_keyboards:
       - {click: Keyboard_kaoi, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaos, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
       - {click: Keyboard_kaom, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
-      - {click: BackSpace, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
   kao_mad:
     name: 颜文字键盘-生气
     author: "llx"
@@ -3800,7 +3813,7 @@ preset_keyboards:
       - {click: Keyboard_kaoi, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaos, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaom, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
-      - {click: BackSpace, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
   kao_astonished:
     name: 颜文字键盘-惊讶
     author: "llx"
@@ -3837,7 +3850,7 @@ preset_keyboards:
       - {click: Keyboard_kaoi, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaos, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaom, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
-      - {click: BackSpace, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
   kao_impotent:
     name: 颜文字键盘-无奈
     author: "llx"
@@ -3876,7 +3889,7 @@ preset_keyboards:
       - {click: Keyboard_kaoi, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
       - {click: Keyboard_kaos, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
       - {click: Keyboard_kaom, width: 12.5, key_text_size: "16", key_back_color: bgn, key_text_color: tgn}
-      - {click: BackSpace, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
+      - {click: BackSpace, swipe_up: Ifly_clear_all, width: 12.5, key_text_size: "16", key_back_color: benter, key_text_color: tenter}
 
   fbj:
     name: 风22并击
@@ -3909,7 +3922,7 @@ preset_keyboards:
     - {label: 'B', click: 'b', long_click: "(){Left}", width: 11.5, key_back_color: bh3, key_text_color: th3}
     - {click: Keyboard_e, long_click: Keyboard_e2, composing: 'e', ascii: 'e', swipe_up: Schema_switchen, width: 11.5, key_back_color: baoe, key_text_color: taoe}
     - {label: 'X', click: 'x', long_click: cut, width: 11.5, key_back_color: bh3, key_text_color: th3}
-    - {label: "⌫", click: BackSpace, width: 15.5, key_text_size: "25", key_back_color: bbs, key_text_color: tbs}
+    - {label: "⌫", click: BackSpace, swipe_up: Ifly_clear_all, width: 15.5, key_text_size: "25", key_back_color: bbs, key_text_color: tbs}
   #  第四行
     - {label: "'分词", click: Keyboard_number, long_click: Keyboard_fbjzj, composing: Keyboard_fc, ascii: '.',  swipe_down: Shift_L, width: 15.5, key_back_color: bgn, key_text_color: tgn}
     - {label: '一', click: Keyboard_bqrw, long_click: Theme_settings, composing: Keyboard_k, ascii: 'k', combo: k, width: 11.5, key_text_size: "18", key_back_color: bgn, key_text_color: tgn}
@@ -3950,7 +3963,7 @@ preset_keyboards:
     - {label: 'B', click: 'b', long_click: "(){Left}", hint: 'iu ua', width: 11.5, key_back_color: bh3, key_text_color: th3}
     - {click: Keyboard_e, long_click: Keyboard_e2, composing: 'e', ascii: 'e', hint: 'e', swipe_up: Schema_switchen, width: 11.5, key_back_color: baoe, key_text_color: taoe}
     - {label: 'X', click: 'x', long_click: cut, hint: 'iao', width: 11.5, key_back_color: bh3, key_text_color: th3}
-    - {label: "⌫", click: BackSpace, width: 15.5, key_text_size: "25", key_back_color: bbs, key_text_color: tbs}
+    - {label: "⌫", click: BackSpace, swipe_up: Ifly_clear_all, width: 15.5, key_text_size: "25", key_back_color: bbs, key_text_color: tbs}
   #  第四行
     - {label: "'分词", click: Keyboard_number, long_click: Keyboard_fbj, composing: Keyboard_fc, ascii: '.', width: 15.5, key_back_color: bgn, key_text_color: tgn}
     - {label: '一', click: Keyboard_bqrw, long_click: Theme_settings, composing: Keyboard_k, ascii: 'k', combo: k, width: 11.5, key_text_size: "18", key_back_color: bgn, key_text_color: tgn}
@@ -3962,6 +3975,59 @@ preset_keyboards:
 
 
 preset_keys:
+  # Literal letter choices for the 26-key long-press picker.
+  Letter_commit_a: {label: "a", commit: "a"}
+  Letter_commit_b: {label: "b", commit: "b"}
+  Letter_commit_c: {label: "c", commit: "c"}
+  Letter_commit_d: {label: "d", commit: "d"}
+  Letter_commit_e: {label: "e", commit: "e"}
+  Letter_commit_f: {label: "f", commit: "f"}
+  Letter_commit_g: {label: "g", commit: "g"}
+  Letter_commit_h: {label: "h", commit: "h"}
+  Letter_commit_i: {label: "i", commit: "i"}
+  Letter_commit_j: {label: "j", commit: "j"}
+  Letter_commit_k: {label: "k", commit: "k"}
+  Letter_commit_l: {label: "l", commit: "l"}
+  Letter_commit_m: {label: "m", commit: "m"}
+  Letter_commit_n: {label: "n", commit: "n"}
+  Letter_commit_o: {label: "o", commit: "o"}
+  Letter_commit_p: {label: "p", commit: "p"}
+  Letter_commit_q: {label: "q", commit: "q"}
+  Letter_commit_r: {label: "r", commit: "r"}
+  Letter_commit_s: {label: "s", commit: "s"}
+  Letter_commit_t: {label: "t", commit: "t"}
+  Letter_commit_u: {label: "u", commit: "u"}
+  Letter_commit_v: {label: "v", commit: "v"}
+  Letter_commit_w: {label: "w", commit: "w"}
+  Letter_commit_x: {label: "x", commit: "x"}
+  Letter_commit_y: {label: "y", commit: "y"}
+  Letter_commit_z: {label: "z", commit: "z"}
+  Letter_commit_A: {label: "A", commit: "A"}
+  Letter_commit_B: {label: "B", commit: "B"}
+  Letter_commit_C: {label: "C", commit: "C"}
+  Letter_commit_D: {label: "D", commit: "D"}
+  Letter_commit_E: {label: "E", commit: "E"}
+  Letter_commit_F: {label: "F", commit: "F"}
+  Letter_commit_G: {label: "G", commit: "G"}
+  Letter_commit_H: {label: "H", commit: "H"}
+  Letter_commit_I: {label: "I", commit: "I"}
+  Letter_commit_J: {label: "J", commit: "J"}
+  Letter_commit_K: {label: "K", commit: "K"}
+  Letter_commit_L: {label: "L", commit: "L"}
+  Letter_commit_M: {label: "M", commit: "M"}
+  Letter_commit_N: {label: "N", commit: "N"}
+  Letter_commit_O: {label: "O", commit: "O"}
+  Letter_commit_P: {label: "P", commit: "P"}
+  Letter_commit_Q: {label: "Q", commit: "Q"}
+  Letter_commit_R: {label: "R", commit: "R"}
+  Letter_commit_S: {label: "S", commit: "S"}
+  Letter_commit_T: {label: "T", commit: "T"}
+  Letter_commit_U: {label: "U", commit: "U"}
+  Letter_commit_V: {label: "V", commit: "V"}
+  Letter_commit_W: {label: "W", commit: "W"}
+  Letter_commit_X: {label: "X", commit: "X"}
+  Letter_commit_Y: {label: "Y", commit: "Y"}
+  Letter_commit_Z: {label: "Z", commit: "Z"}
   # 安卓
   BRIGHTNESS_DOWN: {label: 亮度-, send: BRIGHTNESS_DOWN}
   BRIGHTNESS_UP: {label: 亮度+, send: BRIGHTNESS_UP}
@@ -3985,6 +4051,7 @@ preset_keys:
   Return1: {label: Enter, preview: '↩', functional: false, send: Return}
   Return2: {label: 回车, send: Return }
   Hide: {label: 隐藏, send: BACK}
+  Ifly_clear_all: {label: 全清, send: FUNCTION, command: clear_all}
   BackSpace: {label: 退格, preview: '⇦', repeatable: true, functional: false, send: BackSpace}
   BackSpace2: {label: 退格, preview: '⇦', repeatable: true, functional: false, slide_delete: true, send: BackSpace}
   space: {repeatable: false, preview: ' ', functional: false, slide_cursor: true, label: '_______', send: space}

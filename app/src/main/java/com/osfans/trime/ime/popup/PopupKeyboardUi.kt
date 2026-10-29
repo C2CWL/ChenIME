@@ -196,7 +196,10 @@ class PopupKeyboardUi(
             if (label.length == 1 && label[0].code < 128) {
                 label
             } else {
-                theme.resolveAction(label).getLabel(KeyboardWindow.currentKeyboard).let {
+                val action = theme.resolveAction(label)
+                // Literal letter choices keep their case even when the keyboard is shifted.
+                val literalLetter = action.commit.takeIf { it.length == 1 && (it[0] in 'a'..'z' || it[0] in 'A'..'Z') }
+                (literalLetter ?: action.getLabel(KeyboardWindow.currentKeyboard)).let {
                     when {
                         it.isIconFont -> it
                         it.isNotEmpty() -> String(Character.toChars(it.codePointAt(0)))

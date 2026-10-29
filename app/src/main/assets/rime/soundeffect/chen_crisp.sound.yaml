@@ -1,0 +1,8 @@
+# Original synthesized sounds and descriptor: CC0-1.0
+name: 清脆
+folder: chen_crisp
+sound: [click.wav, special.wav]
+keyset:
+  - keys: [KEYCODE_SPACE, KEYCODE_ENTER, KEYCODE_DEL]
+    inOrder: true
+    sounds: [1]

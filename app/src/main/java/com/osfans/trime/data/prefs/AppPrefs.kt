@@ -130,6 +130,7 @@ class AppPrefs(
             const val HIDE_INPUT_BAR = "hide_input_bar"
             const val HIDE_KEY_SYMBOL = "hide_key_symbol"
             const val HIDE_KEY_HINT = "hide_key_hint"
+            const val UPPERCASE_KEY_LABELS = "uppercase_key_labels"
 
             const val SOUND_ON_KEYPRESS = "sound_on_keypress"
             const val KEY_SOUND_VOLUME = "sound_volume"
@@ -187,6 +188,12 @@ class AppPrefs(
         val hideInputBar = switch(R.string.hide_input_bar, HIDE_INPUT_BAR, false)
         val hideKeySymbol = switch(R.string.hide_key_symbol, HIDE_KEY_SYMBOL, false)
         val hideKeyHint = switch(R.string.hide_key_hint, HIDE_KEY_HINT, false)
+        val uppercaseKeyLabels = switch(
+            R.string.uppercase_key_labels,
+            UPPERCASE_KEY_LABELS,
+            true,
+            R.string.uppercase_key_labels_summary,
+        )
 
         val soundOnKeyPress = switch(R.string.sound_on_keypress, SOUND_ON_KEYPRESS, false)
         val soundVolume = int(
@@ -302,10 +309,10 @@ class AppPrefs(
         val slideStepSize = int(
             R.string.key_slide_step_size,
             SLIDE_STEP_SIZE,
-            24,
+            48,
             1,
             100,
-            "dp",
+            "px",
         )
 
         val horizontalCandidateMode = enum(R.string.horizontal_candidate_style, HORIZONTAL_CANDIDATE_MODE, CompactCandidateMode.NEVER_FILL)

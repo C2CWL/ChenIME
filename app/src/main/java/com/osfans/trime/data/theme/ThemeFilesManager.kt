@@ -13,7 +13,7 @@ import java.io.File
 
 object ThemeFilesManager {
     fun listThemes(dir: File): MutableList<ThemeItem> {
-        val files = dir.listFiles { _, name -> name.endsWith("trime.yaml") } ?: return mutableListOf()
+        val files = dir.listFiles { _, name -> name.endsWith("trime.yaml") && name != "trime.yaml" } ?: return mutableListOf()
         return files
             .sortedByDescending { it.lastModified() }
             .map { file ->

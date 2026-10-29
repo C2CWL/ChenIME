@@ -1,0 +1,3 @@
+# Enable librime native typo correction; keep the existing spelling algebra.
+patch:
+  translator/enable_correction: true

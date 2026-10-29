@@ -8,6 +8,7 @@ package com.osfans.trime.ui.main.settings
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceScreen
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.prefs.PreferenceDelegateFragment
 import kotlinx.coroutines.launch
@@ -15,6 +16,9 @@ import kotlinx.coroutines.launch
 class KeyboardSettingsFragment : PreferenceDelegateFragment(AppPrefs.defaultInstance().keyboard) {
 
     override fun onPreferenceUiCreated(screen: PreferenceScreen) {
+        screen.findPreference<DialogSeekBarPreference>(AppPrefs.Keyboard.SLIDE_STEP_SIZE)?.apply {
+            setDialogMessage(R.string.key_slide_step_size_message)
+        }
         screen.findPreference<Preference>("custom_sound_effect_name")?.apply {
             setOnPreferenceClickListener {
                 lifecycleScope.launch {

@@ -217,7 +217,8 @@
     <string name="vertical_reverse">Vertical reverse</string>
     <string name="ascii_switch_tips">Show tips when switching ASCII mode</string>
     <string name="key_double_tap_timeout">Key double tap timeout</string>
-    <string name="key_slide_step_size">Step size for key sliding</string>
+    <string name="key_slide_step_size">Sliding speed</string>
+    <string name="key_slide_step_size_message">Distance per character for space-bar cursor sliding and backspace slide-delete. Larger values make sliding slower.</string>
     <string name="horizontal_candidate_style">Horizontal candidate style</string>
     <string name="horizontal_candidate_never_fill">Never fill width</string>
     <string name="horizontal_candidate_auto_fill">Fill width on demand</string>
@@ -259,4 +260,6 @@
     <string name="import_user_data_success">User data restored and deployed</string>
     <string name="export_user_data_failure">Export failed. Check the destination and available space.</string>
     <string name="import_user_data_failure">Import or deployment failed. Check that this is a valid Chen IME backup.</string>
+    <string name="uppercase_key_labels">Uppercase letter key labels</string>
+    <string name="uppercase_key_labels_summary">Show letter key labels in uppercase; does not affect typed text.</string>
 </resources>

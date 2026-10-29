@@ -38,6 +38,7 @@ class KeyboardView(
     internal val popupOnKeyPress by AppPrefs.defaultInstance().keyboard.popupOnKeyPress
     internal val hookShiftArrow: Boolean by AppPrefs.defaultInstance().keyboard.hookShiftArrow
     internal val hideKeySymbol: Boolean by AppPrefs.defaultInstance().keyboard.hideKeySymbol
+    internal val uppercaseKeyLabels: Boolean by AppPrefs.defaultInstance().keyboard.uppercaseKeyLabels
     internal val hideKeyHint: Boolean by AppPrefs.defaultInstance().keyboard.hideKeyHint
 
     init {

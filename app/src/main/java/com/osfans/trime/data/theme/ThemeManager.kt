@@ -84,31 +84,22 @@ object ThemeManager {
     )
 
     private fun getThemeById(id: String): ResolvedTheme {
-        when (val result = ThemeLoader.loadTheme(id)) {
-            is ThemeLoader.ThemeLoadResult.Success -> return ResolvedTheme(id, result.theme, result.findings)
-            is ThemeLoader.ThemeLoadResult.Failure -> Timber.w(result.error)
-        }
-
-        if (id != "trime") {
-            when (val result = ThemeLoader.loadTheme("trime")) {
-                is ThemeLoader.ThemeLoadResult.Success -> {
-                    Timber.w("Theme '$id' is unavailable, fallback to default theme 'trime'")
-                    return ResolvedTheme("trime", result.theme, result.findings)
-                }
-
-                is ThemeLoader.ThemeLoadResult.Failure -> Timber.w(result.error)
-            }
-        }
-
+        // Retire the legacy selectable theme while keeping its resource available to librime.
+        val selectedId = id.takeUnless { it == "trime" || it.isBlank() } ?: "iflytek.trime"
         var lastFailure: ThemeLoader.ThemeLoadError? = null
-        for (fallbackId in getAllThemes().map { it.configId }.distinct()) {
-            when (val result = ThemeLoader.loadTheme(fallbackId)) {
+        for (candidateId in listOf(selectedId, "iflytek.trime", "tongwenfeng.trime").distinct()) {
+            when (val result = ThemeLoader.loadTheme(candidateId)) {
                 is ThemeLoader.ThemeLoadResult.Success -> {
-                    Timber.w("Theme '$id' is unavailable, fallback to available theme '$fallbackId'")
-                    return ResolvedTheme(fallbackId, result.theme, result.findings)
+                    if (candidateId != id) {
+                        Timber.w("Theme '$id' is unavailable, fallback to theme '$candidateId'")
+                    }
+                    return ResolvedTheme(candidateId, result.theme, result.findings)
                 }
 
-                is ThemeLoader.ThemeLoadResult.Failure -> lastFailure = result.error
+                is ThemeLoader.ThemeLoadResult.Failure -> {
+                    Timber.w(result.error)
+                    lastFailure = result.error
+                }
             }
         }
 

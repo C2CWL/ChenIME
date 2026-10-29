@@ -7,8 +7,8 @@ remain `com.osfans.trime`; manifest components and IME settings use their actual
 fully qualified class names. Build plugin IDs and JNI keep rules retain their
 upstream names. Chen IME can be installed alongside Trime.
 
-白霜拼音 is the first schema for a fresh installation, with 明月拼音 and 笔画
-fallbacks. Existing user schema selections are preserved. The bundled
+白霜拼音 is the only switchable bundled schema for a fresh installation.
+Its melt_eng, radical_pinyin and rime_frost_aux dependencies remain bundled. Existing user schema selections are preserved. The bundled
 讯飞深色 theme is selectable in Settings. See `THIRD_PARTY_RIME_FROST.md`
 for the bundled subset and upstream license.
 
@@ -52,3 +52,24 @@ before installation. The release job has permission to upload its APKs and notes
 
 Useful checks: `make style-lint`, `make check`, and `make release`.
 Use `BUILD_ABI=arm64-v8a make release` for a single-ABI local APK.
+
+## Bundled key sounds (CC0)
+
+清脆、机械、轻柔 are original synthesized clicks, dedicated to the public domain
+under CC0-1.0. No third-party recordings, keyboard samples, or downloaded sounds
+are used. The generator and its WAV/YAML outputs are CC0-1.0:
+`python3 tools/generate_key_sounds.py` regenerates all files deterministically
+using only Python's standard library. Each mono PCM WAV is 22050 Hz, 16-bit,
+and under 60 ms; space, enter, and backspace use a lower-pitched variant.
+
+Assets in `app/src/main/assets/rime/soundeffect/` are included by the existing
+`generateDataChecksums` build task and copied by `DataManager.sync()` to
+`rime/soundeffect/` in app external files storage. `SoundEffectManager` scans
+that directory for `*.sound.yaml` (also migrating the legacy `rime/sound/`
+directory), displays each descriptor's `name`, and resolves audio via `folder`.
+No sound defaults or existing user preferences are changed; sound remains off
+by default.
+
+启用路径：尘输入法设置 → 虚拟键盘 → 开启「按键声音」→ 开启「使用自定义按键音效」
+→「自定义按键音效」→ 选择「清脆」「机械」或「轻柔」。将「按键音量」设为大于 0
+的值（自定义音效在音量 0 时静音）。

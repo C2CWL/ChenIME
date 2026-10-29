@@ -219,7 +219,11 @@ class KeyView(
             return
         }
 
-        keyboardActionListener.onAction(action)
+        if (behavior == KeyBehavior.LONG_CLICK) {
+            keyboardActionListener.onPopupAction(action)
+        } else {
+            keyboardActionListener.onAction(action)
+        }
 
         val hookArrow = if (keyboardView.hookShiftArrow) {
             when (action.code) {

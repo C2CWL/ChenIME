@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Rime community
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-function(apply_librime_chen_patch)
+function(apply_librime_chen_patch patch_name)
   get_filename_component(jni_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/.." ABSOLUTE)
   set(source_dir "${jni_dir}/librime")
-  set(patch_file "${jni_dir}/cmake/librime-chen-exact-first.patch")
+  set(patch_file "${jni_dir}/cmake/${patch_name}.patch")
   # Android may configure multiple ABIs concurrently against the same sources.
   file(MAKE_DIRECTORY "${source_dir}/build")
   file(LOCK "${source_dir}/build/chen-exact-first.lock" GUARD FUNCTION TIMEOUT 120)
@@ -26,22 +26,23 @@ function(apply_librime_chen_patch)
                   WORKING_DIRECTORY "${source_dir}" RESULT_VARIABLE reversed
                   OUTPUT_QUIET ERROR_QUIET)
   if(reversed EQUAL 0)
-    message(STATUS "librime Chen exact-first patch already applied")
+    message(STATUS "${patch_name} patch already applied")
     return()
   endif()
   execute_process(COMMAND ${check_command} "${patch_file}"
                   WORKING_DIRECTORY "${source_dir}" RESULT_VARIABLE checked
                   OUTPUT_VARIABLE output ERROR_VARIABLE error)
   if(NOT checked EQUAL 0)
-    message(FATAL_ERROR "Cannot apply librime Chen exact-first patch:\n${output}${error}")
+    message(FATAL_ERROR "Cannot apply ${patch_name} patch:\n${output}${error}")
   endif()
   execute_process(COMMAND ${apply_command} "${patch_file}"
                   WORKING_DIRECTORY "${source_dir}" RESULT_VARIABLE applied
                   OUTPUT_VARIABLE output ERROR_VARIABLE error)
   if(NOT applied EQUAL 0)
-    message(FATAL_ERROR "Failed to apply librime Chen exact-first patch:\n${output}${error}")
+    message(FATAL_ERROR "Failed to apply ${patch_name} patch:\n${output}${error}")
   endif()
-  message(STATUS "Applied librime Chen exact-first patch")
+  message(STATUS "Applied ${patch_name} patch")
 endfunction()
 
-apply_librime_chen_patch()
+apply_librime_chen_patch(librime-chen-exact-first)
+apply_librime_chen_patch(librime-popup-literal)

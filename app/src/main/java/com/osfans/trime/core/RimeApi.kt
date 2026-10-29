@@ -49,6 +49,9 @@ interface RimeApi {
         sequence: String,
     ): Boolean
 
+    /** Insert literal text into raw input, bypassing key processors and candidate selection. */
+    suspend fun insertCompositionText(text: String): Boolean
+
     suspend fun selectCandidate(idx: Int, global: Boolean): Boolean
 
     suspend fun deleteCandidate(idx: Int, global: Boolean): Boolean

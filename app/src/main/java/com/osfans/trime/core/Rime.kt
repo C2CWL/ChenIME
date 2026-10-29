@@ -220,6 +220,10 @@ class Rime :
         }.also { Timber.d("simulateKeySequence ${if (it) "success" else "failed"}") }
     }
 
+    override suspend fun insertCompositionText(text: String): Boolean = withRimeContext {
+        insertRimeCompositionText(text).also { if (it) emitResponse() }
+    }
+
     override suspend fun selectCandidate(idx: Int, global: Boolean): Boolean = withRimeContext {
         selectRimeCandidate(idx, global).also { emitResponse() }
     }
@@ -593,6 +597,9 @@ class Rime :
 
         @JvmStatic
         external fun getRimeRawInput(): String
+
+        @JvmStatic
+        external fun insertRimeCompositionText(text: String): Boolean
 
         @JvmStatic
         external fun getRimeCaretPos(): Int

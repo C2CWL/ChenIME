@@ -1,0 +1,20 @@
+diff --git a/src/rime/gear/ascii_composer.cc b/src/rime/gear/ascii_composer.cc
+index feb42b34..6d232ec9 100644
+--- a/src/rime/gear/ascii_composer.cc
++++ b/src/rime/gear/ascii_composer.cc
+@@ -479,6 +479,15 @@ void AsciiComposer::TransitInlineAscii(Context* ctx, bool entering_ascii) {
+ }
+ 
+ void AsciiComposer::OnContextUpdate(Context* ctx) {
++  // External popup insertion bypasses ProcessKeyEvent, including its ledger.
++  const auto literal = ctx->get_property("_trime_literal_append");
++  if (!literal.empty()) {
++    raw_keys_ += literal;
++    ctx->set_property("_trime_literal_append", "");
++    cached_input_.clear();
++    cached_raw_keys_.clear();
++  }
++
+   // 若不是臨時西文，一概無視
+   if (!is_inline_ascii_) {
+     return;

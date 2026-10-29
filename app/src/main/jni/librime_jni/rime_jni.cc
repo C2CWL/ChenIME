@@ -75,6 +75,20 @@ class Rime {
     return rime->simulate_key_sequence(session(), sequence.data());
   }
 
+  bool insertCompositionText(const std::string& text) {
+    auto s = session();
+    const char* raw = rime->get_input(s);
+    if (!raw || !*raw || text.empty()) return false;
+    std::string input(raw);
+    input += text;
+    // The fork's ascii composer also keeps a physical-key ledger. Notify it
+    // of this external insertion so a later uppercase switch retains it.
+    rime->set_property(s, "_trime_literal_append", text.c_str());
+    bool inserted = rime->set_input(s, input.c_str());
+    rime->set_property(s, "_trime_literal_append", "");
+    return inserted;
+  }
+
   bool commitComposition() { return rime->commit_composition(session()); }
 
   void clearComposition() { rime->clear_composition(session()); }
@@ -369,6 +383,13 @@ Java_com_osfans_trime_core_Rime_simulateRimeKeySequence(JNIEnv* env,
                                                         jclass /* thiz */,
                                                         jstring key_sequence) {
   return Rime::Instance().simulateKeySequence(CString(env, key_sequence));
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_osfans_trime_core_Rime_insertRimeCompositionText(JNIEnv* env,
+                                                       jclass /* thiz */,
+                                                       jstring text) {
+  return Rime::Instance().insertCompositionText(CString(env, text));
 }
 
 extern "C" JNIEXPORT jstring JNICALL

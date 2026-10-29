@@ -121,22 +121,36 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
             }
 
             override fun onPopupAction(action: KeyAction) {
-                if (popupLetterKeycode(action.commit, isComposing = true) == null) {
+                val keycode = popupLetterKeycode(action.commit, isComposing = true)
+                val keyValue = if (action.commit.isEmpty() && action.text.isEmpty() &&
+                    action.command.isEmpty() && action.modifier == 0
+                ) {
+                    KeyCode.codeToKeyName(action.code)?.let { RimeKeyEvent.getKeycodeByName(it) }
+                } else {
+                    null
+                }
+                val literal = popupCompositionLiteral(action.commit, action.text, keyValue)
+                if (keycode == null && literal == null) {
                     onAction(action)
                     return
                 }
                 service.postRimeJob {
-                    // Check composition in the same queued job as the key input.
-                    val keycode = popupLetterKeycode(action.commit, statusCached.isComposing)
+                    // Read composition in the same queued job as the selection.
                     if (keycode != null) {
-                        val modifiers = if (action.commit[0] in 'A'..'Z') {
-                            KeyModifiers.fromMetaState(KeyEvent.META_SHIFT_ON).modifiers
+                        if (statusCached.isComposing) {
+                            val modifiers = if (action.commit[0] in 'A'..'Z') {
+                                KeyModifiers.fromMetaState(KeyEvent.META_SHIFT_ON).modifiers
+                            } else {
+                                0u
+                            }
+                            processKey(keycode, modifiers)
                         } else {
-                            0u
+                            service.commitText(action.commit)
                         }
-                        processKey(keycode, modifiers)
-                    } else {
-                        service.commitText(action.commit)
+                        return@postRimeJob
+                    }
+                    if (!statusCached.isComposing || literal == null || !insertCompositionText(literal)) {
+                        service.lifecycleScope.launch { onAction(action) }
                     }
                 }
             }

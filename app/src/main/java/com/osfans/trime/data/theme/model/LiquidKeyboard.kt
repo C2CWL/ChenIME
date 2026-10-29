@@ -53,24 +53,14 @@ data class LiquidKeyboard(
 
     data class Tag(val label: String = "", val type: DataType)
 
+    // Prepared with the theme on IO; opening a resident panel only selects a list.
     @Transient
-    private val data = lazy {
-        keyboards.map {
-            Tag(it.name, it.type) to it.keys.toTypedArray()
-        }
-    }
+    private val tags = keyboards.map { Tag(it.name, it.type) }
 
-    fun getTagList() = data.value.map { it.first }
+    @Transient
+    private val tabKeys = tags.filter { it.type != DataType.TABS }.map { KeyItem(it.label) }
 
-    fun getDataByIndex(index: Int): List<KeyItem> {
-        val item = data.value[index]
-        val tag = item.first
-        return if (tag.type == DataType.TABS) {
-            data.value.mapNotNull {
-                if (it.first.type != DataType.TABS) KeyItem(it.first.label) else null
-            }
-        } else {
-            item.second.toList()
-        }
-    }
+    fun getTagList() = tags
+
+    fun getDataByIndex(index: Int): List<KeyItem> = if (keyboards[index].type == DataType.TABS) tabKeys else keyboards[index].keys
 }

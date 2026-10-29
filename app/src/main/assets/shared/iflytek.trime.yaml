@@ -500,10 +500,10 @@ liquid_keyboard:
   fixed_key_bar:
     position: bottom
     keys:
-    - liquid_keyboard_lock
+    - liquid_keyboard_exit
     - space1
     - BackSpace
-    - liquid_keyboard_exit
+    - Return2
   keyboards:
   - emoji
   - common

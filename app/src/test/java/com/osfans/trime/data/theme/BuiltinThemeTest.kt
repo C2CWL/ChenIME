@@ -244,7 +244,7 @@ class BuiltinThemeTest :
                     mainKeys.any { it.click == KeyActionToken.Plain("Return") } shouldBe true
                     mainKeys.first { it.click == KeyActionToken.Plain("Ifly_space") }
                         .longClick shouldBe KeyActionToken.Plain("Mode_switch")
-                    theme.liquidKeyboard.fixedKeyBar.keys shouldBe listOf("liquid_keyboard_lock", "space1", "BackSpace", "liquid_keyboard_exit")
+                    theme.liquidKeyboard.fixedKeyBar.keys shouldBe listOf("liquid_keyboard_exit", "space1", "BackSpace", "Return2")
                     theme.liquidKeyboard.keyboards.first().keys.isNotEmpty() shouldBe true
                     symbols.longClick shouldBe KeyActionToken.Plain("{hide_key_symbol}{hide_key_hint}")
                     ColorSchemeResolver.resolve(theme.presetColorSchemes, "default", true, false)["key_back_color"] shouldBe "0xffffffff"

@@ -5,15 +5,20 @@
 
 package com.osfans.trime.ime.symbol
 
+import android.content.Context
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.core.text.PrecomputedTextCompat
 import androidx.core.view.updateLayoutParams
+import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.LiquidKeyboard
-import com.osfans.trime.ime.core.AutoScaleTextView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import splitties.dimensions.dp
 import splitties.views.gravityCenter
 
@@ -27,6 +32,27 @@ class LiquidAdapter(
     },
 ) {
     private var recycler: RecyclerView? = null
+    private var preparedLabels: Map<String, PrecomputedTextCompat> = emptyMap()
+
+    /** Warm a bounded cache once while the resident panel is being prepared. */
+    suspend fun prepareTextLayouts(context: Context) {
+        val textView = TextView(context).apply {
+            isSingleLine = true
+            textSize = scope.theme.style.keyTextSize
+            typeface = scope.theme.fonts.key
+        }
+        val params = TextViewCompat.getTextMetricsParams(textView)
+        val labels = scope.theme.liquidKeyboard.keyboards.asSequence()
+            .flatMap { it.keys.asSequence() }
+            .map { it.text }
+            .filterNot { it.startsWith("ic@") }
+            .distinct()
+            .take(512)
+            .toList()
+        preparedLabels = withContext(Dispatchers.Default) {
+            labels.associateWith { PrecomputedTextCompat.create(it, params) }
+        }
+    }
 
     override fun onCurrentListChanged(previousList: MutableList<LiquidKeyboard.KeyItem>, currentList: MutableList<LiquidKeyboard.KeyItem>) {
         super.onCurrentListChanged(previousList, currentList)
@@ -59,7 +85,6 @@ class LiquidAdapter(
         val context = parent.context
         val ui = LiquidItemUi(context, scope)
         ui.mainText.apply {
-            scaleMode = AutoScaleTextView.Mode.Proportional
             gravity = gravityCenter
             updateLayoutParams {
                 width = context.dp(scope.theme.liquidKeyboard.singleWidth)
@@ -94,7 +119,7 @@ class LiquidAdapter(
             holder.ui.refreshColors()
             holder.colorRevision = scope.colorRevision
         }
-        if (holder.ui.mainText.text.toString() != item.text) holder.ui.mainText.text = item.text
+        holder.ui.setLabel(item.text, prepared = preparedLabels[item.text])
         holder.ui.root.setOnClickListener {
             onItemClick.invoke(item, position)
         }

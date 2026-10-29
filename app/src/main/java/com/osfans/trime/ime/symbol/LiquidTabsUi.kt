@@ -14,6 +14,7 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.LiquidKeyboard
 import com.osfans.trime.ime.keyboard.GestureFrame
 import com.osfans.trime.util.roundedRippleDrawable
+import com.osfans.trime.util.setThemeLabel
 import splitties.dimensions.dp
 import splitties.views.dsl.core.Ui
 import splitties.views.dsl.core.add
@@ -58,8 +59,10 @@ class LiquidTabsUi(
                     roundedRippleDrawable(scope.colors.hilitedCandidateBackColor, cornerRadius)
             }
 
+        private var label = ""
+
         fun setText(str: String) {
-            text.text = str
+            label = str
         }
 
         fun setActive(active: Boolean) {
@@ -68,6 +71,7 @@ class LiquidTabsUi(
             val contentColor =
                 if (active) scope.colors.hilitedCandidateBackColor else Color.TRANSPARENT
             text.setTextColor(color)
+            text.setThemeLabel(label, "分类")
             root.background =
                 roundedRippleDrawable(scope.colors.hilitedCandidateBackColor, cornerRadius, contentColor)
         }
@@ -110,7 +114,7 @@ class LiquidTabsUi(
 
             fun activateTab(position: Int) {
                 if (position == selected) return
-                notifyItemChanged(selected)
+                if (selected >= 0) notifyItemChanged(selected)
                 selected = position
                 notifyItemChanged(position)
             }
@@ -123,6 +127,8 @@ class LiquidTabsUi(
 
     override val root =
         recyclerView {
+            setHasFixedSize(true)
+            itemAnimator = null
             layoutManager = horizontalLayoutManager()
             adapter = this@LiquidTabsUi.adapter
             isVerticalScrollBarEnabled = false

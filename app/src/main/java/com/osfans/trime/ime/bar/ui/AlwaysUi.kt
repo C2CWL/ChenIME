@@ -178,6 +178,7 @@ class AlwaysUi(
             }
 
         val (buttonWidth, buttonHeight) = buttonsUi.getButtonSize(buttonConfig)
+        if (leftMostButton.layoutParams.width == buttonWidth && leftMostButton.layoutParams.height == buttonHeight) return
         leftMostButton.layoutParams = leftMostButton.layoutParams.apply {
             width = buttonWidth
             height = buttonHeight

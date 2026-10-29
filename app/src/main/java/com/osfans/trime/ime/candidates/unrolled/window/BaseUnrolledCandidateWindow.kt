@@ -95,6 +95,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                 recyclerView.apply {
                     // disable item cross-fade animation
                     itemAnimator = null
+                    setHasFixedSize(true)
                 }
             }
         return candidateLayout
@@ -124,6 +125,9 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     private var candidatesSubmitJob: Job? = null
 
     override fun onAttached() {
+        // Only alpha changes during the fade; do not animate panel geometry or layout.
+        candidateLayout.alpha = 0f
+        candidateLayout.animate().alpha(1f).setDuration(100L).withLayer().start()
         lifecycleCoroutineScope = candidateLayout.findViewTreeLifecycleOwner()!!.lifecycleScope
         candidateLayout.updatePreedit(rime.run { compositionCached.preedit })
         bar.unrollButtonStateMachine.push(UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesAttached)
@@ -166,6 +170,8 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     }
 
     override fun onDetached() {
+        candidateLayout.animate().cancel()
+        candidateLayout.alpha = 1f
         bar.unrollButtonStateMachine.push(
             UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesDetached,
             UnrollButtonStateMachine.BooleanKey.UnrolledCandidatesEmpty to

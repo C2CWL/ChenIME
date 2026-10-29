@@ -25,6 +25,7 @@ import com.osfans.trime.data.theme.model.ToolBar
 import com.osfans.trime.ime.core.AutoScaleTextView
 import com.osfans.trime.ime.keyboard.GestureFrame
 import com.osfans.trime.ime.keyboard.KeyboardWindow
+import com.osfans.trime.util.parseThemeLabel
 import splitties.dimensions.dp
 import splitties.views.dsl.core.add
 import splitties.views.dsl.core.imageView
@@ -210,6 +211,8 @@ class ToolButton(context: Context, private val scope: ThemeScope) : GestureFrame
             singleStyle
         }
 
+        val iconLabel = style.ifEmpty { actionLabel }
+
         // drawable: local image or iconics
         var useLocalImage = false
         val drawable = if (style.isEmpty() && config?.action == "Hide") {
@@ -217,11 +220,13 @@ class ToolButton(context: Context, private val scope: ThemeScope) : GestureFrame
         } else if (IMAGE_PATTERN.matches(style)) {
             useLocalImage = true
             scope.drawable(style)
-        } else if (style.startsWith("ic@")) {
-            val icon = "cmd_${style.substring(3)}"
-            IconicsDrawable(context, icon).apply {
-                sizeDp = fontSize.toInt()
-            }
+        } else if (iconLabel.startsWith("ic@")) {
+            runCatching {
+                IconicsDrawable(context, parseThemeLabel(iconLabel).iconName!!).apply {
+                    require(icon != null)
+                    sizeDp = fontSize.toInt()
+                }
+            }.getOrNull()
         } else {
             null
         }
@@ -232,7 +237,8 @@ class ToolButton(context: Context, private val scope: ThemeScope) : GestureFrame
             label.isVisible = false
             image.isVisible = true
         } else { // text icon
-            label.text = if (useLocalImage || style.isEmpty()) actionLabel else style
+            val text = if (useLocalImage || style.isEmpty()) actionLabel else style
+            label.text = parseThemeLabel(text, parseThemeLabel(actionLabel).text).text
             image.isVisible = false
             label.isVisible = true
         }

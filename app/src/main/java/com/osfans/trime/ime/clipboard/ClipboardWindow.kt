@@ -12,6 +12,7 @@ import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
 import com.c2cwl.chenime.R
 import com.osfans.trime.data.db.ClipboardHelper
 import com.osfans.trime.data.db.CollectionHelper
@@ -28,7 +29,10 @@ import com.osfans.trime.ime.window.BoardWindowManager
 import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.ClipEditActivity
 import com.osfans.trime.util.AppUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
@@ -60,14 +64,20 @@ class ClipboardWindow(di: DI) :
     private val prefs = AppPrefs.defaultInstance().clipboard
     private val clipboardReturnAfterPaste by prefs.clipboardReturnAfterPaste
 
+    // Cache loaded pages across visibility changes, but release them with this theme's panel.
+    private val dataScope = CoroutineScope(
+        service.lifecycleScope.coroutineContext + SupervisorJob(service.lifecycleScope.coroutineContext[Job]),
+    )
+
     private val clipboardBeansPager by lazy {
-        Pager(PagingConfig(pageSize = 16)) { ClipboardHelper.allBeans() }
+        Pager(PagingConfig(pageSize = 16)) { ClipboardHelper.allBeans() }.flow.cachedIn(dataScope)
     }
     private val collectionBeansPager by lazy {
-        Pager(PagingConfig(pageSize = 16)) { CollectionHelper.allBeans() }
+        Pager(PagingConfig(pageSize = 16)) { CollectionHelper.allBeans() }.flow.cachedIn(dataScope)
     }
     override fun onDestroyed() {
         onDetached()
+        dataScope.cancel()
     }
 
     private var clipboardBeansSubmitJob: Job? = null
@@ -270,7 +280,7 @@ class ClipboardWindow(di: DI) :
         clipboardBeansSubmitJob = service.lifecycleScope.launch {
             coroutineScope {
                 val submit = launch {
-                    clipboardBeansPager.flow.collectLatest { clipboardBeansAdapter.submitData(it) }
+                    clipboardBeansPager.collectLatest { clipboardBeansAdapter.submitData(it) }
                 }
                 if (warmup) {
                     clipboardBeansAdapter.onPagesUpdatedFlow.first()
@@ -281,7 +291,7 @@ class ClipboardWindow(di: DI) :
         collectionBeansSubmitJob = service.lifecycleScope.launch {
             coroutineScope {
                 val submit = launch {
-                    collectionBeansPager.flow.collectLatest { collectionBeansAdapter.submitData(it) }
+                    collectionBeansPager.collectLatest { collectionBeansAdapter.submitData(it) }
                 }
                 if (warmup) {
                     collectionBeansAdapter.onPagesUpdatedFlow.first()

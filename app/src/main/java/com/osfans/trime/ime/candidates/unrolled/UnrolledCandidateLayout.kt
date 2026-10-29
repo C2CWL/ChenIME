@@ -74,13 +74,21 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         setOnClickListener { action() }
     }
 
+    private var displayedSyllables: List<String> = emptyList()
+
     fun updatePreedit(preedit: String?) {
-        syllables.removeAllViews()
-        preeditSyllables(preedit).forEach { syllable ->
-            // Display engine-supplied syllables without mutating composition or inventing alternatives.
-            syllables.addView(button(syllable, syllable) {}, LayoutParams(LayoutParams.MATCH_PARENT, dp(44)))
+        val labels = preeditSyllables(preedit)
+        if (labels == displayedSyllables) return
+        displayedSyllables = labels
+        while (syllables.childCount > labels.size) syllables.removeViewAt(syllables.childCount - 1)
+        labels.forEachIndexed { index, syllable ->
+            val view = (syllables.getChildAt(index) as? TextView) ?: button(syllable, syllable) {}.also {
+                syllables.addView(it, LayoutParams(LayoutParams.MATCH_PARENT, dp(44)))
+            }
+            if (view.text.toString() != syllable) view.text = syllable
+            view.contentDescription = syllable
+            view.setTextColor(scope.colors.candidateTextColor)
         }
-        refreshColors()
     }
 
     fun resetPosition() = recyclerView.scrollToPosition(0)

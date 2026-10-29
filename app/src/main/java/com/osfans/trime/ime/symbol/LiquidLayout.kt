@@ -14,7 +14,6 @@ import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.LiquidKeyboard
 import com.osfans.trime.ime.broadcast.EnterKeyDisplayDelegate
-import com.osfans.trime.ime.core.AutoScaleTextView
 import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
 import org.kodein.di.instance
 import splitties.dimensions.dp
@@ -57,11 +56,11 @@ class LiquidLayout(
     private var enterKey: LiquidItemUi? = null
 
     fun updateLockLabel(locked: Boolean) {
-        lockKey?.mainText?.text = if (locked) "🔒锁定" else "🔓锁定"
+        lockKey?.setLabel(if (locked) "🔒锁定" else "🔓锁定")
     }
 
     fun updateEnterLabel() {
-        enterKey?.mainText?.text = enterKeyDisplay.keyLabel
+        enterKey?.setLabel(enterKeyDisplay.keyLabel, "回车")
     }
 
     private val fixedKeyItems = mutableListOf<LiquidItemUi>()
@@ -77,22 +76,26 @@ class LiquidLayout(
                         val presetKey = theme.presetKeys[presetKeyName]
                         val ui = LiquidItemUi(context, scope)
                         fixedKeyItems += ui
-                        if ("liquid_keyboard_lock" in fixedKeys) {
-                            ui.mainText.apply {
-                                textSize = 18f
-                                scaleMode = AutoScaleTextView.Mode.Proportional
-                                setPadding(dp(4))
-                                updateLayoutParams { width = matchParent }
-                            }
+                        ui.mainText.apply {
+                            textSize = 18f
+                            setPadding(dp(4))
+                            updateLayoutParams { width = matchParent }
                         }
-                        ui.mainText.text = presetKey?.label ?: ""
+                        val fallback = when (presetKeyName) {
+                            "liquid_keyboard_exit" -> "返回"
+                            "space1" -> "空格"
+                            "BackSpace" -> "退格"
+                            "Return", "Return1", "Return2" -> "回车"
+                            else -> "按键"
+                        }
+                        ui.setLabel(presetKey?.label.orEmpty(), fallback)
                         if (presetKey?.label == "enter_labels") {
                             enterKey = ui
-                            ui.mainText.text = enterKeyDisplay.keyLabel
+                            ui.setLabel(enterKeyDisplay.keyLabel, "回车")
                         }
                         if (presetKey?.command == "liquid_keyboard_lock") {
                             lockKey = ui
-                            ui.mainText.text = "🔓锁定"
+                            ui.setLabel("🔓锁定")
                         }
                         ui.root.apply {
                             isRepeatable = presetKey?.repeatable ?: false
@@ -140,7 +143,10 @@ class LiquidLayout(
                         btns.forEachIndexed { i, btn ->
                             add(
                                 btn,
-                                lParams(wrapContent, matchConstraints) {
+                                lParams(matchConstraints, dp(theme.liquidKeyboard.keyHeight.coerceAtLeast(40))) {
+                                    topOfParent()
+                                    bottomOfParent()
+                                    horizontalWeight = 1f
                                     if (i == 0) {
                                         startOfParent()
                                     } else {
@@ -187,7 +193,7 @@ class LiquidLayout(
                 )
                 add(
                     fixedKeyBar,
-                    lParams(wrapContent, wrapContent) {
+                    lParams(matchConstraints, wrapContent) {
                         centerHorizontally()
                         topOfParent()
                         bottomToTopOf(root)
@@ -206,7 +212,7 @@ class LiquidLayout(
                 )
                 add(
                     fixedKeyBar,
-                    lParams(wrapContent, wrapContent) {
+                    lParams(matchConstraints, wrapContent) {
                         centerHorizontally()
                         topToBottomOf(root)
                         bottomOfParent()

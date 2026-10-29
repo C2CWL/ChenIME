@@ -608,7 +608,8 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         // The IME uses an ordinary View hierarchy, not an owned SurfaceView.
         // Surface frame-rate hints apply to surfaces we own; View hints are API 35+.
         if (Build.VERSION.SDK_INT >= 35) {
-            imeWindow.decorView.setRequestedFrameRate(rate)
+            // View uses DEFAULT to clear a hint; WindowManager.LayoutParams uses zero.
+            imeWindow.decorView.setRequestedFrameRate(if (shown) rate else View.REQUESTED_FRAME_RATE_CATEGORY_DEFAULT)
         }
     }
 

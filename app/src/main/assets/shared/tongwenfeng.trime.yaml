@@ -886,13 +886,11 @@ liquid_keyboard:
   margin_x: 5       #左右按键间隙的1/2
   fixed_key_bar: # 固定按键条
     position: bottom  # 摆放位置（在滚动区域的……） top|bottom|left|right
-    keys: # 按键（显示名称为对应的label，不能放太多）
+    keys:
       - liquid_keyboard_exit
       - space1
       - BackSpace
       - Return2
-      - clipboard_window
-      - liquid_keyboard_tabs
   keyboards: [emoji, math, ascii, cn, history, symbollist, list, ids, symbol, tabs, pinyin, script_symbols, jp, grease, rusa, korea, lation, yinbiao, unit, yanwenzi, combing, emoji_full]  #tab列表
   tabs:
     name: 更多

@@ -80,13 +80,14 @@ abstract class BaseInputView(
         val row = LinearLayout(themedContext).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(dp(6), dp(6), dp(6), dp(6))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(100f)
-                setColor(scope.colors.candidateBackground)
-            }
         }
         val popup = PopupWindow(row, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
-            setBackgroundDrawable(row.background)
+            setBackgroundDrawable(
+                GradientDrawable().apply {
+                    cornerRadius = dp(100f)
+                    setColor(scope.colors.candidateBackground)
+                },
+            )
             elevation = dp(8f)
             isOutsideTouchable = true
             inputMethodMode = PopupWindow.INPUT_METHOD_NOT_NEEDED

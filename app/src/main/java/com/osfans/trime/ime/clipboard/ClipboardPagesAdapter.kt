@@ -64,6 +64,7 @@ abstract class ClipboardPagesAdapter : RecyclerView.Adapter<ClipboardPagesAdapte
         val page = pages[holder.itemId]
             ?: throw IllegalStateException("No such page view")
         val container = holder.itemView as FrameLayout
+        if (page.root.parent === container) return
         if (container.isNotEmpty()) {
             container.removeAllViews()
         }

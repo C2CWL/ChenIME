@@ -95,6 +95,7 @@ class LiquidWindow(di: DI) :
 
     override fun onCreateView(): View = LiquidLayout(context, scope, commonKeyboardActionListener).apply {
         liquidLayout = this
+        service.lifecycleScope.launch { adapter.prepareTextLayouts(context) }
         tabsUi.apply {
             setTags(scope.theme.liquidKeyboard.getTagList())
             setOnTabClickListener { i ->
@@ -109,7 +110,7 @@ class LiquidWindow(di: DI) :
             if (supportsLock) {
                 addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
                     if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
-                        post { this@LiquidWindow.adapter.notifyDataSetChanged() }
+                        post { this@LiquidWindow.adapter.notifyItemRangeChanged(0, this@LiquidWindow.adapter.itemCount, Unit) }
                     }
                 }
             }
@@ -134,7 +135,7 @@ class LiquidWindow(di: DI) :
 
     fun setDataByIndex(i: Int) {
         historyJob?.cancel()
-        val tag = scope.theme.liquidKeyboard.getTagList()[i]
+        val tag = scope.theme.liquidKeyboard.getTagList().getOrNull(i) ?: return
         currentDataType = tag.type
         liquidLayout.tabsUi.activateTab(i)
         when (tag.type) {

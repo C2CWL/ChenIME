@@ -4,6 +4,7 @@
 package com.osfans.trime.data.theme
 
 import com.osfans.trime.data.theme.model.KeyActionToken
+import com.osfans.trime.data.theme.model.LiquidKeyboard
 import com.osfans.trime.data.theme.model.TextKeyboard
 import com.osfans.trime.ime.keyboard.KeyboardAsciiState
 import com.osfans.trime.ime.keyboard.inputStartKeyboard
@@ -55,6 +56,12 @@ class BuiltinThemeTest :
                 theme.presetKeys.getValue("redo").label shouldBe "ic@redo"
                 theme.toolBar.buttons.takeLast(2).map { it.action } shouldBe listOf("redo", "undo")
                 theme.liquidKeyboard.fixedKeyBar.keys.forEach { theme.presetKeys.containsKey(it) shouldBe true }
+                val builtinEmojiKeyboard = theme.liquidKeyboard.keyboards.single { it.id == "emoji" }
+                builtinEmojiKeyboard.type shouldBe LiquidKeyboard.DataType.SINGLE
+                builtinEmojiKeyboard.keys.take(2) shouldBe listOf(
+                    LiquidKeyboard.KeyItem("[旺柴]"),
+                    LiquidKeyboard.KeyItem("[狗头]"),
+                )
 
                 val letterLayouts = if (id == "iflytek.trime") listOf("default") else listOf("default", "letter")
                 for (layout in letterLayouts) {

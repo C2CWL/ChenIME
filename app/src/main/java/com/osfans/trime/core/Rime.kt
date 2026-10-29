@@ -309,6 +309,10 @@ class Rime :
         getRimeCandidates(startIndex, limit)
     }
 
+    override suspend fun getCandidateEnds(startIndex: Int, limit: Int): IntArray = withRimeContext {
+        getRimeCandidateEnds(startIndex, limit)
+    }
+
     override suspend fun setCandidatePagingMode(enabled: Boolean) = withRimeContext {
         pagingMode = enabled
         emitResponse()
@@ -624,6 +628,9 @@ class Rime :
 
         @JvmStatic
         external fun selectRimeSchemas(schemaIds: Array<String>): Boolean
+
+        @JvmStatic
+        external fun getRimeCandidateEnds(startIndex: Int, limit: Int): IntArray
 
         @JvmStatic
         external fun getRimeCandidates(

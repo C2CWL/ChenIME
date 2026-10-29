@@ -100,5 +100,8 @@ interface RimeApi {
         limit: Int,
     ): Array<CandidateProto>
 
+    /** Last menu segment: [start, end, candidateEnd0, ...], in raw input bytes. */
+    suspend fun getCandidateEnds(startIndex: Int, limit: Int): IntArray
+
     suspend fun setCandidatePagingMode(enabled: Boolean)
 }

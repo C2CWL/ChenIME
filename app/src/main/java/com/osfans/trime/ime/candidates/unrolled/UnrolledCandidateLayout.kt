@@ -26,6 +26,12 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
     private val single = button("单字", "单字") { onSingleCharacterToggle?.invoke() }
     private val actions = mutableListOf<TextView>()
     var onSingleCharacterToggle: (() -> Unit)? = null
+    var onSyllableToggle: ((Int, List<String>) -> Unit)? = null
+    var activeSyllable: Int? = null
+        set(value) {
+            field = value
+            refreshColors()
+        }
     var onCompositionKey: ((String) -> Unit)? = null
     var singleCharacter = false
         set(value) {
@@ -82,13 +88,14 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         displayedSyllables = labels
         while (syllables.childCount > labels.size) syllables.removeViewAt(syllables.childCount - 1)
         labels.forEachIndexed { index, syllable ->
-            val view = (syllables.getChildAt(index) as? TextView) ?: button(syllable, syllable) {}.also {
+            val view = (syllables.getChildAt(index) as? TextView) ?: button(syllable, "筛选 $syllable") {}.also {
                 syllables.addView(it, LayoutParams(LayoutParams.MATCH_PARENT, dp(44)))
             }
             if (view.text.toString() != syllable) view.text = syllable
-            view.contentDescription = syllable
-            view.setTextColor(scope.colors.candidateTextColor)
+            view.contentDescription = "筛选 $syllable"
+            view.setOnClickListener { onSyllableToggle?.invoke(index, displayedSyllables) }
         }
+        refreshColors()
     }
 
     fun resetPosition() = recyclerView.scrollToPosition(0)
@@ -96,7 +103,13 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
     fun refreshColors() {
         background = scope.decorDrawable("candidate_background", "candidate_border_color", dp(scope.theme.style.candidateBorder), dp(scope.theme.style.candidateBorderRound))
         val colors = scope.colors
-        for (i in 0 until syllables.childCount) (syllables.getChildAt(i) as TextView).setTextColor(colors.candidateTextColor)
+        for (i in 0 until syllables.childCount) {
+            val covered = activeSyllable?.let { i <= it } == true
+            (syllables.getChildAt(i) as TextView).apply {
+                setTextColor(if (covered) colors.hilitedCandidateTextColor else colors.candidateTextColor)
+                background = roundedRippleDrawable(colors.hilitedCandidateBackColor, dp(8f), if (covered) colors.hilitedCandidateBackColor else colors.candidateBackground)
+            }
+        }
         single.setTextColor(if (singleCharacter) colors.hilitedCandidateTextColor else colors.candidateTextColor)
         single.background = roundedRippleDrawable(colors.hilitedCandidateBackColor, dp(8f), if (singleCharacter) colors.hilitedCandidateBackColor else colors.candidateBackground)
         actions.forEachIndexed { index, view ->

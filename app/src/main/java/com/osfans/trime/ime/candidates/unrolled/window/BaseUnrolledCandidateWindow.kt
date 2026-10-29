@@ -13,7 +13,6 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.filter
 import androidx.recyclerview.widget.RecyclerView
 import com.osfans.trime.core.CompositionProto
 import com.osfans.trime.core.RimeKeyEvent
@@ -27,9 +26,10 @@ import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.ime.candidates.compact.CompactCandidateDelegate
 import com.osfans.trime.ime.candidates.unrolled.CandidatesPagingSource
+import com.osfans.trime.ime.candidates.unrolled.FilteringCandidatesPagingSource
 import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
-import com.osfans.trime.ime.candidates.unrolled.isSingleCharacter
+import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.keyboard.KeyboardWindow
@@ -89,6 +89,25 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                     resetPosition()
                     adapter.refresh()
                 }
+                onSyllableToggle = { index, syllables ->
+                    filterJob?.cancel()
+                    if (activeSyllable == index) {
+                        clearSyllableFilter()
+                    } else {
+                        filterJob = lifecycleCoroutineScope.launch {
+                            val target = rime.runOnReady {
+                                val ends = getCandidateEnds(0, 300)
+                                if (ends.size < 2) null else syllableInputEnd(getRawInput(), ends[0], syllables, index, ends.drop(2))
+                            }
+                            if (target != null) {
+                                filterEnd = target
+                                activeSyllable = index
+                                resetPosition()
+                                adapter.refresh()
+                            }
+                        }
+                    }
+                }
                 onCompositionKey = { key ->
                     rime.launchOnReady { it.processKey(RimeKeyEvent.getKeycodeByName(key), 0u) }
                 }
@@ -105,6 +124,17 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     abstract val layoutManager: RecyclerView.LayoutManager
 
     private var offsetJob: Job? = null
+    private var filterJob: Job? = null
+    private var filterEnd: Int? = null
+
+    private fun clearSyllableFilter() {
+        filterJob?.cancel()
+        if (filterEnd == null && candidateLayout.activeSyllable == null) return
+        filterEnd = null
+        candidateLayout.activeSyllable = null
+        candidateLayout.resetPosition()
+        adapter.refresh()
+    }
 
     private val candidatesPager by lazy {
         Pager(
@@ -113,11 +143,15 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                 enablePlaceholders = false,
             ),
             pagingSourceFactory = {
-                CandidatesPagingSource(
-                    rime,
-                    total = compactCandidate.adapter.total,
-                    offset = adapter.offset,
-                )
+                if (filterEnd != null || candidateLayout.singleCharacter) {
+                    FilteringCandidatesPagingSource(rime, adapter.offset, filterEnd, candidateLayout.singleCharacter)
+                } else {
+                    CandidatesPagingSource(
+                        rime,
+                        total = compactCandidate.adapter.total,
+                        offset = adapter.offset,
+                    )
+                }
             },
         )
     }
@@ -148,13 +182,16 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         candidatesSubmitJob =
             lifecycleCoroutineScope.launch {
                 candidatesPager.flow.collectLatest {
-                    adapter.submitData(if (candidateLayout.singleCharacter) it.filter { item -> isSingleCharacter(item.candidate.text) } else it)
+                    adapter.submitData(it)
                 }
             }
     }
 
     override fun onCompositionUpdate(data: CompositionProto) {
-        if (::candidateLayout.isInitialized) candidateLayout.updatePreedit(data.preedit)
+        if (::candidateLayout.isInitialized) {
+            clearSyllableFilter()
+            candidateLayout.updatePreedit(data.preedit)
+        }
     }
 
     fun bindCandidateUiViewHolder(holder: CandidateViewHolder) {
@@ -170,6 +207,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     }
 
     override fun onDetached() {
+        clearSyllableFilter()
         candidateLayout.animate().cancel()
         candidateLayout.alpha = 1f
         bar.unrollButtonStateMachine.push(

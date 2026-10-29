@@ -217,6 +217,10 @@ class Rime {
     rime->finalize();
   }
 
+  std::vector<int> candidateEnds(int start, int limit) {
+    return rime_get_candidate_ends(session(), start, limit);
+  }
+
   bool sync() {
     session_.reset();
     return rime->sync_user_data();
@@ -431,6 +435,17 @@ Java_com_osfans_trime_core_Rime_changeRimeCandidatePage(JNIEnv* env,
                                                         jclass clazz,
                                                         jboolean backward) {
   return Rime::Instance().changePage(backward);
+}
+
+extern "C" JNIEXPORT jintArray JNICALL
+Java_com_osfans_trime_core_Rime_getRimeCandidateEnds(JNIEnv* env, jclass clazz,
+                                                     jint start_index,
+                                                     jint limit) {
+  auto ends = Rime::Instance().candidateEnds(start_index, limit);
+  auto result = env->NewIntArray(ends.size());
+  if (!ends.empty())
+    env->SetIntArrayRegion(result, 0, ends.size(), ends.data());
+  return result;
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL

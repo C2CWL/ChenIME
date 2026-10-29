@@ -73,7 +73,7 @@ class ThemeGoldenTest :
                     keyboard.author shouldBe "暖暖"
                     keyboard.width shouldBe 10f
                     keyboard.asciiMode shouldBe 0
-                    keyboard.keys.size shouldBe 37
+                    keyboard.keys.size shouldBe 36
                     val firstKey = keyboard.keys.first()
                     firstKey.click shouldBe KeyActionToken.Plain("q")
                     firstKey.longClick shouldBe KeyActionToken.Plain("1")

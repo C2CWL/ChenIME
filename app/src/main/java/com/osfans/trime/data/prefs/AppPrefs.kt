@@ -45,7 +45,7 @@ class AppPrefs(
 
     val customFont = object : PreferenceDelegateOwner(shared) {
         val fileName = string("chen_custom_font", "")
-    }.fileName
+    }.register().fileName
 
     val internal = Internal(shared)
     val general = General(shared).register()

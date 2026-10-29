@@ -23,6 +23,8 @@ import com.osfans.trime.ime.bar.ui.ToolButton
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.dialog.EnabledSchemaPickerDialog
+import com.osfans.trime.ime.keyboard.KeyboardWindow
+import com.osfans.trime.ime.keyboard.switchCharset
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.settings.ThemePickerDialog
@@ -51,6 +53,7 @@ class SwitchOptionWindow(di: DI) :
     private var attached = false
     private val service: TrimeInputMethodService by instance()
     private val rime: RimeSession by instance()
+    private val keyboardWindow: KeyboardWindow by instance()
     private val scope: ThemeScope by instance()
     private val theme: Theme get() = scope.theme
 
@@ -140,7 +143,9 @@ class SwitchOptionWindow(di: DI) :
 
                     is SwitchOptionEntry.Custom -> {
                         val options = entry.switch.options
-                        if (options.isEmpty()) {
+                        if (entry.switch.name == "ascii_mode") {
+                            service.switchCharset(entry.switch.name, keyboardWindow)
+                        } else if (options.isEmpty()) {
                             rime.launchOnReady {
                                 val oldValue = it.getRuntimeOption(entry.switch.name)
                                 it.applyOption(entry.switch.name, !oldValue)

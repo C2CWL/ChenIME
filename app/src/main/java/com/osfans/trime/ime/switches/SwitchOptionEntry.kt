@@ -8,6 +8,7 @@ package com.osfans.trime.ime.switches
 import androidx.annotation.DrawableRes
 import com.osfans.trime.core.RimeApi
 import com.osfans.trime.core.RimeSchema
+import com.osfans.trime.ime.keyboard.EnglishMode
 
 sealed class SwitchOptionEntry(
     val label: String,
@@ -36,7 +37,7 @@ sealed class SwitchOptionEntry(
             return if (it.name.isNotEmpty()) {
                 if (labels.size != 2) return null
                 val (disabledText, enabledText) = labels
-                val value = api.getRuntimeOption(it.name)
+                val value = EnglishMode.optionEnabled(it.name, api.getRuntimeOption(it.name), api.statusCached.schemaId)
                 val label = if (value) "$enabledText → $disabledText" else "$disabledText → $enabledText"
                 Custom(it, label, 0)
             } else {

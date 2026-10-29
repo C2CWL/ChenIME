@@ -41,6 +41,20 @@ class EnglishModeTest :
             }
         }
 
+        given("the ASCII switch tile across a schema round trip") {
+            then("its enabled state follows the schema even when runtime ASCII stays off") {
+                val english = EnglishMode.targetSchema("rime_frost", false, false)!!
+                EnglishMode.optionEnabled("ascii_mode", false, english) shouldBe true
+                val chinese = EnglishMode.targetSchema(english, false, false)!!
+                EnglishMode.optionEnabled("ascii_mode", false, chinese) shouldBe false
+            }
+
+            then("plain ASCII is enabled without selecting the English schema") {
+                EnglishMode.optionEnabled("ascii_mode", true, "rime_frost") shouldBe true
+                EnglishMode.targetSchema("rime_frost", true, false) shouldBe null
+            }
+        }
+
         given("returning from temporary number and symbol keyboards") {
             then("English letters always compose even if the saved panel mode was ASCII") {
                 for (saved in listOf(false, true)) {

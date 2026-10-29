@@ -189,48 +189,7 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
             private fun handleSwitchCharset(action: KeyAction) {
                 val option = action.toggle.ifEmpty { return }
 
-                val forcedAscii = keyboardWindow.isForcedAsciiLayout
-                service.postRimeJob {
-                    val enabled = getRuntimeOption(option)
-                    val schema = statusCached.schemaId
-                    val target = if (option == "ascii_mode") {
-                        EnglishMode.targetSchema(schema, enabled, forcedAscii)
-                    } else {
-                        null
-                    }
-                    if (target != null) {
-                        if (target == EnglishMode.SCHEMA && statusCached.isComposing) {
-                            getRawInput().takeIf { it.isNotEmpty() }?.let {
-                                service.commitText(it)
-                                clearComposition()
-                            }
-                        } else {
-                            commitComposition()
-                        }
-                        if (selectSchema(target)) {
-                            keyboardWindow.resetLetterAsciiMode()
-                            setKeyboardAsciiMode(forcedAscii)
-                        } else {
-                            Timber.w("Failed to select schema %s from %s", target, schema)
-                            if (target == EnglishMode.SCHEMA) {
-                                setRuntimeOption("ascii_mode", true)
-                            }
-                        }
-                    } else if (option == "ascii_mode" && schema == EnglishMode.CHINESE_SCHEMA) {
-                        commitComposition()
-                        keyboardWindow.resetLetterAsciiMode()
-                        setKeyboardAsciiMode(false)
-                    } else {
-                        val composing = statusCached.isComposing
-                        setRuntimeOption(option, !enabled)
-                        if (option == "ascii_mode" && composing) {
-                            getRawInput().takeIf { it.isNotEmpty() }?.let {
-                                service.commitText(it)
-                                clearComposition()
-                            }
-                        }
-                    }
-                }
+                service.switchCharset(option, keyboardWindow)
             }
 
             private fun handleLanguageSwitch(action: KeyAction) {

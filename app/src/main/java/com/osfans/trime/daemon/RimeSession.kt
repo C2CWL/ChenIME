@@ -5,7 +5,9 @@
 package com.osfans.trime.daemon
 
 import com.osfans.trime.core.RimeApi
+import com.osfans.trime.core.RimeLifecycle
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * A interface to run different operations on RimeApi
@@ -34,6 +36,8 @@ interface RimeSession {
      * This function does not block or suspend the caller.
      */
     fun runIfReady(block: suspend RimeApi.() -> Unit)
+
+    val lifecycleState: StateFlow<RimeLifecycle.State>
 
     val lifecycleScope: CoroutineScope
 }

@@ -19,6 +19,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
 import com.osfans.trime.core.CompositionProto
+import com.osfans.trime.core.RimeLifecycle
 import com.osfans.trime.core.RimeMessage
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.data.prefs.AppPrefs
@@ -329,15 +330,39 @@ class InputView(
         enterKeyDisplay.updateLabelOnEditorInfo(info)
     }
 
+    private var optionSeedJob: Job? = null
+
+    override suspend fun onRimeMessageHandlerStarted() {
+        rime.lifecycleState.collect {
+            if (it == RimeLifecycle.State.READY) seedRuntimeOptions()
+        }
+    }
+
+    private fun seedRuntimeOptions() {
+        optionSeedJob?.cancel()
+        optionSeedJob = service.lifecycleScope.launch {
+            val revision = theme.runtimeOptions.beginSeed()
+            val options = theme.presetKeys.values.map { it.toggle }.filter { it.isNotEmpty() }.toSet()
+            val snapshot = rime.runOnReady {
+                getRuntimeOptions(options)
+            }
+            theme.runtimeOptions.finishSeed(revision, snapshot)
+            keyboardWindow.invalidateOptionLabels()
+        }
+    }
+
     override fun handleRimeMessage(it: RimeMessage<*>) {
         when (it) {
             is RimeMessage.SchemaMessage -> {
+                seedRuntimeOptions()
                 broadcaster.onRimeSchemaUpdated(it.data)
 
                 windowManager.attachWindow(KeyboardWindow)
             }
 
             is RimeMessage.OptionMessage -> {
+                // Includes options set by IME actions and temporary keyboard ASCII changes.
+                theme.runtimeOptions.update(it.data.option, it.data.value)
                 broadcaster.onRimeOptionUpdated(it.data)
 
                 if (it.data.option == "_liquid_keyboard") {
@@ -346,6 +371,16 @@ class InputView(
                         liquidWindow.setDataByIndex(0)
                     }
                 }
+            }
+
+            is RimeMessage.StatusMessage -> {
+                val asciiChanged = theme.runtimeOptions.update("ascii_mode", it.data.isAsciiMode)
+                val punctChanged = theme.runtimeOptions.update("ascii_punct", it.data.isAsciiPunct)
+                if (asciiChanged || punctChanged) keyboardWindow.invalidateOptionLabels()
+            }
+
+            is RimeMessage.DeployMessage -> {
+                if (it.data == RimeMessage.DeployMessage.State.Success) seedRuntimeOptions()
             }
 
             is RimeMessage.CompositionMessage -> {

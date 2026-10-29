@@ -17,6 +17,7 @@ import timber.log.Timber
 class KeyAction(
     token: KeyActionToken,
     presetKeys: Map<String, PresetKey>,
+    private val runtimeOptions: RuntimeOptionCache = RuntimeOptionCache(),
 ) {
     var code = 0
         private set
@@ -134,7 +135,7 @@ class KeyAction(
     fun getLabel(keyboard: Keyboard): String {
         ensureLabels()
         if (states.isNotEmpty() && toggle.isNotEmpty()) {
-            return states[if (rime.run { getRuntimeOption(toggle) }) 1 else 0]
+            return states[if (runtimeOptions[toggle]) 1 else 0]
         }
         if (keyboard.isOnlyShiftOn) {
             val asciiMode = rime.run { statusCached }.isAsciiMode

@@ -14,6 +14,7 @@ import com.osfans.trime.data.theme.model.TextKeyboard
 import com.osfans.trime.data.theme.model.ToolBar
 import com.osfans.trime.data.theme.model.Window
 import com.osfans.trime.ime.keyboard.KeyAction
+import com.osfans.trime.ime.keyboard.RuntimeOptionCache
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
@@ -31,6 +32,9 @@ data class Theme(
     val fallbackColors: Map<String, String> = emptyMap(),
     val toolBar: ToolBar = ToolBar(),
 ) {
+    @Transient
+    val runtimeOptions = RuntimeOptionCache()
+
     val fonts by lazy { ThemeFonts(this) }
 
     @Transient
@@ -39,7 +43,7 @@ data class Theme(
     }
 
     fun resolveAction(token: KeyActionToken) = actionCache.value.getOrPut(token) {
-        KeyAction(token, presetKeys)
+        KeyAction(token, presetKeys, runtimeOptions)
     }
 
     fun resolveAction(tokenString: String) = resolveAction(KeyActionToken.Plain(tokenString))

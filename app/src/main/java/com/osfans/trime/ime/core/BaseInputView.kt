@@ -47,9 +47,12 @@ abstract class BaseInputView(
 
     private var messageHandlerJob: Job? = null
 
+    protected open suspend fun onRimeMessageHandlerStarted() {}
+
     private fun setupRimeMessageHandler() {
         messageHandlerJob =
             service.lifecycleScope.launch {
+                launch { onRimeMessageHandlerStarted() }
                 rime.run { messageFlow }.collect {
                     handleRimeMessage(it)
                 }

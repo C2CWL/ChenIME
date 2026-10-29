@@ -79,6 +79,8 @@ object RimeDaemon {
             }
         }
 
+        override val lifecycleState get() = realRime.lifecycle.stateFlow
+
         override val lifecycleScope: CoroutineScope
             get() = realRime.lifecycle.lifecycleScope
     }

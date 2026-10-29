@@ -332,6 +332,10 @@ class KeyboardWindow(di: DI) :
         switchKeyboard(".default")
     }
 
+    fun invalidateOptionLabels() {
+        currentKeyboardView?.invalidateAllKeys()
+    }
+
     override fun onRimeOptionUpdated(value: RimeMessage.OptionMessage.Data) {
         val option = value.option
         when {

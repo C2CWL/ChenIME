@@ -87,6 +87,9 @@ interface RimeApi {
 
     suspend fun getRuntimeOption(option: String): Boolean
 
+    /** Read a label seed in one Rime dispatcher operation, away from drawing. */
+    suspend fun getRuntimeOptions(options: Set<String>): Map<String, Boolean> = options.associateWith { getRuntimeOption(it) }
+
     suspend fun setNullInputType(value: Boolean)
 
     suspend fun getCandidates(

@@ -290,6 +290,10 @@ class Rime :
         getRimeOption(option)
     }
 
+    override suspend fun getRuntimeOptions(options: Set<String>): Map<String, Boolean> = withRimeContext {
+        options.associateWith { getRimeOption(it) }
+    }
+
     override suspend fun setNullInputType(value: Boolean) = withRimeContext {
         isNullInputType = value
     }

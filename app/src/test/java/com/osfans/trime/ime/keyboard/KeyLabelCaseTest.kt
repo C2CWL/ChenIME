@@ -13,7 +13,7 @@ class KeyLabelCaseTest :
             keyLabelForDisplay("Q", uppercase = false, shifted = true) shouldBe "Q"
         }
         "height percentage applies to portrait and landscape and clamps restored values" {
-            for (height in listOf(280, 200)) {
+            for (height in listOf(250, 200)) {
                 scaleKeyboardHeight(height, 100) shouldBe height
                 scaleKeyboardHeight(height, 70) shouldBe (height * 0.7f).toInt()
                 scaleKeyboardHeight(height, 150) shouldBe (height * 1.5f).toInt()

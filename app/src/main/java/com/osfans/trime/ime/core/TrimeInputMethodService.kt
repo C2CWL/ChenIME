@@ -50,6 +50,9 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.composition.CandidatesView
 import com.osfans.trime.ime.keyboard.CommitHistory
 import com.osfans.trime.ime.keyboard.InputFeedbackManager
+import com.osfans.trime.ime.keyboard.UndoRedoShortcut
+import com.osfans.trime.ime.keyboard.sendUndoRedoCombination
+import com.osfans.trime.ime.keyboard.undoRedoShortcut
 import com.osfans.trime.receiver.RimeIntentReceiver
 import com.osfans.trime.util.any
 import com.osfans.trime.util.findSectionFrom
@@ -887,26 +890,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         val ctrl = mask and KeyEvent.META_CTRL_ON != 0
         val shift = mask and KeyEvent.META_SHIFT_ON != 0
         val otherModifiers = mask and (KeyEvent.META_ALT_MASK or KeyEvent.META_META_MASK or KeyEvent.META_SYM_ON)
-        if (ctrl && otherModifiers == 0 && code in setOf(KeyEvent.KEYCODE_Z, KeyEvent.KEYCODE_Y)) {
-            val redo = code == KeyEvent.KEYCODE_Y || shift
-            // Prefer our guarded commit: key delivery cannot tell us whether the app changed text.
-            // Never send a shortcut as well as successfully applying our own edit.
-            ic.finishComposingText()
-            val handled = commitHistory.apply(
-                redo,
-                ic.getTextBeforeCursor(CommitHistory.MAX_TEXT + CommitHistory.CONTEXT, 0)?.toString(),
-                ic.getTextAfterCursor(CommitHistory.CONTEXT, 0)?.toString(),
-                !ic.getSelectedText(0).isNullOrEmpty(),
-            ) { text, delete ->
-                if (delete > 0) ic.deleteSurroundingText(delete, 0) else ic.commitText(text, 1)
-            }
-            if (!handled) {
-                commitHistory.clear()
-                val nativeHandled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                    prefs.keyboard.hookCtrlZY.getValue() &&
-                    ic.performContextMenuAction(if (redo) android.R.id.redo else android.R.id.undo)
-                if (!nativeHandled) sendDownUpKeyEvent(KeyEvent.KEYCODE_Z, meta(ctrl = true, shift = redo))
-            }
+        val shortcut = undoRedoShortcut(code, mask)
+        if (shortcut != null) {
+            sendUndoRedoCombination(ic, redo = shortcut == UndoRedoShortcut.REDO)
             return true
         }
         if (!ctrl || shift || otherModifiers != 0) return false

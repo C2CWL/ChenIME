@@ -1010,13 +1010,13 @@ liquid_keyboard:
     keys: [ 符号: '/fh', 电脑: '/dn', 象棋: '/xq', 麻将: '/mj', 骰子: '/sz', 扑克: '/pk', 天气: '/tq', 音乐: '/yy', 八卦: '/bg', 易经: '/lssg', 天体: '/tt',  星座: '/xz',  星号: '/xh',  方块: '/fk',  几何: '/jh',  箭头: '/jt',  数学: '/sx',  上标: '/sb',  下标: '/xb',  单位: '/dw',  货币: '/hb',  拼音: '/py',  注音: '/zy',  假名: '/jm',  片假: '/pjm',  韩文: '/hw',  希腊: '/xl',  希大: '/xld', 罗马:   '/lm',  罗大:   '/lmd', 俄语:   '/ey',  俄大:   '/eyd', 表情:  '/bq',  一: '/1',  二: '/2',  三: '/3',  四: '/4',  五: '/5',  六: '/6',  七: '/7',  八: '/8',  九: '/9',  零: '/0',  十: '/10',  分数: '/fs',  标点: '/bd',  偏旁: '/pp',  竖标:  '/bdz'  ]
 
 tool_bar:
-  button_spacing: 2 # 按钮间距
+  button_spacing: 5 # 按钮间距
   button_font: iconfont.ttf # 按钮字体
   back_style: "ic@arrow-left" # 左侧返回按钮样式
 
   # 左侧固定主按钮配置
   primary_button:
-    size: [34, 40]
+    size: [40, 40]
     # size: [120, 24]      # 视图组件整体宽高 (支持: -1: 填充(matchParent), -2: 自适应(wrapContent))
     # 背景样式设置
     background:
@@ -1031,69 +1031,69 @@ tool_bar:
       style: "ic@dots_horizontal"         # 内置质感设计图标样式（以ic@开头）
       normal: candidate_text_color  # 正常状态前景色 (本地图片不允许着色)
       # highlight:        # 高亮状态前景色
-      padding: 4            # 前景内容与背景边界的内边距
+      padding: 10            # 前景内容与背景边界的内边距
     # 按钮点击事件
     action: menu_keyboard
     long_press_action: Settings
 
   hide_button: &hide_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
-      style: ""
+      style: "ic@keyboard_close"
       normal: candidate_text_color
     action: Hide
 
   voice_button: &voice_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
       style: "ic@microphone"
     action: VOICE_ASSIST
 
   emoji_button: &emoji_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
       style: "ic@emoticon"
     # 前景样式可以为空，使用默认样式，按钮将显示为 action 的 label
     action: liquid_keyboard_emoji
 
   clipboard_button: &clipboard_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
       style: "ic@clipboard"
     action: clipboard_window
 
   edit_button: &edit_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
       style: "ic@arrow_all"
       normal: candidate_text_color
     action: Keyboard_editor
 
   ascii_mode_button: &ascii_mode_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
       option_styles: ["中", "En"] # 样式也可以为表，将根据 action 的 toggle 决定
       font_size: 18  # 按钮字体大小
-      padding: 4
+      padding: 10
     action: Mode_switch
 
   full_shape_button: &full_shape_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
-      option_styles: ["ic@moon_full", "ic@moon_new"]
+      option_styles: ["ic@arrow_collapse_horizontal", "ic@arrow_expand_horizontal"]
     action: Zenkaku_Hankaku
 
   undo_button: &undo_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
-      style: "↶"
+      style: "ic@undo"
       normal: candidate_text_color
     action: undo
 
   redo_button: &redo_button
-    size: [34, 40]
+    size: [40, 40]
     foreground:
-      style: "↷"
+      style: "ic@redo"
       normal: candidate_text_color
     action: redo
 
@@ -4096,8 +4096,8 @@ preset_keys:
   paste_clip: {label: 粘贴, send: FUNCTION, command: clipboard}
   paste_text: {label: 粘贴文本, send: Control+Shift+Alt+v} #>=Android 6.0
   share_text: {label: 分享文本, send: Control+Alt+s} #>=Android 6.0
-  redo: {label: 重做, functional: false, send: Control+Shift+z} #>=Android 6.0
-  undo: {label: 撤销, functional: false, send: Control+z} #>=Android 6.0
+  redo: {label: ic@redo, functional: false, send: Control+Shift+z} #>=Android 6.0
+  undo: {label: ic@undo, functional: false, send: Control+z} #>=Android 6.0
   delimiter: {label: 分词, text: ''''}
   Ifly_separator: {label: 分词, send: apostrophe}
   x1: {text: '{Home}{Right}{Right}', label: 单字, functional: false}

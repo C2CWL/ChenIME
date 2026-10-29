@@ -48,6 +48,11 @@ class BuiltinThemeTest :
                     it.swipeDown shouldBe KeyActionToken.Plain("restore_cleared")
                 }
                 theme.toolBar.primaryButton?.action shouldBe "menu_keyboard"
+                theme.toolBar.buttons.first().foreground.style shouldBe "ic@keyboard_close"
+                theme.toolBar.buttons.takeLast(2).map { it.foreground.style } shouldBe listOf("ic@redo", "ic@undo")
+                theme.toolBar.buttons.forEach { it.size shouldBe listOf(40, 40) }
+                theme.presetKeys.getValue("undo").label shouldBe "ic@undo"
+                theme.presetKeys.getValue("redo").label shouldBe "ic@redo"
                 theme.toolBar.buttons.takeLast(2).map { it.action } shouldBe listOf("redo", "undo")
                 theme.liquidKeyboard.fixedKeyBar.keys.forEach { theme.presetKeys.containsKey(it) shouldBe true }
 
@@ -85,7 +90,7 @@ class BuiltinThemeTest :
                 theme.presetKeys.getValue("Return").label shouldBe "ic@keyboard_return"
                 theme.toolBar.buttons.first { it.action == "Keyboard_editor" }
                     .foreground.style shouldBe "ic@arrow_all"
-                theme.presetKeys.getValue("undo").label shouldBe "撤销"
+                theme.presetKeys.values.any { "撤銷" in it.label } shouldBe false
                 for (layout in letterLayouts) {
                     theme.presetKeyboards.getValue(layout).keys
                         .first { it.click == KeyActionToken.Plain("Shift_L") }
@@ -174,7 +179,6 @@ class BuiltinThemeTest :
                     checkAction(it.longPressAction)
                 }
                 theme.toolBar.buttons.first().action shouldBe "Hide"
-                theme.toolBar.buttons.first().foreground.style shouldBe ""
                 val emoji = theme.presetKeys.getValue("liquid_keyboard_emoji")
                 emoji.command shouldBe "liquid_keyboard"
                 emoji.option shouldBe "emoji"
@@ -198,18 +202,26 @@ class BuiltinThemeTest :
                     )
                 }
                 theme.toolBar.buttons[1].foreground.style shouldBe "ic@microphone"
-                // 1080px at 3x density is 360dp; the fixed rightmost Hide is included.
+                // Menu and Hide stay fixed; the middle strip scrolls when its 40dp targets overflow.
                 val toolbarButtons = theme.toolBar.buttons + listOfNotNull(theme.toolBar.primaryButton)
                 val toolbarWidth = toolbarButtons.sumOf { it.size.first() } +
                     (theme.toolBar.buttons.size - 1) * theme.toolBar.buttonSpacing
-                (toolbarWidth <= 360) shouldBe true
+                toolbarWidth shouldBe if (id == "tongwenfeng.trime") 440 else 350
+                for (screenWidth in listOf(360, 411)) {
+                    val fixedWidth = theme.toolBar.primaryButton!!.size.first() + theme.toolBar.buttons.first().size.first()
+                    (screenWidth - fixedWidth >= 280) shouldBe true
+                }
                 val toolbarActions = theme.toolBar.buttons.map { it.action } + theme.toolBar.primaryButton?.action
                 toolbarActions.containsAll(listOf("undo", "redo")) shouldBe true
                 if (id == "iflytek.trime") {
                     val standard = ThemeLoader.decodeSource("tongwenfeng.trime", sources.load("tongwenfeng.trime", null)!!) { null }
                     theme.style.candidateViewHeight shouldBe standard.style.candidateViewHeight
                     theme.style.commentHeight shouldBe standard.style.commentHeight
-                    theme.style.verticalGap shouldBe 4
+                    theme.style.verticalGap shouldBe standard.style.verticalGap
+                    theme.style.horizontalGap shouldBe standard.style.horizontalGap
+                    theme.style.keyHeight shouldBe standard.style.keyHeight
+                    theme.style.keyboardHeight shouldBe standard.style.keyboardHeight
+                    theme.style.keyboardHeightLand shouldBe standard.style.keyboardHeightLand
                     theme.style.keyboardPaddingBottom shouldBe 0
                     theme.style.keyboardPaddingLandBottom shouldBe 0
                     theme.presetKeyboards.getValue("default").labelTransform shouldBe TextKeyboard.LabelTransform.NONE
@@ -220,6 +232,8 @@ class BuiltinThemeTest :
                         (colors["key_symbol_color"] != colors["key_back_color"]) shouldBe true
                         colors["on_key_symbol_color"] shouldBe "0xffffffff"
                     }
+                    theme.toolBar.primaryButton?.background shouldBe standard.toolBar.primaryButton?.background
+                    theme.toolBar.primaryButton?.foreground shouldBe standard.toolBar.primaryButton?.foreground
                     theme.toolBar.buttonSpacing shouldBe standard.toolBar.buttonSpacing
                     theme.toolBar.buttons.forEach { it.foreground.padding shouldBe standard.toolBar.buttons.first().foreground.padding }
                     val symbols = theme.presetKeyboards.getValue("default").keys
@@ -236,7 +250,7 @@ class BuiltinThemeTest :
                     ColorSchemeResolver.resolve(theme.presetColorSchemes, "default", true, false)["key_back_color"] shouldBe "0xffffffff"
                     ColorSchemeResolver.resolve(theme.presetColorSchemes, "light", true, true)["key_back_color"] shouldBe "0xff444444"
                     ColorSchemeResolver.resolve(theme.presetColorSchemes, "default", false, false)["key_back_color"] shouldBe "0xff444444"
-                    theme.style.keyHeight shouldBe 56
+                    theme.style.keyHeight shouldBe 48
                     theme.style.keyFont shouldBe ThemeLoader.decodeSource("tongwenfeng.trime", sources.load("tongwenfeng.trime", null)!!) { null }.style.keyFont
                     theme.presetColorSchemes.getValue("default")["key_back_color"] shouldBe "0xff444444"
                     theme.presetKeyboards.keys shouldBe setOf("default", "number", "editor")

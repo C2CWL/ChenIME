@@ -29,7 +29,6 @@ import com.osfans.trime.util.isLandscape
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.runBlocking
 import org.kodein.di.DI
 import org.kodein.di.instance
 import splitties.dimensions.dp
@@ -101,7 +100,7 @@ class KeyboardWindow(di: DI) :
                 lastIsPortrait = isPortrait
                 containerWidth = width
                 allowedWidth = width
-                v.post { refreshKeyboards() }
+                v.post { refreshKeyboards(isAll = true) }
             }
         }
 
@@ -115,7 +114,7 @@ class KeyboardWindow(di: DI) :
     private fun detachCurrentView() {
         currentKeyboardView?.also {
             it.onDetach()
-            keyboardView.removeView(it)
+            it.visibility = View.INVISIBLE
         }
         activeKeyboard?.lastAsciiMode = rime.run { statusCached }.isAsciiMode
     }
@@ -176,7 +175,7 @@ class KeyboardWindow(di: DI) :
         }
 
         keyboard.also {
-            runBlocking { _currentKeyboardHeight.emit(it.keyboardHeight) }
+            _currentKeyboardHeight.tryEmit(it.keyboardHeight)
             if (it.isLock) lastLockKeyboardId = target
             dispatchCapsState(it::setShifted)
 
@@ -197,10 +196,32 @@ class KeyboardWindow(di: DI) :
 
         view.let {
             keyboardView.apply {
-                (it.parent as? android.view.ViewGroup)?.removeView(it)
-                add(it, lParams(matchParent, matchParent))
+                if (it.parent == null) add(it, lParams(matchParent, matchParent))
+                it.visibility = View.VISIBLE
             }
         }
+    }
+
+    private var warmupGeneration = 0
+
+    /** Warm one layout per frame without changing the active keyboard or Rime mode. */
+    fun precreatePanels() {
+        val generation = ++warmupGeneration
+        val targets = presetKeyboardIds.iterator()
+        val width = computeAllowedWidth()
+        fun next() {
+            if (generation != warmupGeneration || !keyboardView.isAttachedToWindow || !targets.hasNext()) return
+            val id = targets.next()
+            if (id !in cachedKeyboards) {
+                val keyboard = Keyboard(context, theme, width, selectKeyboardConfig(id))
+                val view = KeyboardView(context, theme, keyboard, popup, service, keyboardActionListener, enterKeyDisplay)
+                view.visibility = View.INVISIBLE
+                cachedKeyboards[id] = keyboard to view
+                keyboardView.apply { add(view, lParams(matchParent, matchParent)) }
+            }
+            keyboardView.postOnAnimation { next() }
+        }
+        next()
     }
 
     private fun smartMatchKeyboard(): String {
@@ -278,16 +299,18 @@ class KeyboardWindow(di: DI) :
         val id = currentKeyboardId.ifEmpty { return }
         detachCurrentView()
         if (isAll) {
+            keyboardView.removeAllViews()
             cachedKeyboards.clear()
         } else {
-            cachedKeyboards.remove(id)
+            cachedKeyboards.remove(id)?.second?.let { keyboardView.removeView(it) }
         }
         attachKeyboard(id)
+        precreatePanels()
     }
 
     /** Repaints the keyboard after a color-scheme switch; keys re-resolve their colors. */
     override fun refreshColors() {
-        currentKeyboardView?.invalidateAllKeys()
+        cachedKeyboards.values.forEach { (_, view) -> view.invalidateAllKeys() }
     }
 
     override fun onEnterKeyLabelUpdate(label: String) {

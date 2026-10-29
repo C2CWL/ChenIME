@@ -57,6 +57,7 @@ class TabUi(
     }
 
     private var external: View? = null
+    private var retainExternal = false
 
     private val size = ctx.dp(theme.style.run { candidateViewHeight + commentHeight })
 
@@ -91,6 +92,7 @@ class TabUi(
     fun addExternal(
         view: View,
         showTitle: Boolean,
+        retain: Boolean = false,
     ) {
         if (external != null) {
             throw IllegalStateException("TabBar external view is already present")
@@ -98,6 +100,14 @@ class TabUi(
         backButton.isVisible = showTitle
         titleText.isVisible = showTitle
         external = view
+        retainExternal = retain
+        prepareExternal(view, showTitle)
+        view.visibility = View.VISIBLE
+    }
+
+    fun prepareExternal(view: View, showTitle: Boolean) {
+        if (view.parent == root) return
+        view.visibility = View.INVISIBLE
         root.run {
             add(
                 view,
@@ -116,7 +126,7 @@ class TabUi(
 
     fun removeExternal() {
         external?.let {
-            root.removeView(it)
+            if (retainExternal) it.visibility = View.INVISIBLE else root.removeView(it)
             external = null
         }
     }

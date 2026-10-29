@@ -65,6 +65,7 @@ class ButtonsBarUi(
             val size = getButtonSize(config)
             val lParams = FlexboxLayout.LayoutParams(size.first, size.second).apply {
                 marginEnd = ctx.dp(theme.toolBar.buttonSpacing)
+                flexShrink = 0f
             }
             root.addView(button, lParams)
         }

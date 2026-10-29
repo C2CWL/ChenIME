@@ -8,10 +8,8 @@ package com.osfans.trime.ime.window
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.FrameLayout
-import androidx.transition.Transition
-import androidx.transition.TransitionManager
-import androidx.transition.TransitionSet
 import com.c2cwl.chenime.R
+import com.osfans.trime.ime.bar.InputBarDelegate
 import com.osfans.trime.ime.broadcast.InputBroadcaster
 import com.osfans.trime.ime.clipboard.ClipboardWindow
 import com.osfans.trime.ime.core.TrimeInputMethodService
@@ -44,7 +42,7 @@ class BoardWindowManager(override val di: DI) : DIAware {
     }
 
     fun destroy() {
-        TransitionManager.endTransitions(view)
+        destroyed = true
         currentWindow?.onDetached()
         cachedResidentWindows.values.forEach { (window, _) ->
             window.onDestroyed()
@@ -59,25 +57,24 @@ class BoardWindowManager(override val di: DI) : DIAware {
     private var currentWindow: BoardWindow? = null
     private var currentView: View? = null
 
-    private fun prepareAnimation(
-        exitAnimation: Transition?,
-        enterAnimation: Transition?,
-        remove: View,
-        add: View,
-    ) {
-        enterAnimation?.addTarget(add)
-        exitAnimation?.addTarget(remove)
-        TransitionManager.beginDelayedTransition(
-            view,
-            TransitionSet().apply {
-                // Capture only the two window roots, not every key and menu row.
-                addTarget(add)
-                addTarget(remove)
-                enterAnimation?.let { addTransition(it) }
-                exitAnimation?.let { addTransition(it) }
-                duration = 180
-            },
-        )
+    private var destroyed = false
+
+    /** Called after the first keyboard frame; resident roots stay measured but do not draw. */
+    fun precreatePanels() {
+        if (destroyed) return
+        switchOptionWindow
+        clipboardWindow
+        cachedResidentWindows.toMap().forEach { (key, entry) ->
+            if (entry.second == null) {
+                val root = entry.first.onCreateView()
+                root.visibility = View.INVISIBLE
+                view.apply { add(root, lParams(matchParent, matchParent)) }
+                cachedResidentWindows[key] = entry.first to root
+                val bar: InputBarDelegate by instance()
+                bar.precreateWindowBar(entry.first)
+                entry.first.refreshColors()
+            }
+        }
     }
 
     fun <R> cacheResidentWindow(
@@ -121,14 +118,8 @@ class BoardWindowManager(override val di: DI) : DIAware {
         if (currentWindow != null) {
             val oldWindow = currentWindow!!
             val oldView = currentView!!
-            prepareAnimation(
-                oldWindow.exitAnimation(window),
-                window.enterAnimation(oldWindow),
-                oldView,
-                newView,
-            )
             oldWindow.onDetached()
-            view.removeView(oldView)
+            if (oldWindow is ResidentWindow) oldView.visibility = View.INVISIBLE else view.removeView(oldView)
             broadcaster.onWindowDetached(oldWindow)
             Timber.d("Detach $oldWindow")
             if (oldWindow !is ResidentWindow) {
@@ -138,7 +129,8 @@ class BoardWindowManager(override val di: DI) : DIAware {
         if (window is ResidentWindow) {
             window.beforeAttached()
         }
-        view.apply { add(newView, lParams(matchParent, matchParent)) }
+        if (newView.parent == null) view.apply { add(newView, lParams(matchParent, matchParent)) }
+        newView.visibility = View.VISIBLE
         currentView = newView
         Timber.d("Attach $window")
         window.onAttached()

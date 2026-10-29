@@ -12,7 +12,6 @@ import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.cachedIn
 import com.c2cwl.chenime.R
 import com.osfans.trime.data.db.ClipboardHelper
 import com.osfans.trime.data.db.CollectionHelper
@@ -30,7 +29,9 @@ import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.ClipEditActivity
 import com.osfans.trime.util.AppUtils
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.instance
@@ -55,7 +56,6 @@ class ClipboardWindow(di: DI) :
 
     private lateinit var clipboardLayout: ClipboardLayout
     private lateinit var clipboardPagesAdapter: ClipboardPagesAdapter
-    private var wasAttached = false
 
     private val prefs = AppPrefs.defaultInstance().clipboard
     private val clipboardReturnAfterPaste by prefs.clipboardReturnAfterPaste
@@ -66,12 +66,8 @@ class ClipboardWindow(di: DI) :
     private val collectionBeansPager by lazy {
         Pager(PagingConfig(pageSize = 16)) { CollectionHelper.allBeans() }
     }
-    private val pagingScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
-    private val clipboardFlow by lazy { clipboardBeansPager.flow.cachedIn(pagingScope) }
-    private val collectionFlow by lazy { collectionBeansPager.flow.cachedIn(pagingScope) }
     override fun onDestroyed() {
         onDetached()
-        pagingScope.coroutineContext[Job]?.cancel()
     }
 
     private var clipboardBeansSubmitJob: Job? = null
@@ -194,9 +190,14 @@ class ClipboardWindow(di: DI) :
                 else -> collectionPage
             }
         }
+        // Construct both page roots during warmup, rather than on the first tab switch.
+        clipboardPage
+        collectionPage
         viewPager.apply {
+            offscreenPageLimit = 1
             adapter = clipboardPagesAdapter
         }
+        startData(warmup = true)
         titleUi.apply {
             tabLayout.onConfigureTab(viewPager) { tabUi, position ->
                 configureTab(tabUi, position)
@@ -258,17 +259,34 @@ class ClipboardWindow(di: DI) :
     }
 
     override fun onAttached() {
-        wasAttached = true
         clipboardLayout.viewPager.setCurrentItem(selectedTab, false)
         refreshColors()
+        startData(warmup = false)
+    }
+
+    private fun startData(warmup: Boolean) {
+        clipboardBeansSubmitJob?.cancel()
+        collectionBeansSubmitJob?.cancel()
         clipboardBeansSubmitJob = service.lifecycleScope.launch {
-            clipboardFlow.collectLatest {
-                clipboardBeansAdapter.submitData(it)
+            coroutineScope {
+                val submit = launch {
+                    clipboardBeansPager.flow.collectLatest { clipboardBeansAdapter.submitData(it) }
+                }
+                if (warmup) {
+                    clipboardBeansAdapter.onPagesUpdatedFlow.first()
+                    submit.cancel()
+                }
             }
         }
         collectionBeansSubmitJob = service.lifecycleScope.launch {
-            collectionFlow.collectLatest {
-                collectionBeansAdapter.submitData(it)
+            coroutineScope {
+                val submit = launch {
+                    collectionBeansPager.flow.collectLatest { collectionBeansAdapter.submitData(it) }
+                }
+                if (warmup) {
+                    collectionBeansAdapter.onPagesUpdatedFlow.first()
+                    submit.cancel()
+                }
             }
         }
     }
@@ -283,7 +301,7 @@ class ClipboardWindow(di: DI) :
     private var colorRevision = -1L
 
     override fun refreshColors() {
-        if (!wasAttached || colorRevision == scope.colorRevision) return
+        if (!::clipboardLayout.isInitialized || colorRevision == scope.colorRevision) return
         colorRevision = scope.colorRevision
         clipboardLayout.titleUi.deleteAllButton.refreshColors()
         clipboardLayout.titleUi.tabLayout.reconfigureTabs { tabUi, position ->

@@ -239,12 +239,19 @@ class InputView(
         updateWindowViewHeightJob =
             service.lifecycleScope.launch {
                 keyboardWindow.currentKeyboardHeight.collect {
-                    windowManager.view.updateLayoutParams {
-                        height = it
+                    if (windowManager.view.layoutParams.height != it) {
+                        windowManager.view.updateLayoutParams { height = it }
                     }
                 }
             }
 
+        // Queue warmup after the first traversal so keyboard presentation wins.
+        keyboardView.postOnAnimation {
+            keyboardView.post {
+                windowManager.precreatePanels()
+                keyboardWindow.precreatePanels()
+            }
+        }
         updateKeyboardSize()
 
         add(

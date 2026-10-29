@@ -179,8 +179,8 @@ class SwitchOptionWindow(di: DI) :
         }
     }
 
-    private fun updateSchemaOptionEntries() {
-        if (!attached) return
+    private fun updateSchemaOptionEntries(warmup: Boolean = false) {
+        if (!attached && !warmup) return
         // Cancel obsolete snapshots when several option messages arrive together.
         entriesJob?.cancel()
         val static = staticEntries.toList()
@@ -204,6 +204,8 @@ class SwitchOptionWindow(di: DI) :
 
     override fun onCreateView(): View {
         viewCreated = true
+        adapter.submitList(staticEntries.toList())
+        updateSchemaOptionEntries(warmup = true)
         return view
     }
 
@@ -240,6 +242,10 @@ class SwitchOptionWindow(di: DI) :
         attached = true
         refreshColors()
         updateSchemaOptionEntries()
+    }
+
+    override fun onDestroyed() {
+        onDetached()
     }
 
     override fun onDetached() {

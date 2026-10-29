@@ -6,10 +6,14 @@
 package com.osfans.trime.ime.bar.ui
 
 import android.content.Context
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ViewAnimator
 import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
+import androidx.core.view.doOnLayout
 import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
@@ -26,6 +30,7 @@ import splitties.views.dsl.core.Ui
 import splitties.views.dsl.core.add
 import splitties.views.dsl.core.lParams
 import splitties.views.dsl.core.matchParent
+import splitties.views.dsl.core.wrapContent
 import timber.log.Timber
 
 class AlwaysUi(
@@ -84,7 +89,18 @@ class AlwaysUi(
 
     private val animator =
         ViewAnimator(ctx).apply {
-            add(buttonsUi.root, lParams(matchParent, matchParent))
+            add(
+                HorizontalScrollView(ctx).apply {
+                    isHorizontalScrollBarEnabled = false
+                    addView(
+                        buttonsUi.root,
+                        FrameLayout.LayoutParams(wrapContent, matchParent),
+                    )
+                    // Start at the right: voice is adjacent to the pinned hide button.
+                    doOnLayout { fullScroll(View.FOCUS_RIGHT) }
+                },
+                lParams(matchParent, matchParent),
+            )
             add(clipboardUi.root, lParams(matchParent, matchParent))
             add(inlineSuggestionsUi.root, lParams(matchParent, matchParent))
         }
@@ -112,7 +128,6 @@ class AlwaysUi(
             lParams(matchConstraints, matchParent) {
                 after(leftMostButton)
                 before(rightMostButton)
-                endOfParent()
                 centerVertically()
             },
         )

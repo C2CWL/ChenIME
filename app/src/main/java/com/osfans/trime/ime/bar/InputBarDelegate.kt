@@ -40,6 +40,7 @@ import com.osfans.trime.ime.keyboard.KeyBehavior
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
+import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.ClipEditActivity
 import com.osfans.trime.util.AppUtils
 import kotlinx.coroutines.Job
@@ -288,10 +289,16 @@ class InputBarDelegate(override val di: DI) :
         evalAlwaysUiState()
     }
 
+    fun precreateWindowBar(window: BoardWindow) {
+        if (window is BoardWindow.BarBoardWindow) {
+            window.onCreateBarView()?.let { tabUi.prepareExternal(it, window.showTitle) }
+        }
+    }
+
     override fun onWindowAttached(window: BoardWindow) {
         if (window is BoardWindow.BarBoardWindow) {
             tabUi.setTitle(window.title)
-            window.onCreateBarView()?.let { tabUi.addExternal(it, window.showTitle) }
+            window.onCreateBarView()?.let { tabUi.addExternal(it, window.showTitle, retain = window is ResidentWindow) }
             tabUi.setBackButtonOnClickListener {
                 windowManager.attachWindow(KeyboardWindow)
             }

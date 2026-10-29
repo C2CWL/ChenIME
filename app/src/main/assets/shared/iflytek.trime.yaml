@@ -364,7 +364,7 @@ preset_keyboards:
     - click: m
       label_symbol: "、'"
       long_click: Ifly_symbol_m
-      popup: [Letter_commit_M, Letter_commit_m, Ifly_symbol_m, Ifly_symbol_apostrophe]
+      popup: [Ifly_symbol_m, Ifly_symbol_apostrophe, Letter_commit_M, Letter_commit_m]
     - click: BackSpace
       swipe_up: Ifly_clear_all
       swipe_down: restore_cleared

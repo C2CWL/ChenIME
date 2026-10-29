@@ -83,8 +83,9 @@ class BuiltinThemeTest :
                     letters.size shouldBe 26
                     letters.forEach { key ->
                         val letter = (key.click as KeyActionToken.Plain).token
+                        key.popup.first() shouldBe (key.longClick as KeyActionToken.Plain).token
                         key.popup shouldBe if (id == "iflytek.trime" && letter == "m") {
-                            listOf("Letter_commit_M", "Letter_commit_m", "Ifly_symbol_m", "Ifly_symbol_apostrophe")
+                            listOf("Ifly_symbol_m", "Ifly_symbol_apostrophe", "Letter_commit_M", "Letter_commit_m")
                         } else {
                             listOf(
                                 (key.longClick as KeyActionToken.Plain).token,
@@ -159,7 +160,8 @@ class BuiltinThemeTest :
                     m.composing shouldBe null
                     m.labelSymbol shouldBe "、'"
                     m.longClick shouldBe KeyActionToken.Plain("Ifly_symbol_m")
-                    m.popup shouldBe listOf("Letter_commit_M", "Letter_commit_m", "Ifly_symbol_m", "Ifly_symbol_apostrophe")
+                    m.popup.first() shouldBe "Ifly_symbol_m"
+                    m.popup shouldBe listOf("Ifly_symbol_m", "Ifly_symbol_apostrophe", "Letter_commit_M", "Letter_commit_m")
                     theme.presetKeys.getValue("Ifly_symbol_m").commit shouldBe "、"
                     theme.presetKeys.getValue("Ifly_symbol_m").command shouldBe ""
                     theme.presetKeys.getValue("Ifly_symbol_apostrophe").commit shouldBe "'"

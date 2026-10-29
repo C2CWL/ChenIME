@@ -10,6 +10,7 @@ import com.osfans.trime.ime.keyboard.KeyboardAsciiState
 import com.osfans.trime.ime.keyboard.inputStartKeyboard
 import com.osfans.trime.ime.keyboard.retainedKeyboard
 import com.osfans.trime.util.get
+import com.osfans.trime.util.sequence
 import com.osfans.trime.util.string
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -324,9 +325,23 @@ class BuiltinThemeTest :
         "only Frost and its dependency schemas are bundled" {
             root.listFiles()!!.filter { it.name.endsWith(".schema.yaml") }
                 .map { it.name.removeSuffix(".schema.yaml") }.toSet() shouldBe
-                setOf("rime_frost", "melt_eng", "radical_pinyin", "rime_frost_aux")
-            root.resolve("default.yaml").readLines().filter { it.trimStart().startsWith("- schema:") }
-                .map { it.trim() } shouldBe listOf("- schema: rime_frost")
+                setOf("rime_frost", "melt_eng", "radical_pinyin", "rime_frost_aux", "chen_eng")
+        }
+
+        "chen_eng shares the English dictionary with its own prism and user dictionary" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("chen_eng.schema.yaml").readText())
+            val translator = schema["translator"]
+            translator?.get("dictionary")?.string shouldBe "melt_eng"
+            translator?.get("prism")?.string shouldBe "chen_eng"
+            translator?.get("user_dict")?.string shouldBe "chen_eng"
+            translator?.get("enable_completion")?.string shouldBe "true"
+        }
+
+        "chen_eng is excluded from the default schema list" {
+            val defaults = ThemeYaml.parser.parseToYamlNode(root.resolve("default.yaml").readText())
+            val schemas = defaults["schema_list"]!!.sequence!!.items.map { it["schema"]?.string }
+            schemas shouldBe listOf("rime_frost")
+            schemas.contains("chen_eng") shouldBe false
         }
 
         "the old include id prevents both loading and picker metadata expansion" {

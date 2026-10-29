@@ -1070,7 +1070,7 @@ tool_bar:
   ascii_mode_button: &ascii_mode_button
     size: [40, 40]
     foreground:
-      option_styles: ["中", "En"] # 样式也可以为表，将根据 action 的 toggle 决定
+      option_styles: ["中", "英"] # 样式也可以为表，将根据 action 的 toggle 决定
       font_size: 18  # 按钮字体大小
       padding: 10
     action: Mode_switch
@@ -4133,7 +4133,7 @@ preset_keys:
   menu_keyboard: { label: 菜单, send: FUNCTION, command: menu_keyboard }
   clipboard_window: { label: "剪贴", send: FUNCTION, command: "clipboard_window", option: '0' } #0剪贴板，1收藏夹
   # rime状态
-  Mode_switch: {toggle: ascii_mode, functional: false, send: SWITCH_CHARSET, states: [ 中文, 西文 ]}
+  Mode_switch: {toggle: ascii_mode, functional: false, send: SWITCH_CHARSET, states: [ 中文, 英文 ]}
   Zenkaku_Hankaku: {toggle: full_shape, send: SWITCH_CHARSET, states: [ 半角, 全角 ]}
   Henkan: {toggle: simplification, send: SWITCH_CHARSET, states: [ 漢字, 汉字 ]}
   Charset_switch: {toggle: extended_charset, send: SWITCH_CHARSET, states: [ 常用, 增广 ]}

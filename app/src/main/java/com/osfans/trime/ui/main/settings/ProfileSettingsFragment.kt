@@ -247,6 +247,40 @@ class ProfileSettingsFragment : PaddingPreferenceFragment() {
     ) {
         val ctx = requireContext()
         preferenceScreen = preferenceManager.createPreferenceScreen(ctx).apply {
+            addPreference(
+                SwitchPreferenceCompat(ctx).apply {
+                    key = AppPrefs.Profile.PINYIN_CORRECTION
+                    isIconSpaceReserved = false
+                    setTitle(R.string.pinyin_correction)
+                    setSummary(R.string.pinyin_correction_summary)
+                    setDefaultValue(false)
+                    setOnPreferenceChangeListener { _, value ->
+                        val oldValue = prefs.pinyinCorrection.getValue()
+                        isEnabled = false
+                        lifecycleScope.launch {
+                            try {
+                                withLoadingDialog(ctx) {
+                                    prefs.pinyinCorrection.setValue(value as Boolean)
+                                    viewModel.rime.runOnReady { deploy() }
+                                }
+                                isChecked = value as Boolean
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (_: Exception) {
+                                prefs.pinyinCorrection.setValue(oldValue)
+                                isChecked = oldValue
+                                ctx.toast(R.string.pinyin_correction_failed)
+                            } finally {
+                                isEnabled = true
+                            }
+                        }
+                        false
+                    }
+                },
+            )
+            addPreference(R.string.custom_phrases) {
+                com.osfans.trime.data.phrase.CustomPhraseDialogs.list(ctx, lifecycleScope, viewModel.rime)
+            }
             addCategory(R.string.storage) {
                 isIconSpaceReserved = false
                 val storageModes = DataStorageMode.entries

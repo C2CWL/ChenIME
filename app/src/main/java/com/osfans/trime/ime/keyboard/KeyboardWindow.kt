@@ -82,7 +82,7 @@ class KeyboardWindow(di: DI) :
     private var currentKeyboardId = ""
     private var lastKeyboardId = ""
     private var lastLockKeyboardId = ""
-    private var tempAsciiMode: Boolean? = null
+    private val keyboardAsciiState = KeyboardAsciiState()
     private val cachedKeyboards = mutableMapOf<String, Pair<Keyboard, KeyboardView>>()
     private val activeKeyboard: Keyboard? get() = cachedKeyboards[currentKeyboardId]?.first
     private val currentKeyboardView: KeyboardView? get() = cachedKeyboards[currentKeyboardId]?.second
@@ -180,13 +180,15 @@ class KeyboardWindow(di: DI) :
             if (it.isLock) lastLockKeyboardId = target
             dispatchCapsState(it::setShifted)
 
-            val currentMode = rime.run { statusCached }.isAsciiMode
-            val targetMode = if (it.resetAsciiMode) it.asciiMode else it.lastAsciiMode
-
-            if (currentMode != targetMode) {
-                service.postRimeJob {
+            // Number/editor panels temporarily force ASCII, preserving the letter mode
+            // across panel-to-panel switches. Read mode inside the serialized Rime job.
+            val temporary = target == "number" || target == "editor" || it.asciiMode
+            service.postRimeJob {
+                val currentMode = statusCached.isAsciiMode
+                val targetMode = keyboardAsciiState.select(temporary, currentMode)
+                if (currentMode != targetMode) {
                     commitComposition()
-                    setRuntimeOption("ascii_mode", targetMode)
+                    setKeyboardAsciiMode(targetMode)
                 }
             }
 
@@ -238,19 +240,16 @@ class KeyboardWindow(di: DI) :
 
                 ".last_lock" -> lastLockKeyboardId
 
-                ".ascii" -> {
-                    var ascii = activeKeyboard?.asciiKeyboard
-                    if (ascii.isNullOrEmpty()) {
-                        ascii = lastLockKeyboardId
-                    }
-                    if (presetKeyboardIds.contains(ascii)) ascii else currentKeyboardId
-                }
+                ".ascii", "" -> retainedKeyboard(
+                    id,
+                    currentKeyboardId,
+                    activeKeyboard?.isLock == true,
+                    lastLockKeyboardId,
+                    activeKeyboard?.asciiKeyboard.orEmpty(),
+                    presetKeyboardIds,
+                )
 
-                else -> {
-                    id.ifEmpty {
-                        if (activeKeyboard?.isLock == true) currentKeyboardId else lastLockKeyboardId
-                    }
-                }
+                else -> id
             }
         var final = dot.ifEmpty { smartMatchKeyboard() }
 
@@ -295,59 +294,14 @@ class KeyboardWindow(di: DI) :
         cachedKeyboards.values.forEach { (_, view) -> view.invalidateAllKeys() }
     }
 
-    override fun onStartInput(info: EditorInfo) {
-        val targetKeyboard =
-            when (info.imeOptions and EditorInfo.IME_FLAG_FORCE_ASCII) {
-                EditorInfo.IME_FLAG_FORCE_ASCII -> ".ascii"
-
-                else -> {
-                    when (info.inputType and InputType.TYPE_MASK_CLASS) {
-                        InputType.TYPE_CLASS_NUMBER,
-                        InputType.TYPE_CLASS_PHONE,
-                        InputType.TYPE_CLASS_DATETIME,
-                        -> "number"
-
-                        InputType.TYPE_CLASS_TEXT -> {
-                            when (info.inputType and InputType.TYPE_MASK_VARIATION) {
-                                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
-                                InputType.TYPE_TEXT_VARIATION_PASSWORD,
-                                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
-                                InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS,
-                                InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
-                                -> ".ascii"
-
-                                else -> ""
-                            }
-                        }
-
-                        else -> ""
-                    }
-                }
-            }
-        switchKeyboard(targetKeyboard)
-        val isAsciiMode = rime.run { statusCached }.isAsciiMode
-        if (targetKeyboard == ".ascii" || targetKeyboard == "number") {
-            if (tempAsciiMode == null) {
-                tempAsciiMode = isAsciiMode
-            }
-            if (!isAsciiMode) {
-                service.postRimeJob { setRuntimeOption("ascii_mode", true) }
-            }
-        } else {
-            tempAsciiMode?.let { saved ->
-                if (isAsciiMode != saved) {
-                    service.postRimeJob { setRuntimeOption("ascii_mode", saved) }
-                }
-                tempAsciiMode = null
-            } ?: activeKeyboard?.let {
-                if (theme.style.resetAsciiModeOnFocusChange) {
-                    val targetMode = if (it.resetAsciiMode) it.asciiMode else it.lastAsciiMode
-                    if (isAsciiMode != targetMode) {
-                        service.postRimeJob { setRuntimeOption("ascii_mode", targetMode) }
-                    }
-                }
-            }
-        }
+    override fun onStartInput(info: EditorInfo, restarting: Boolean) {
+        // Apps may restart the same editor after Send, backspace, select-all/delete,
+        // or clear_all, with a different inputType or the same EditorInfo instance.
+        // Neither its pad nor its language mode belongs to that restart.
+        val target = inputStartKeyboard(info.inputType, restarting, currentKeyboardId)
+        if (restarting) return
+        lastLockKeyboardId = evalKeyboard("default")
+        switchKeyboard(target)
     }
 
     private fun dispatchCapsState(setShift: (Boolean, Boolean) -> Unit) {

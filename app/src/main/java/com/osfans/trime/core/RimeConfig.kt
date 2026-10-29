@@ -36,6 +36,9 @@ class RimeConfig private constructor(
     }
 
     companion object {
+        @JvmStatic
+        external fun patchPinyinCorrection(path: String, enabled: Boolean): Boolean
+
         fun openConfig(configId: String): RimeConfig = RimeConfig(openRimeConfig(configId))
 
         fun openUserConfig(configId: String): RimeConfig = RimeConfig(openRimeUserConfig(configId))

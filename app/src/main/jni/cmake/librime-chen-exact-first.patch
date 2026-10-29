@@ -1,0 +1,106 @@
+diff --git a/src/rime/algo/syllabifier.cc b/src/rime/algo/syllabifier.cc
+index a133f7c1..49ddcc6b 100644
+--- a/src/rime/algo/syllabifier.cc
++++ b/src/rime/algo/syllabifier.cc
+@@ -34,6 +34,18 @@ int Syllabifier::BuildSyllableGraph(const string& input,
+   if (input.empty())
+     return 0;
+ 
++  if (corrector_) {
++    Syllabifier exact(*this);
++    exact.corrector_ = nullptr;
++    exact.enable_completion_ = false;
++    SyllableGraph exact_graph;
++    const auto consumed = exact.BuildSyllableGraph(input, prism, &exact_graph);
++    if (consumed == input.size()) {
++      *graph = std::move(exact_graph);
++      return consumed;
++    }
++  }
++
+   size_t farthest = 0;
+   VertexQueue queue;
+   queue.push(Vertex{0, kNormalSpelling});  // start
+@@ -86,10 +98,11 @@ int Syllabifier::BuildSyllableGraph(const string& input,
+     } else {
+       prism.CommonPrefixSearch(current_input, &matches);
+     }
+-    if (corrector_) {
+-      for (auto& m : matches) {
+-        exact_match_syllables.insert(m.value);
+-      }
++    for (const auto& match : matches)
++      exact_match_syllables.insert(match.value);
++    // Valid syllables are never replaced by keyboard-neighbour corrections.
++    // This also keeps every fully exact path free from correction candidates.
++    if (corrector_ && matches.empty()) {
+       Corrections corrections;
+       corrector_->ToleranceSearch(prism, string{current_input}, &corrections,
+                                   5);
+diff --git a/test/config_test.cc b/test/config_test.cc
+index cae2a9fb..2ef0f15b 100644
+--- a/test/config_test.cc
++++ b/test/config_test.cc
+@@ -293,3 +293,23 @@ TEST(RimeConfigListKeyPathTest, Greetings) {
+   EXPECT_TRUE(config->GetInt("list/@last/id", &id));
+   EXPECT_EQ(6, id);
+ }
++
++#include "../../librime_jni/pinyin-correction.h"
++
++TEST(RimePinyinCorrectionMigrationTest, MigratesAndPreservesUserPatches) {
++  Config config;
++  config.SetBool("patch/translator/enable_correction", true);
++  config.SetString("patch/unrelated", "keep me");
++  auto patch = config.GetMap("patch");
++  patch->Set("translator/enable_correction", New<ConfigValue>(true));
++  EXPECT_TRUE(chen::PatchPinyinCorrection(config, false));
++  bool enabled = true;
++  EXPECT_TRUE(patch->GetValue("translator/enable_correction")->GetBool(&enabled));
++  EXPECT_FALSE(enabled);
++  string unrelated;
++  EXPECT_TRUE(config.GetString("patch/unrelated", &unrelated));
++  EXPECT_EQ("keep me", unrelated);
++  EXPECT_FALSE(chen::PatchPinyinCorrection(config, false));
++  EXPECT_TRUE(chen::PatchPinyinCorrection(config, true));
++  EXPECT_FALSE(chen::PatchPinyinCorrection(config, true));
++}
+diff --git a/test/syllabifier_test.cc b/test/syllabifier_test.cc
+index b4740d4e..7bcbe002 100644
+--- a/test/syllabifier_test.cc
++++ b/test/syllabifier_test.cc
+@@ -8,6 +8,7 @@
+ #include <filesystem>
+ #include <gtest/gtest.h>
+ #include <rime/dict/prism.h>
++#include <rime/dict/corrector.h>
+ #include <rime/algo/algebra.h>
+ #include <rime/algo/syllabifier.h>
+ 
+@@ -358,3 +359,26 @@ TEST_F(CanonicalizeSyllabifierTest, NullCanonicalizerFallback) {
+       "FZURO", *loaded_prism_, &graph_disordered);
+   EXPECT_NE(5, farthest_disordered);
+ }
++
++TEST_F(RimeSyllabifierTest, CorrectionNeverReplacesValidSyllables) {
++  rime::NearSearchCorrector corrector;
++  Syllabifier s;
++  s.EnableCorrection(&corrector);
++  for (const auto& input : {"gan", "changan", "tu"}) {
++    SyllableGraph g;
++    EXPECT_EQ(std::string(input).size(), s.BuildSyllableGraph(input, *prism_, &g));
++    for (const auto& start : g.edges)
++      for (const auto& end : start.second)
++        for (const auto& syllable : end.second)
++          EXPECT_FALSE(syllable.second.is_correction);
++  }
++}
++
++TEST_F(RimeSyllabifierTest, CorrectionStillHandlesInvalidSyllable) {
++  rime::NearSearchCorrector corrector;
++  Syllabifier s;
++  s.EnableCorrection(&corrector);
++  SyllableGraph g;
++  EXPECT_EQ(3, s.BuildSyllableGraph("gab", *prism_, &g));
++  EXPECT_TRUE(g.edges[0][3][syllable_id_["gan"]].is_correction);
++}

@@ -32,18 +32,29 @@ import splitties.views.gravityCenter
 class PopupEntryUi(
     override val ctx: Context,
     private val scope: ThemeScope,
-    keyHeight: Int,
+    private val keyHeight: Int,
     radius: Float,
 ) : Ui {
     private val theme: Theme get() = scope.theme
 
+    private val previewBackColor get() = runCatching { scope.color("preview_back_color") }.getOrDefault(scope.colors.popupBackColor)
+    private val previewTextColor get() = runCatching { scope.color("preview_text_color") }.getOrDefault(scope.colors.popupTextColor)
+
+    var capsule = false
+        set(value) {
+            field = value
+            textView.layoutParams = textView.layoutParams.apply { height = if (value) ctx.dp(36) else keyHeight }
+            textView.textSize = if (value) 16f else theme.style.popupTextSize
+        }
+
     var lastShowTime = -1L
 
     val textView = view(::AutoScaleTextView) {
+        distinctLetterLabels = true
         scaleMode = AutoScaleTextView.Mode.Proportional
         textSize = theme.style.popupTextSize
         gravity = gravityCenter
-        setTextColor(scope.colors.popupTextColor)
+        setTextColor(previewTextColor)
         typeface = theme.fonts.popup
     }
 
@@ -53,7 +64,7 @@ class PopupEntryUi(
 
     private val popupBackground = GradientDrawable().apply {
         cornerRadius = radius
-        setColor(scope.colors.popupBackColor)
+        setColor(previewBackColor)
     }
 
     override val root = constraintLayout {
@@ -78,10 +89,10 @@ class PopupEntryUi(
 
     /** Re-applies the scheme colors, as pooled popups outlive scheme switches. */
     fun refreshColors() {
-        popupBackground.setColor(scope.colors.popupBackColor)
-        textView.setTextColor(scope.colors.popupTextColor)
+        popupBackground.setColor(previewBackColor)
+        textView.setTextColor(previewTextColor)
         imageView.drawable?.colorFilter =
-            PorterDuffColorFilter(scope.colors.popupTextColor, PorterDuff.Mode.SRC_IN)
+            PorterDuffColorFilter(previewTextColor, PorterDuff.Mode.SRC_IN)
     }
 
     fun setText(text: String) {
@@ -89,7 +100,7 @@ class PopupEntryUi(
             imageView.setImageDrawable(
                 IconicsDrawable(ctx, text.toIconName()).apply {
                     sizeDp = theme.style.popupTextSize.toInt()
-                    colorFilter = PorterDuffColorFilter(scope.colors.popupTextColor, PorterDuff.Mode.SRC_IN)
+                    colorFilter = PorterDuffColorFilter(previewTextColor, PorterDuff.Mode.SRC_IN)
                 },
             )
             imageView.isVisible = true

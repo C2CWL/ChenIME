@@ -5,31 +5,49 @@
 
 package com.osfans.trime.ime.switches
 
-import android.content.Context
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.chad.library.adapter4.BaseQuickAdapter
 import com.osfans.trime.data.theme.ThemeScope
 
-abstract class SwitchOptionAdapter : BaseQuickAdapter<SwitchOptionEntry, SwitchOptionAdapter.ViewHolder>() {
+abstract class SwitchOptionAdapter :
+    ListAdapter<SwitchOptionEntry, SwitchOptionAdapter.ViewHolder>(
+        object : DiffUtil.ItemCallback<SwitchOptionEntry>() {
+            override fun areItemsTheSame(oldItem: SwitchOptionEntry, newItem: SwitchOptionEntry): Boolean = when {
+                oldItem is SwitchOptionEntry.Static && newItem is SwitchOptionEntry.Static -> oldItem.type == newItem.type
+
+                oldItem is SwitchOptionEntry.Custom && newItem is SwitchOptionEntry.Custom ->
+                    oldItem.switch.name == newItem.switch.name && oldItem.switch.options == newItem.switch.options
+
+                else -> false
+            }
+
+            override fun areContentsTheSame(oldItem: SwitchOptionEntry, newItem: SwitchOptionEntry) = oldItem.label == newItem.label && oldItem.icon == newItem.icon &&
+                (oldItem !is SwitchOptionEntry.Custom || newItem !is SwitchOptionEntry.Custom || oldItem.switch == newItem.switch)
+        },
+    ) {
     inner class ViewHolder(
         val ui: SwitchOptionEntryUi,
-    ) : RecyclerView.ViewHolder(ui.root)
+    ) : RecyclerView.ViewHolder(ui.root) {
+        var colorRevision = -1L
+    }
 
     override fun onCreateViewHolder(
-        context: Context,
         parent: ViewGroup,
         viewType: Int,
-    ): ViewHolder = ViewHolder(SwitchOptionEntryUi(context, scope))
+    ): ViewHolder = ViewHolder(SwitchOptionEntryUi(parent.context, scope)).apply { colorRevision = scope.colorRevision }
 
     override fun onBindViewHolder(
         holder: ViewHolder,
         position: Int,
-        item: SwitchOptionEntry?,
     ) {
-        item ?: return
-        holder.ui.refreshColors()
+        val item = getItem(position)
+        if (holder.colorRevision != scope.colorRevision) {
+            holder.ui.refreshColors()
+            holder.colorRevision = scope.colorRevision
+        }
         holder.ui.setEntry(item)
         holder.ui.root.setOnClickListener {
             onItemClick(it, item)

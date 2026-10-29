@@ -43,6 +43,10 @@ class AppPrefs(
         registerProvider { this }
     }
 
+    val customFont = object : PreferenceDelegateOwner(shared) {
+        val fileName = string("chen_custom_font", "")
+    }.fileName
+
     val internal = Internal(shared)
     val general = General(shared).register()
     val profile = Profile(shared).register()
@@ -64,6 +68,7 @@ class AppPrefs(
         private var defaultInstance: AppPrefs? = null
 
         fun initDefault(sharedPreferences: SharedPreferences): AppPrefs {
+            migrateKeyboardAppearance(sharedPreferences)
             val instance = AppPrefs(sharedPreferences)
             defaultInstance = instance
             sharedPreferences.registerOnSharedPreferenceChangeListener(
@@ -124,6 +129,7 @@ class AppPrefs(
     ) : PreferenceDelegateOwner(shared, R.string.virtual_keyboard) {
         companion object {
             const val LANDSCAPE_MODE = "keyboard_landscape_mode"
+            const val HEIGHT_PERCENT = "keyboard_height_percent"
             const val SPLIT_SPACE_PERCENT = "keyboard_split_space"
 
             const val USE_SOFT_CURSOR = "use_soft_cursor"
@@ -173,6 +179,8 @@ class AppPrefs(
             ALWAYS(R.string.always),
         }
 
+        val heightPercent = int(R.string.keyboard_height, HEIGHT_PERCENT, 100, 70, 150, "%")
+
         val landscapeMode = enum(R.string.enable_landscape_mode, LANDSCAPE_MODE, LandscapeMode.NEVER)
         val splitSpacePercent = int(
             R.string.split_space_percent,
@@ -191,7 +199,7 @@ class AppPrefs(
         val uppercaseKeyLabels = switch(
             R.string.uppercase_key_labels,
             UPPERCASE_KEY_LABELS,
-            true,
+            false,
             R.string.uppercase_key_labels_summary,
         )
 
@@ -251,7 +259,7 @@ class AppPrefs(
 
         val speakOnKeyPress = switch(R.string.speak_on_keypress, SPEAK_ON_KEYPRESS, false)
         val speakOnCommit = switch(R.string.speak_on_commit, SPEAK_ON_COMMIT, false)
-        val popupOnKeyPress = switch(R.string.popup_on_key_press, POPUP_ON_KEY_PRESS, false)
+        val popupOnKeyPress = switch(R.string.popup_on_key_press, POPUP_ON_KEY_PRESS, true)
         val expandKeypressArea = switch(R.string.expand_keypress_area_to_edge, EXPAND_KEYPRESS_AREA, false)
         val swipeTravel = int(
             R.string.key_swipe_travel,
@@ -376,6 +384,7 @@ class AppPrefs(
             const val EXTERNAL_RIME_TREE_URI = "profile_external_rime_tree_uri"
             const val EXTERNAL_RIME_DISPLAY_NAME = "profile_external_rime_display_name"
             const val DATA_STORAGE_MODE = "profile_data_storage_mode"
+            const val PINYIN_CORRECTION = "pinyin_correction"
             const val PERIODIC_BACKGROUND_SYNC = "periodic_background_sync"
             const val PERIODIC_BACKGROUND_SYNC_INTERVAL = "periodic_background_sync_interval"
             const val LAST_BACKGROUND_SYNC_STATUS = "last_background_sync_status"
@@ -384,6 +393,7 @@ class AppPrefs(
 
         val dataStorageMode = enum(R.string.data_storage_mode, DATA_STORAGE_MODE, DataStorageMode.EXTERNAL_SYNC)
         val externalRimeTreeUri = string(EXTERNAL_RIME_TREE_URI, "")
+        val pinyinCorrection = bool(PINYIN_CORRECTION, false)
         val periodicBackgroundSync = bool(PERIODIC_BACKGROUND_SYNC, false)
         val periodicBackgroundSyncInterval = int(PERIODIC_BACKGROUND_SYNC_INTERVAL, 30)
         val lastBackgroundSyncStatus = bool(LAST_BACKGROUND_SYNC_STATUS, false)

@@ -58,7 +58,7 @@ data class TextKeyboard(
         val keyTextSize: Float = 0f,
         val symbolTextSize: Float = 0f,
         val keyTextOffsetX: Float = 0f,
-        val keyTextOffsetY: Float = 0f,
+        val keyTextOffsetY: Float? = null,
         val keySymbolOffsetX: Float = 0f,
         val keySymbolOffsetY: Float = 0f,
         val keyHintOffsetX: Float = 0f,

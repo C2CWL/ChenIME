@@ -14,7 +14,7 @@ import com.osfans.trime.core.StatusProto
 import com.osfans.trime.ime.window.BoardWindow
 
 interface InputBroadcastReceiver {
-    fun onStartInput(info: EditorInfo) {}
+    fun onStartInput(info: EditorInfo, restarting: Boolean) {}
 
     fun onSelectionUpdate(start: Int, end: Int) {}
 

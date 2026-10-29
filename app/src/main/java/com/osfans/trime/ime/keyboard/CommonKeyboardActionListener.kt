@@ -9,6 +9,7 @@ import android.app.Dialog
 import android.content.Intent
 import android.view.ContextThemeWrapper
 import android.view.KeyEvent
+import android.view.inputmethod.ExtractedTextRequest
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
@@ -22,12 +23,11 @@ import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.data.theme.model.LiquidKeyboard
-import com.osfans.trime.ime.clipboard.ClipboardWindow
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.dialog.EnabledSchemaPickerDialog
-import com.osfans.trime.ime.switches.SwitchOptionWindow
 import com.osfans.trime.ime.symbol.LiquidWindow
 import com.osfans.trime.ime.window.BoardWindowManager
+import com.osfans.trime.ui.main.VoiceInputActivity
 import com.osfans.trime.ui.main.settings.ColorPickerDialog
 import com.osfans.trime.ui.main.settings.SoundEffectPickerDialog
 import com.osfans.trime.ui.main.settings.ThemePickerDialog
@@ -55,6 +55,8 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
     private val windowManager: BoardWindowManager by instance()
     private val keyboardWindow: KeyboardWindow by instance()
     private val liquidWindow: LiquidWindow by instance()
+
+    private val clearedText = ClearedTextSlot()
 
     private val prefs = AppPrefs.defaultInstance()
 
@@ -115,6 +117,27 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
                 InputFeedbackManager.run {
                     keyPressSound(keyEventCode)
                     keyPressSpeak(keyEventCode)
+                }
+            }
+
+            override fun onPopupAction(action: KeyAction) {
+                if (popupLetterKeycode(action.commit, isComposing = true) == null) {
+                    onAction(action)
+                    return
+                }
+                service.postRimeJob {
+                    // Check composition in the same queued job as the key input.
+                    val keycode = popupLetterKeycode(action.commit, statusCached.isComposing)
+                    if (keycode != null) {
+                        val modifiers = if (action.commit[0] in 'A'..'Z') {
+                            KeyModifiers.fromMetaState(KeyEvent.META_SHIFT_ON).modifiers
+                        } else {
+                            0u
+                        }
+                        processKey(keycode, modifiers)
+                    } else {
+                        service.commitText(action.commit)
+                    }
                 }
             }
 
@@ -180,13 +203,16 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
 
                 when (action.command) {
                     "liquid_keyboard" -> handleLiquidKeyboard(arg)
-                    "menu_keyboard" -> windowManager.attachWindow(SwitchOptionWindow(di))
+                    "menu_keyboard" -> windowManager.showMore()
                     "clipboard_window" -> handleClipboardWindow(arg)
                     "set_color_scheme" -> handleColorScheme(arg)
                     "set_theme" -> handleTheme(arg)
                     "broadcast" -> service.sendBroadcast(Intent(arg))
                     "clipboard" -> handleClipboard()
+                    "noop" -> Unit
                     "clear_all" -> handleClearAll()
+                    "restore_cleared" -> handleRestoreCleared()
+                    "liquid_keyboard_lock" -> liquidWindow.toggleLock()
                     "commit" -> service.commitText(arg)
                     "date" -> service.commitText(customFormatDateTime(arg))
                     "run" -> handleRunCommand(arg)
@@ -202,10 +228,38 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
             private fun handleClearAll() {
                 service.postRimeJob {
                     if (statusCached.isComposing) {
+                        clearedText.save(getRawInput(), true)
                         clearComposition()
                     } else {
-                        service.sendDownUpKeyEvent(KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON)
-                        service.sendDownUpKeyEvent(KeyEvent.KEYCODE_DEL, 0)
+                        val connection = service.currentInputConnection ?: return@postRimeJob
+                        val deleted = ClearTextStrategy.clear(object : ClearTextStrategy.Editor {
+                            override fun snapshot(): ClearTextStrategy.Snapshot? {
+                                val value = connection.getExtractedText(ExtractedTextRequest(), 0) ?: return null
+                                return value.text?.let {
+                                    ClearTextStrategy.Snapshot(it.toString(), value.startOffset, value.partialStartOffset >= 0)
+                                }
+                            }
+                            override fun select(start: Int, end: Int) = connection.setSelection(start, end)
+                            override fun selectAll() = connection.performContextMenuAction(android.R.id.selectAll)
+                            override fun selected() = connection.getSelectedText(0)?.toString()
+                            override fun replace() = connection.commitText("", 1)
+                            override fun before() = connection.getTextBeforeCursor(4096, 0)?.toString()
+                            override fun after() = connection.getTextAfterCursor(4096, 0)?.toString()
+                            override fun delete(before: Int, after: Int) = connection.deleteSurroundingText(before, after)
+                        })
+                        clearedText.save(deleted, false)
+                    }
+                }
+            }
+
+            private fun handleRestoreCleared() {
+                service.postRimeJob {
+                    val entry = clearedText.take() ?: return@postRimeJob
+                    if (entry.composing) {
+                        clearComposition()
+                        simulateKeySequence(entry.text)
+                    } else {
+                        service.commitText(entry.text)
                     }
                 }
             }
@@ -213,14 +267,13 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
             private fun handleLiquidKeyboard(arg: String) {
                 // for compatibility
                 if (arg == "剪贴" || arg == "clipboard") {
-                    windowManager.attachWindow(ClipboardWindow(di))
+                    windowManager.showClipboard()
                     return
                 }
-                val liquidTagList = theme.liquidKeyboard.getTagList()
-                val index = liquidTagList.indexOfFirst { tag ->
-                    tag.label == arg || runCatching {
+                val index = theme.liquidKeyboard.keyboards.indexOfFirst { tab ->
+                    tab.id == arg || tab.name == arg || runCatching {
                         LiquidKeyboard.DataType.valueOf(arg.uppercase())
-                    }.getOrNull() == tag.type
+                    }.getOrNull() == tab.type
                 }
 
                 if (index >= 0) {
@@ -233,7 +286,7 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
 
             private fun handleClipboardWindow(arg: String) {
                 val tabIndex = arg.toIntOrNull()?.coerceIn(0, 1) ?: 0
-                windowManager.attachWindow(ClipboardWindow(di, tabIndex))
+                windowManager.showClipboard(tabIndex)
             }
 
             private fun handleColorScheme(arg: String) {
@@ -333,22 +386,18 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
             }
 
             private fun switchToVoiceInputMethod() {
-                val pkgName = prefs.general.preferredVoiceInput.getValue()
-                val voiceInputSubType = if (pkgName.isNotEmpty()) {
-                    InputMethodUtils.voiceInputMethods().find {
-                        it.first.packageName == pkgName
-                    }?.let {
-                        it.first.id to it.second
-                    } ?: InputMethodUtils.firstVoiceInput()
-                } else {
-                    InputMethodUtils.firstVoiceInput()
-                }
-                if (voiceInputSubType != null) {
-                    val (id, subType) = voiceInputSubType
-                    InputMethodUtils.switchInputMethod(service, id, subType)
-                } else {
-                    service.toast(R.string.no_voice_input_installed)
-                }
+                val switched = runCatching {
+                    val pkgName = prefs.general.preferredVoiceInput.getValue()
+                    val methods = InputMethodUtils.voiceInputMethods()
+                    val voice = methods.find { it.first.packageName == pkgName } ?: methods.firstOrNull()
+                    if (voice == null) {
+                        false
+                    } else {
+                        InputMethodUtils.switchInputMethod(service, voice.first.id, voice.second)
+                        true
+                    }
+                }.getOrDefault(false)
+                if (!switched) VoiceInputActivity.launch(service)
             }
 
             private fun handleDefaultKeyAction(action: KeyAction) {

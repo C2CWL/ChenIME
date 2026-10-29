@@ -30,6 +30,7 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
     private var isLongPressed = false
     private var slideActivated = false
     private var swipeTriggered = false
+    private var swipeWasActive = false
 
     private var longPressJob: Job? = null
     private var repeatJob: Job? = null
@@ -63,6 +64,9 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
     var isRepeatable = false
     var isSlideCursor = false
     var isSlideDelete = false
+    var hasClearSwipe = false
+
+    private val clearSwipeThreshold get() = minOf(24f, if (swipeTravel > 0) swipeTravel.toFloat() else 24f)
 
     var hasLongPress = false
     var hasDouble = false
@@ -95,11 +99,13 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                 isLongPressed = false
                 slideActivated = false
                 swipeTriggered = false
+                swipeWasActive = false
                 lastSwipeBehavior = KeyBehavior.CLICK
 
                 drawableHotspotChanged(x, y)
                 isPressed = true
                 if (vibrateOnKeyPress) InputFeedbackManager.keyPressVibrate(this)
+                if (hasClearSwipe) parent?.requestDisallowInterceptTouchEvent(true)
                 onPress?.invoke()
 
                 if (hasLongPress || isRepeatable || hasPopup) {
@@ -116,11 +122,25 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                 val dx = x - startX
                 val dy = y - startY
 
+                if (hasClearSwipe && DeleteSwipeDecision.vertical(dx, dy, clearSwipeThreshold)) {
+                    cancelJobs()
+                    isLongPressed = false
+                    slideActivated = false
+                    swipeTriggered = true
+                    swipeWasActive = true
+                    val behavior = if (dy < 0) KeyBehavior.SWIPE_UP else KeyBehavior.SWIPE_DOWN
+                    if (lastSwipeBehavior != behavior) {
+                        lastSwipeBehavior = behavior
+                        onSwipe?.invoke(behavior)
+                    }
+                    return true
+                }
+                if (hasClearSwipe && (abs(dx) > 8f || abs(dy) > 8f)) longPressJob?.cancel()
                 onMove?.invoke(x, y, isLongPressed)
 
                 if ((isSlideCursor || isSlideDelete) && onSlide != null && !isLongPressed && swipeTravel > 0) {
                     if (!slideActivated) {
-                        if (abs(dx) >= swipeTravel) {
+                        if (abs(dx) >= swipeTravel && (!isSlideDelete || DeleteSwipeDecision.horizontal(dx, dy, swipeTravel.toFloat()))) {
                             slideActivated = true
                             lastX = startX
                         }
@@ -139,9 +159,7 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                     val behavior = detectSwipe(dx, dy)
                     if (behavior != lastSwipeBehavior) {
                         lastSwipeBehavior = behavior
-                        if (behavior != KeyBehavior.CLICK) {
-                            onSwipe?.invoke(behavior)
-                        }
+                        onSwipe?.invoke(behavior)
                     }
                 }
 
@@ -156,6 +174,11 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                 if (vibrateOnKeyRelease) InputFeedbackManager.keyPressVibrate(this)
                 cancelJobs()
 
+                if (hasClearSwipe && DeleteSwipeDecision.vertical(dx, dy, clearSwipeThreshold)) {
+                    dispatchBehavior(if (dy < 0) KeyBehavior.SWIPE_UP else KeyBehavior.SWIPE_DOWN, false)
+                    return true
+                }
+
                 if (slideActivated) {
                     onSlide?.invoke(0, x, y)
                     onCancel?.invoke()
@@ -167,6 +190,11 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                     return true
                 }
 
+                lastSwipeBehavior = detectSwipe(dx, dy)
+                if (lastSwipeBehavior == KeyBehavior.CLICK && swipeWasActive) {
+                    onCancel?.invoke()
+                    return true
+                }
                 if (swipeTriggered) {
                     dispatchBehavior(lastSwipeBehavior, false)
                     return true
@@ -246,12 +274,18 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                     delay(repeatInterval.toLong())
                 }
             } finally {
-                onCancel?.invoke()
+                // Clear-swipe transitions must not asynchronously dismiss the new capsule.
+                if (!hasClearSwipe) onCancel?.invoke()
             }
         }
     }
 
     private fun detectSwipe(dx: Float, dy: Float): KeyBehavior {
+        if (hasClearSwipe && DeleteSwipeDecision.vertical(dx, dy, clearSwipeThreshold)) {
+            swipeTriggered = true
+            swipeWasActive = true
+            return if (dy < 0) KeyBehavior.SWIPE_UP else KeyBehavior.SWIPE_DOWN
+        }
         val absDx = abs(dx)
         val absDy = abs(dy)
 
@@ -268,6 +302,7 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
             (swipeTravel > 0 && distance >= swipeTravel) ||
                 (swipeVelocity > 0 && velocity >= swipeVelocity)
         swipeTriggered = isSwipe
+        if (isSwipe) swipeWasActive = true
 
         if (!isSwipe) return KeyBehavior.CLICK
         return if (absDx > absDy) {

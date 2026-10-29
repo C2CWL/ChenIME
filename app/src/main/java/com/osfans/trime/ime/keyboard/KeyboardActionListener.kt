@@ -17,6 +17,8 @@ interface KeyboardActionListener {
 
     fun onAction(action: KeyAction)
 
+    fun onPopupAction(action: KeyAction) = onAction(action)
+
     /**
      * Send a key press to the listener.
      *

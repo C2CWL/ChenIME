@@ -35,8 +35,8 @@ class InputBroadcaster : InputBroadcastReceiver {
         receivers.clear()
     }
 
-    override fun onStartInput(info: EditorInfo) {
-        receivers.forEach { it.onStartInput(info) }
+    override fun onStartInput(info: EditorInfo, restarting: Boolean) {
+        receivers.forEach { it.onStartInput(info, restarting) }
     }
 
     override fun onSelectionUpdate(

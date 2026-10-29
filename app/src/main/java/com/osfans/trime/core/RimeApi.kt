@@ -82,6 +82,9 @@ interface RimeApi {
         value: Boolean,
     )
 
+    /** Temporary keyboard mode changes do not announce a language switch. */
+    suspend fun setKeyboardAsciiMode(value: Boolean)
+
     suspend fun getRuntimeOption(option: String): Boolean
 
     suspend fun setNullInputType(value: Boolean)

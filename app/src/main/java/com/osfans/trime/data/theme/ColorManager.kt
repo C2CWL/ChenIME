@@ -6,7 +6,6 @@ package com.osfans.trime.data.theme
 
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.NinePatch
@@ -18,11 +17,16 @@ import androidx.annotation.ColorInt
 import androidx.collection.LruCache
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.math.MathUtils
+import com.osfans.trime.TrimeApplication
 import com.osfans.trime.core.data.DataManager
 import com.osfans.trime.util.ColorUtils
 import com.osfans.trime.util.NinePatchBitmapFactory
 import com.osfans.trime.util.WeakHashSet
 import com.osfans.trime.util.isNightMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 /**
  * Global entry point for the colors and drawables of the active theme.
@@ -43,7 +47,13 @@ object ColorManager {
     val activeColorScheme: ColorScheme
         get() = requireNotNull(requireScope().activeColorScheme) { "ColorManager is not initialized" }
 
-    private var bitmapCache: LruCache<String, Bitmap>? = null
+    private data class CachedImage(val state: Drawable.ConstantState, val sizeKb: Int)
+
+    private val imageStates = object : LruCache<String, CachedImage>((Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()) {
+        override fun sizeOf(key: String, value: CachedImage) = value.sizeKb
+    }
+    private val loadingImages = mutableSetOf<String>()
+    private val missingImages = mutableSetOf<String>()
 
     private var generation = 0L
 
@@ -75,16 +85,6 @@ object ColorManager {
     fun init(configuration: Configuration) {
         isNightMode = configuration.isNightMode()
         activateScheme(notify = false)
-
-        val maxMemory = Runtime.getRuntime().maxMemory() / 1024
-        val cacheSize = maxMemory / 8
-        bitmapCache =
-            object : LruCache<String, Bitmap>(cacheSize.toInt()) {
-                override fun sizeOf(
-                    key: String,
-                    value: Bitmap,
-                ): Int = value.byteCount / 1024
-            }
     }
 
     fun onSystemNightModeChange(isNight: Boolean) {
@@ -100,7 +100,9 @@ object ColorManager {
      * through ThemeManager, so no color listener fires here.
      */
     fun attachTheme(theme: Theme) {
-        bitmapCache?.evictAll()
+        imageStates.evictAll()
+        loadingImages.clear()
+        missingImages.clear()
         scope = ThemeScope(theme)
         activateScheme(notify = false)
     }
@@ -138,6 +140,8 @@ object ColorManager {
         if (activeScope.activeColorScheme == target) return
         activeScope.updateScheme(target)
         generation++
+        // Warm image assets without file checks, decoding or nine-patch processing on Main.
+        target.values.filter(ColorTable::isImageValue).distinct().forEach { imageDrawable(activeScope, it) }
         if (notify) fireChange()
     }
 
@@ -198,23 +202,45 @@ object ColorManager {
         scope: ThemeScope,
         value: String,
     ): Drawable? {
+        val key = "${backgroundFolder(scope)}/$value"
+        imageStates.get(key)?.let { return it.state.newDrawable(Resources.getSystem()).mutate() }
+        if (key in missingImages || !loadingImages.add(key)) return null
+        TrimeApplication.getInstance().coroutineScope.launch {
+            val state = withContext(Dispatchers.IO) {
+                runCatching { decodeImage(scope, value) }
+                    .onFailure { Timber.w(it, "Cannot decode theme image") }.getOrNull()
+            }
+            // Ignore results from a theme that was replaced during decoding.
+            if (this@ColorManager.scope !== scope) return@launch
+            loadingImages.remove(key)
+            if (state == null) {
+                missingImages.add(key)
+            } else {
+                imageStates.put(key, state)
+                scope.invalidateDrawables()
+                generation++
+                fireChange()
+            }
+        }
+        return null
+    }
+
+    private fun decodeImage(scope: ThemeScope, value: String): CachedImage? {
         val path = resolveImageFilePath(scope, value)
-        val bitmap =
-            bitmapCache?.get(path)
-                ?: BitmapFactory.decodeFile(path)?.also {
-                    bitmapCache?.put(path, it)
-                } ?: return null
-        if (path.endsWith(".9.png")) {
+        val bitmap = BitmapFactory.decodeFile(path) ?: return null
+        val drawable = if (path.endsWith(".9.png")) {
             val chunk = bitmap.ninePatchChunk
-            return if (NinePatch.isNinePatchChunk(chunk)) {
+            if (NinePatch.isNinePatchChunk(chunk)) {
                 // for compiled nine patch image
                 NinePatchDrawable(Resources.getSystem(), bitmap, chunk, Rect(), null)
             } else {
                 // for source nine patch image
                 NinePatchBitmapFactory.createNinePatchDrawable(Resources.getSystem(), bitmap)
             }
+        } else {
+            bitmap.toDrawable(Resources.getSystem())
         }
-        return bitmap.toDrawable(Resources.getSystem())
+        return drawable.constantState?.let { CachedImage(it, bitmap.byteCount / 1024 + 1) }
     }
 
     private fun resolveImageFilePath(

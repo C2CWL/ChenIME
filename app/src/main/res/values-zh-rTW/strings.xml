@@ -20,7 +20,7 @@
     <string name="privacy_policy">隱私權政策</string>
     <string name="build_info_format">建構者：%1$s\n建構 Git 雜湊值：%2$s\n建構時間：%3$s</string>
     <string name="selected_theme">主題</string>
-    <string name="selected_theme_summary">選取想要的主題</string>
+    <string name="selected_theme_summary">選擇 New布局 或 标准</string>
     <string name="normal_mode_color">配色</string>
     <string name="normal_mode_color_summary">選取想要的配色</string>
     <string name="reset">回廠</string>
@@ -245,7 +245,7 @@
     <string name="wide_or_landscape">寬屏或橫屏</string>
     <string name="always">始終</string>
     <string name="preferred_voice_input">首選語音輸入</string>
-    <string name="no_voice_input_installed">尚未安裝語音輸入</string>
+    <string name="no_voice_input_installed">未找到可用的語音輸入</string>
     <string name="inline_suggestions">顯示內嵌自動填充建議</string>
     <string name="update_config">更新配置</string>
     <string name="share">分享</string>
@@ -262,4 +262,24 @@
     <string name="import_user_data_failure">匯入或部署失敗，請確認這是有效的塵輸入法備份</string>
     <string name="uppercase_key_labels">鍵面字母大寫顯示</string>
     <string name="uppercase_key_labels_summary">開啟顯示大寫字母，關閉顯示小寫字母，不影響輸入內容。</string>
+    <string name="keyboard_height">鍵盤高度</string>
+    <string name="choose_font">選擇字型</string>
+    <string name="restore_default_font">恢復預設字型</string>
+    <string name="default_font">主題預設字型</string>
+    <string name="custom_font_invalid">字型無效或檔案超過 50 MiB</string>
+    <string name="custom_phrases">自訂詞組</string>
+    <string name="add_as_custom_phrase">新增為自訂詞組</string>
+    <string name="custom_phrase_text">詞組內容</string>
+    <string name="custom_phrase_code">編碼（例如 nh）</string>
+    <string name="custom_phrase_weight">權重 / 位置（選填，預設 1）</string>
+    <string name="custom_phrase_format">僅支援單行：librime 不解析換行跳脫。不允許定位字元、換行；權重須為非負整數。</string>
+    <string name="custom_phrase_search">搜尋編碼或詞組</string>
+    <string name="custom_phrase_add">新增</string>
+    <string name="custom_phrase_delete">刪除</string>
+    <string name="custom_phrase_save_failed">詞組儲存或部署失敗，請重新開啟編輯器後重試。</string>
+    <string name="swipe_clear">清空</string>
+    <string name="swipe_restore_clear">復原清空</string>
+    <string name="pinyin_correction">拼音纠错</string>
+    <string name="pinyin_correction_summary">仅在原拼写无法完整解析时尝试邻键纠错（雾凇拼音）</string>
+    <string name="pinyin_correction_failed">拼音纠错设置部署失败，请重试</string>
 </resources>

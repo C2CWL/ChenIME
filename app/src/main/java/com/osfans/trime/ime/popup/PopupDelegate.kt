@@ -72,20 +72,23 @@ class PopupDelegate(override val di: DI) : DIAware {
         }
     }
 
-    private fun showPopup(viewId: Int, content: String, bounds: Rect) {
+    private fun showPopup(viewId: Int, content: String, bounds: Rect, capsule: Boolean = false) {
         showingEntryUi[viewId]?.apply {
             dismissJobs[viewId]?.also {
                 dismissJobs.remove(viewId)?.cancel()
             }
             lastShowTime = System.currentTimeMillis()
+            this.capsule = capsule
             setText(content)
+            placePopup(this, bounds)
             return
         }
         val popup = (
             freeEntryUi.poll()
-                ?: PopupEntryUi(context, scope, popupKeyHeight, popupRadius)
+                ?: PopupEntryUi(context, scope, popupKeyHeight, maxOf(popupRadius, context.dp(24f)))
             ).apply {
             lastShowTime = System.currentTimeMillis()
+            this.capsule = capsule
             setText(content)
         }
         placePopup(popup, bounds)
@@ -94,15 +97,16 @@ class PopupDelegate(override val di: DI) : DIAware {
 
     private fun placePopup(ui: PopupEntryUi, bounds: Rect) {
         val v = ui.root
-        if (v.parent == root) return
+        val entryWidth = if (ui.capsule) context.dp(112) else popupWidth
+        val entryHeight = if (ui.capsule) context.dp(36) else popupHeight
         (v.parent as? ViewGroup)?.removeView(v)
         root.apply {
             add(
                 v,
-                lParams(popupWidth, popupHeight) {
+                lParams(entryWidth, entryHeight) {
                     // align popup bottom with key border bottom
-                    topMargin = bounds.bottom - popupHeight - popupBottomMargin
-                    leftMargin = (bounds.left + bounds.right - popupWidth) / 2
+                    topMargin = if (ui.capsule) bounds.top - entryHeight - context.dp(8) - rootBounds.top else bounds.bottom - popupHeight - popupBottomMargin - rootBounds.top
+                    leftMargin = ((bounds.left + bounds.right - entryWidth) / 2 - rootBounds.left).coerceIn(0, (rootBounds.width() - entryWidth).coerceAtLeast(0))
                 },
             )
         }
@@ -157,7 +161,7 @@ class PopupDelegate(override val di: DI) : DIAware {
     private fun dismissPopup(viewId: Int) {
         dismissPopupContainer(viewId)
         showingEntryUi[viewId]?.also {
-            val timeLeft = it.lastShowTime + hideThreshold - System.currentTimeMillis()
+            val timeLeft = if (it.capsule) 0L else it.lastShowTime + hideThreshold - System.currentTimeMillis()
             if (timeLeft <= 0L) {
                 dismissPopupEntry(viewId, it)
             } else {
@@ -214,7 +218,7 @@ class PopupDelegate(override val di: DI) : DIAware {
             when (this) {
                 is PopupAction.ChangeFocusAction -> outResult = changeFocus(viewId, x, y)
                 is PopupAction.DismissAction -> dismissPopup(viewId)
-                is PopupAction.PreviewAction -> showPopup(viewId, content, bounds)
+                is PopupAction.PreviewAction -> showPopup(viewId, content, bounds, capsule)
                 is PopupAction.PreviewUpdateAction -> updatePopup(viewId, content)
                 is PopupAction.ShowKeyboardAction -> showKeyboard(viewId, keys, bounds)
                 is PopupAction.TriggerAction -> outAction = triggerFocused(viewId)

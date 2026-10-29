@@ -11,6 +11,7 @@ import android.graphics.fonts.FontFamily
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.osfans.trime.core.data.DataManager
+import com.osfans.trime.data.prefs.AppPrefs
 import timber.log.Timber
 import java.io.File
 
@@ -36,6 +37,11 @@ class ThemeFonts(private val theme: Theme) {
                 (it.size / 1024).toInt().coerceAtLeast(1)
             }
         }
+
+    fun clearCache() {
+        typefaceCache.evictAll()
+        fontFamilyCache.evictAll()
+    }
 
     val hanb: Typeface
         get() = getTypeface(style.hanbFont.toList())
@@ -83,14 +89,16 @@ class ThemeFonts(private val theme: Theme) {
     }
 
     private fun getTypeface(fonts: List<String>): Typeface {
-        val key = resolveKey(fonts)
+        val custom = AppPrefs.defaultInstance().customFont.getValue()
+        val override = makeFileStateList(listOf(custom)).takeIf { custom.isNotEmpty() }.orEmpty()
+        val key = if (override.isNotEmpty()) TypefaceKey(override) else resolveKey(fonts)
         val typeface = typefaceCache[key]
         return if (typeface == null) {
             Timber.d("getTypeface: key=$key")
             val newTypeface = if (key.files.isEmpty()) {
                 Typeface.DEFAULT
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val bulk = makeFileStateList(style.latinFont.toList() + fonts + style.hanbFont.toList())
+                val bulk = if (override.isNotEmpty()) override else makeFileStateList(style.latinFont.toList() + fonts + style.hanbFont.toList())
                 val fontFamilies = bulk.map { getFontFamily(it) }
                 Typeface.CustomFallbackBuilder(fontFamilies.first())
                     .apply {

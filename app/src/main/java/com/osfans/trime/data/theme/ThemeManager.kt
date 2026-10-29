@@ -132,6 +132,12 @@ object ThemeManager {
         activeTheme = theme
     }
 
+    fun refreshFonts() {
+        ensureActiveTheme()
+        _activeTheme.fonts.clearCache()
+        fireChange()
+    }
+
     fun init(configuration: Configuration) {
         ensureActiveTheme()
         ColorManager.init(configuration)

@@ -59,3 +59,6 @@ internal fun pickLandscape(
     landscapeValue: Int,
     landscape: Boolean,
 ): Int = if (landscape && landscapeValue > 0) landscapeValue else value
+
+/** Scale the resolved pixel height equally in either orientation; clamp restored preferences. */
+internal fun scaleKeyboardHeight(height: Int, percent: Int): Int = (height * (percent.coerceIn(70, 150) / 100f)).toInt()

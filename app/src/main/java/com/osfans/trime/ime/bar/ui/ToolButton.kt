@@ -15,7 +15,9 @@ import android.graphics.drawable.StateListDrawable
 import android.graphics.drawable.shapes.OvalShape
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import com.c2cwl.chenime.R
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.utils.sizeDp
 import com.osfans.trime.data.theme.ThemeScope
@@ -210,7 +212,9 @@ class ToolButton(context: Context, private val scope: ThemeScope) : GestureFrame
 
         // drawable: local image or iconics
         var useLocalImage = false
-        val drawable = if (IMAGE_PATTERN.matches(style)) {
+        val drawable = if (style.isEmpty() && config?.action == "Hide") {
+            ContextCompat.getDrawable(context, R.drawable.ic_baseline_arrow_drop_down_24)
+        } else if (IMAGE_PATTERN.matches(style)) {
             useLocalImage = true
             scope.drawable(style)
         } else if (style.startsWith("ic@")) {

@@ -64,12 +64,14 @@ abstract class ClipboardAdapter(
 
     class ViewHolder(
         val ui: ClipboardBeanUi,
-    ) : RecyclerView.ViewHolder(ui.root)
+    ) : RecyclerView.ViewHolder(ui.root) {
+        var colorRevision = -1L
+    }
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int,
-    ): ViewHolder = ViewHolder(ClipboardBeanUi(parent.context, scope))
+    ): ViewHolder = ViewHolder(ClipboardBeanUi(parent.context, scope)).apply { colorRevision = scope.colorRevision }
 
     override fun onBindViewHolder(
         holder: ViewHolder,
@@ -77,7 +79,10 @@ abstract class ClipboardAdapter(
     ) {
         val bean = getItem(position) ?: return
         with(holder.ui) {
-            refreshColors()
+            if (holder.colorRevision != scope.colorRevision) {
+                refreshColors()
+                holder.colorRevision = scope.colorRevision
+            }
             setBean(excerptText(bean.text ?: ""), bean.pinned)
             root.setOnClickListener {
                 onPaste(bean)

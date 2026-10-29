@@ -11,6 +11,8 @@ add_link_options("LINKER:--hash-style=both,--build-id=none")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
+include(ApplyLibrimeChenPatch)
+
 # general options
 option(BUILD_SHARED_LIBS "" OFF)
 option(BUILD_TESTING "" OFF)

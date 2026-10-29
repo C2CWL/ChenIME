@@ -8,6 +8,19 @@ import io.kotest.matchers.shouldBe
 
 class KeyLabelCaseTest :
     StringSpec({
+        "lowercase default still displays shifted uppercase" {
+            keyLabelForDisplay("q", uppercase = false, shifted = false) shouldBe "q"
+            keyLabelForDisplay("Q", uppercase = false, shifted = true) shouldBe "Q"
+        }
+        "height percentage applies to portrait and landscape and clamps restored values" {
+            for (height in listOf(280, 200)) {
+                scaleKeyboardHeight(height, 100) shouldBe height
+                scaleKeyboardHeight(height, 70) shouldBe (height * 0.7f).toInt()
+                scaleKeyboardHeight(height, 150) shouldBe (height * 1.5f).toInt()
+                scaleKeyboardHeight(height, 0) shouldBe scaleKeyboardHeight(height, 70)
+                scaleKeyboardHeight(height, 999) shouldBe scaleKeyboardHeight(height, 150)
+            }
+        }
         "overrides derived and explicit theme letter labels in either direction" {
             for (letter in 'a'..'z') {
                 for (label in listOf(letter.toString(), letter.uppercase())) {

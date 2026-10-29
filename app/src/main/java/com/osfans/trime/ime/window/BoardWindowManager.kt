@@ -13,6 +13,9 @@ import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import com.c2cwl.chenime.R
 import com.osfans.trime.ime.broadcast.InputBroadcaster
+import com.osfans.trime.ime.clipboard.ClipboardWindow
+import com.osfans.trime.ime.core.TrimeInputMethodService
+import com.osfans.trime.ime.switches.SwitchOptionWindow
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
@@ -28,6 +31,31 @@ class BoardWindowManager(override val di: DI) : DIAware {
 
     private val cachedResidentWindows = mutableMapOf<ResidentWindow.Key, Pair<BoardWindow, View?>>()
 
+    private val service: TrimeInputMethodService by instance()
+
+    private val switchOptionWindow by lazy { SwitchOptionWindow(di).also { cacheResidentWindow(it) } }
+    private val clipboardWindow by lazy { ClipboardWindow(di).also { cacheResidentWindow(it) } }
+
+    fun showMore() = attachWindow(switchOptionWindow)
+
+    fun showClipboard(tab: Int = 0) {
+        clipboardWindow.selectTab(tab)
+        attachWindow(clipboardWindow)
+    }
+
+    fun destroy() {
+        TransitionManager.endTransitions(view)
+        currentWindow?.onDetached()
+        cachedResidentWindows.values.forEach { (window, _) ->
+            window.onDestroyed()
+            broadcaster.removeReceiver(window)
+        }
+        cachedResidentWindows.clear()
+        view.removeAllViews()
+        currentWindow = null
+        currentView = null
+    }
+
     private var currentWindow: BoardWindow? = null
     private var currentView: View? = null
 
@@ -42,9 +70,12 @@ class BoardWindowManager(override val di: DI) : DIAware {
         TransitionManager.beginDelayedTransition(
             view,
             TransitionSet().apply {
+                // Capture only the two window roots, not every key and menu row.
+                addTarget(add)
+                addTarget(remove)
                 enterAnimation?.let { addTransition(it) }
                 exitAnimation?.let { addTransition(it) }
-                duration = 100
+                duration = 180
             },
         )
     }
@@ -56,6 +87,7 @@ class BoardWindowManager(override val di: DI) : DIAware {
         if (window.key in cachedResidentWindows) {
             if (cachedResidentWindows[window.key]!!.first === window) {
                 Timber.d("Skip adding resident window $window")
+                return
             } else {
                 throw IllegalStateException("${window.key} is already occupied")
             }
@@ -72,8 +104,10 @@ class BoardWindowManager(override val di: DI) : DIAware {
     }
 
     fun attachWindow(window: BoardWindow) {
+        if (service.isInputViewShown) service.updatePreferredRefreshRate(true)
         if (window === currentWindow) {
             Timber.d("Skip attaching $window")
+            return
         }
         val newView =
             if (window is ResidentWindow) {
@@ -114,7 +148,8 @@ class BoardWindowManager(override val di: DI) : DIAware {
 
     /** Restyles the window currently on screen after a scheme switch. */
     fun refreshColors() {
-        currentWindow?.refreshColors()
+        cachedResidentWindows.values.forEach { (window, _) -> window.refreshColors() }
+        if (currentWindow !is ResidentWindow) currentWindow?.refreshColors()
     }
 
     val view: FrameLayout by lazy { context.frameLayout(R.id.input_window) }

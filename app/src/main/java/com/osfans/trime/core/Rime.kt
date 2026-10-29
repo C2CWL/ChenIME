@@ -253,6 +253,9 @@ class Rime :
     override suspend fun commitComposition(): Boolean = withRimeContext { commitRimeComposition().also { if (it) emitResponse() } }
 
     override suspend fun clearComposition() = withRimeContext {
+        // Clearing/restarting is not a language toggle. Compare the response to
+        // the actual mode before clearing, not a tip cached by an earlier key.
+        lastAsciiTipsText = asciiTipsText(getRimeStatus())
         clearRimeComposition()
         emitResponse()
     }
@@ -266,6 +269,18 @@ class Rime :
         value: Boolean,
     ): Unit = withRimeContext {
         setRimeOption(option, value)
+    }
+
+    private var quietAsciiSwitch = false
+
+    override suspend fun setKeyboardAsciiMode(value: Boolean): Unit = withRimeContext {
+        quietAsciiSwitch = true
+        try {
+            setRimeOption("ascii_mode", value)
+            lastAsciiTipsText = asciiTipsText(getRimeStatus())
+        } finally {
+            quietAsciiSwitch = false
+        }
     }
 
     override suspend fun getRuntimeOption(option: String): Boolean = withRimeContext {
@@ -291,6 +306,11 @@ class Rime :
     private fun startRime(fullCheck: Boolean) {
         DataManager.sync()
         UserDataManager.ensureDefaultCustomConfig()
+        // Apply after asset/external sync and before startup, including upgrades with stale build output.
+        val correctionChanged = RimeConfig.patchPinyinCorrection(
+            UserDataManager.userDataDir.resolve("rime_frost.custom.yaml").absolutePath,
+            AppPrefs.defaultInstance().profile.pinyinCorrection.getValue(),
+        )
         val sharedDataDir = DataManager.sharedDataDir.absolutePath
         val userDataDir = UserDataManager.userDataDir.absolutePath
         Timber.d(
@@ -305,7 +325,7 @@ class Rime :
             sharedDataDir,
             userDataDir,
             BuildConfig.BUILD_VERSION_NAME,
-            fullCheck,
+            fullCheck || correctionChanged,
         )
     }
 
@@ -427,7 +447,7 @@ class Rime :
     }
 
     private fun showAsciiSwitchTips(status: StatusProto) {
-        if (!showAsciiSwitchTips) return
+        if (quietAsciiSwitch || !showAsciiSwitchTips) return
         val tipsText = asciiTipsText(status)
         if (tipsText.isEmpty()) return
 

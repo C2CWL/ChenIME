@@ -48,6 +48,7 @@ import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.composition.CandidatesView
+import com.osfans.trime.ime.keyboard.CommitHistory
 import com.osfans.trime.ime.keyboard.InputFeedbackManager
 import com.osfans.trime.receiver.RimeIntentReceiver
 import com.osfans.trime.util.any
@@ -97,6 +98,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     private var cursorUpdateIndex = 0
 
     private val recreateInputViewPrefs: Array<PreferenceDelegate<*>> = arrayOf(
+        prefs.keyboard.heightPercent,
         prefs.keyboard.expandKeypressArea,
         prefs.keyboard.hideKeySymbol,
         prefs.keyboard.hideKeyHint,
@@ -303,6 +305,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     }
 
     private fun replaceInputView(scope: ThemeScope): InputView {
+        inputView?.dispose()
         val newInputView = InputView(this, rime, scope)
         setInputView(newInputView)
         inputDeviceManager.setInputView(newInputView)
@@ -333,6 +336,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
 
     override fun onDestroy() {
         InputFeedbackManager.destroy()
+        inputView?.dispose()
         inputView = null
         recreateInputViewPrefs.forEach {
             it.unregisterOnChangeListener(recreateInputViewListener)
@@ -369,6 +373,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             super.onConfigurationChanged(newConfig)
         }
         lastKnownConfig.setTo(newConfig)
+        if (isInputViewShown) updatePreferredRefreshRate(true)
     }
 
     private val contentSize = floatArrayOf(0f, 0f)
@@ -531,6 +536,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         isCandidatesOnly: Boolean,
     ) {
         win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        updatePreferredRefreshRate(isInputViewShown, win)
     }
 
     override fun onStartInput(
@@ -538,6 +544,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         restarting: Boolean,
     ) {
         composingText = ""
+        commitHistory.clear()
         Timber.d("onStartInput: restarting=$restarting")
         val isNullType = attribute.inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_NULL
         postRimeJob {
@@ -562,6 +569,44 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     override fun onInlineSuggestionsResponse(response: InlineSuggestionsResponse): Boolean {
         if (!inputDeviceManager.useVirtualKeyboard) return false
         return inputView?.handleInlineSuggestions(response) == true
+    }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        updatePreferredRefreshRate(true)
+    }
+
+    override fun onWindowHidden() {
+        updatePreferredRefreshRate(false)
+        super.onWindowHidden()
+    }
+
+    fun updatePreferredRefreshRate(shown: Boolean, targetWindow: Window? = window.window) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val imeWindow = targetWindow ?: return
+        val mode = if (shown) {
+            val display = imeWindow.decorView.display ?: return
+            val currentMode = display.mode
+            // Keep the current resolution; only request a higher refresh rate.
+            display.supportedModes
+                .filter { it.physicalWidth == currentMode.physicalWidth && it.physicalHeight == currentMode.physicalHeight }
+                .maxByOrNull { it.refreshRate } ?: return
+        } else {
+            null // Release the request while hidden so the system can conserve power.
+        }
+        val rate = mode?.refreshRate ?: 0f
+        val modeId = mode?.modeId ?: 0
+        val attributes = imeWindow.attributes
+        if (attributes.preferredRefreshRate != rate || attributes.preferredDisplayModeId != modeId) {
+            attributes.preferredDisplayModeId = modeId
+            attributes.preferredRefreshRate = rate
+            imeWindow.attributes = attributes
+        }
+        // The IME uses an ordinary View hierarchy, not an owned SurfaceView.
+        // Surface frame-rate hints apply to surfaces we own; View hints are API 35+.
+        if (Build.VERSION.SDK_INT >= 35) {
+            imeWindow.decorView.setRequestedFrameRate(rate)
+        }
     }
 
     override fun onStartInputView(
@@ -607,14 +652,26 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         InputFeedbackManager.finishInput()
     }
 
+    private val commitHistory = CommitHistory()
+
     fun commitText(text: String) {
         val ic = currentInputConnection ?: return
 
         // when composing text equals commit content, finish composing text as-is
-        if (composingText.isNotEmpty() && composingText == text) {
+        val selected = !ic.getSelectedText(0).isNullOrEmpty()
+        val committed = if (composingText.isNotEmpty() && composingText == text) {
             ic.finishComposingText()
         } else {
             ic.commitText(text, 1)
+        }
+        if (committed && !selected) {
+            commitHistory.record(
+                text,
+                ic.getTextBeforeCursor(CommitHistory.MAX_TEXT + CommitHistory.CONTEXT, 0)?.toString(),
+                ic.getTextAfterCursor(CommitHistory.CONTEXT, 0)?.toString(),
+            )
+        } else {
+            commitHistory.clear()
         }
         lastCommittedText = text
         composingText = ""
@@ -827,19 +884,32 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         mask: Int,
     ): Boolean {
         val ic = currentInputConnection ?: return false
-        // 没按下 Ctrl 键
-        if (mask != KeyEvent.META_CTRL_ON) {
-            return false
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (prefs.keyboard.hookCtrlZY.getValue()) {
-                when (code) {
-                    KeyEvent.KEYCODE_Y -> return ic.performContextMenuAction(android.R.id.redo)
-                    KeyEvent.KEYCODE_Z -> return ic.performContextMenuAction(android.R.id.undo)
-                }
+        val ctrl = mask and KeyEvent.META_CTRL_ON != 0
+        val shift = mask and KeyEvent.META_SHIFT_ON != 0
+        val otherModifiers = mask and (KeyEvent.META_ALT_MASK or KeyEvent.META_META_MASK or KeyEvent.META_SYM_ON)
+        if (ctrl && otherModifiers == 0 && code in setOf(KeyEvent.KEYCODE_Z, KeyEvent.KEYCODE_Y)) {
+            val redo = code == KeyEvent.KEYCODE_Y || shift
+            // Prefer our guarded commit: key delivery cannot tell us whether the app changed text.
+            // Never send a shortcut as well as successfully applying our own edit.
+            ic.finishComposingText()
+            val handled = commitHistory.apply(
+                redo,
+                ic.getTextBeforeCursor(CommitHistory.MAX_TEXT + CommitHistory.CONTEXT, 0)?.toString(),
+                ic.getTextAfterCursor(CommitHistory.CONTEXT, 0)?.toString(),
+                !ic.getSelectedText(0).isNullOrEmpty(),
+            ) { text, delete ->
+                if (delete > 0) ic.deleteSurroundingText(delete, 0) else ic.commitText(text, 1)
             }
+            if (!handled) {
+                commitHistory.clear()
+                val nativeHandled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                    prefs.keyboard.hookCtrlZY.getValue() &&
+                    ic.performContextMenuAction(if (redo) android.R.id.redo else android.R.id.undo)
+                if (!nativeHandled) sendDownUpKeyEvent(KeyEvent.KEYCODE_Z, meta(ctrl = true, shift = redo))
+            }
+            return true
         }
+        if (!ctrl || shift || otherModifiers != 0) return false
 
         when (code) {
             KeyEvent.KEYCODE_A -> {

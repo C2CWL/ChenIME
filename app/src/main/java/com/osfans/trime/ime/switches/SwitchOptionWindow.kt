@@ -24,9 +24,13 @@ import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.dialog.EnabledSchemaPickerDialog
 import com.osfans.trime.ime.window.BoardWindow
+import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.settings.ThemePickerDialog
 import com.osfans.trime.util.AppUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.kodein.di.DI
 import org.kodein.di.instance
 import splitties.dimensions.dp
@@ -39,7 +43,12 @@ import splitties.views.recyclerview.gridLayoutManager
 
 class SwitchOptionWindow(di: DI) :
     BoardWindow.BarBoardWindow(di),
-    InputBroadcastReceiver {
+    InputBroadcastReceiver,
+    ResidentWindow {
+    companion object : ResidentWindow.Key
+    override val key: ResidentWindow.Key get() = SwitchOptionWindow
+    private var entriesJob: Job? = null
+    private var attached = false
     private val service: TrimeInputMethodService by instance()
     private val rime: RimeSession by instance()
     private val scope: ThemeScope by instance()
@@ -163,19 +172,24 @@ class SwitchOptionWindow(di: DI) :
 
     val view by lazy {
         context.recyclerView {
-            layoutManager = gridLayoutManager(4)
+            layoutManager = gridLayoutManager(4).apply { initialPrefetchItemCount = 8 }
             adapter = this@SwitchOptionWindow.adapter
+            itemAnimator = null
+            setHasFixedSize(true)
         }
     }
 
     private fun updateSchemaOptionEntries() {
-        val switches = rime.run { schemaCached }.switches
-        adapter.submitList(
-            listOf(
-                *staticEntries,
-                *switches.mapNotNull { SwitchOptionEntry.fromSwitch(rime, it) }.toTypedArray(),
-            ),
-        )
+        if (!attached) return
+        // Cancel obsolete snapshots when several option messages arrive together.
+        entriesJob?.cancel()
+        val static = staticEntries.toList()
+        entriesJob = service.lifecycleScope.launch(Dispatchers.Default) {
+            val entries = rime.runOnReady {
+                static + currentSchema().switches.mapNotNull { SwitchOptionEntry.fromSwitch(this, it) }
+            }
+            withContext(Dispatchers.Main) { adapter.submitList(entries) }
+        }
     }
 
     override fun onRimeSchemaUpdated(schema: SchemaItem) {
@@ -193,8 +207,11 @@ class SwitchOptionWindow(di: DI) :
         return view
     }
 
+    private var colorRevision = -1L
+
     override fun refreshColors() {
-        if (!viewCreated) return
+        if (!viewCreated || colorRevision == scope.colorRevision) return
+        colorRevision = scope.colorRevision
         (view.adapter as? SwitchOptionAdapter)?.refreshColors()
         settingsButton.refreshColors()
     }
@@ -220,20 +237,14 @@ class SwitchOptionWindow(di: DI) :
     override fun onCreateBarView() = barExternalView
 
     override fun onAttached() {
-        rime.launchOnReady { api ->
-            val data = api.currentSchema().switches
-            service.lifecycleScope.launch {
-                adapter.submitList(
-                    listOf(
-                        *staticEntries,
-                        *data.mapNotNull { SwitchOptionEntry.fromSwitch(rime, it) }.toTypedArray(),
-                    ),
-                )
-            }
-        }
+        attached = true
+        refreshColors()
+        updateSchemaOptionEntries()
     }
 
     override fun onDetached() {
+        attached = false
+        entriesJob?.cancel()
         popupMenu?.dismiss()
         popupMenu = null
     }

@@ -97,7 +97,7 @@ class KeyView(
                     val triggerAction = PopupAction.TriggerAction(id)
                     popup.listener.onPopupAction(triggerAction)
                     triggerAction.outAction?.let { action ->
-                        keyboardActionListener.onAction(theme.resolveAction(action))
+                        keyboardActionListener.onPopupAction(theme.resolveAction(action))
                         dismissPopupPreview()
                     }
                     setPressedState(false)
@@ -126,9 +126,11 @@ class KeyView(
             if (keyboard.firstPressedKeyIndex == id) keyboard.firstPressedKeyIndex = -1
         }
 
+        hasClearSwipe = key.getAction(KeyBehavior.SWIPE_UP)?.command == "clear_all"
+
         onSwipe = { direction ->
             setPressedState(true)
-            showPopupPreview(direction)
+            if (direction == KeyBehavior.CLICK) dismissPopupPreview() else showPopupPreview(direction)
         }
 
         onSlide = { delta, _, _ ->
@@ -246,15 +248,21 @@ class KeyView(
     }
 
     private fun showPopupPreview(behavior: KeyBehavior = KeyBehavior.CLICK) {
-        if (!keyboardView.popupOnKeyPress) return
-        key.getPreviewText(behavior).takeIf { it.isNotEmpty() }?.let { previewText ->
-            val context = if (previewText.isIconFont) {
-                previewText
-            } else {
-                String(Character.toChars(previewText.codePointAt(0)))
-            }
-            popup.listener.onPopupAction(PopupAction.PreviewAction(id, context, bounds))
+        val action = key.getAction(behavior)
+        val hint = when (action?.command) {
+            "clear_all" -> context.getString(com.c2cwl.chenime.R.string.swipe_clear)
+            "restore_cleared" -> context.getString(com.c2cwl.chenime.R.string.swipe_restore_clear)
+            else -> null
         }
+        if (!keyboardView.popupOnKeyPress && (behavior == KeyBehavior.CLICK || hint == null)) return
+        if (behavior != KeyBehavior.CLICK && action == null) {
+            dismissPopupPreview()
+            return
+        }
+        val text = hint ?: key.getPreviewText(behavior).let {
+            if (behavior == KeyBehavior.CLICK) keyLabelForDisplay(it, keyboardView.uppercaseKeyLabels, keyboard.isShifted) else it
+        }
+        if (text.isNotEmpty()) popup.listener.onPopupAction(PopupAction.PreviewAction(id, text, bounds, capsule = hint != null && behavior != KeyBehavior.CLICK))
     }
 
     private fun dismissPopupPreview() {
@@ -287,6 +295,8 @@ class KeyView(
         val label = key.getLabel().let {
             if (it == "enter_labels") {
                 keyboardView.labelEnter
+            } else if (it == "ic@apple_keyboard_shift" && keyboard.isShifted) {
+                if (key.isOn) "ic@apple_keyboard_caps" else "ic@arrow_up_bold"
             } else {
                 keyLabelForDisplay(it, keyboardView.uppercaseKeyLabels, keyboard.isShifted)
             }
@@ -324,12 +334,22 @@ class KeyView(
         bg.draw(canvas)
     }
 
+    private val labelOffsetY: Float
+        get() = if (key.hasExplicitTextOffsetY ||
+            (!keyboardView.hideKeySymbol && key.symbolLabel.isNotEmpty()) ||
+            (!keyboardView.hideKeyHint && key.hint.isNotEmpty())
+        ) {
+            key.keyTextOffsetY
+        } else {
+            if (key.isPressed) key.keyPressOffsetY else 0f
+        }
+
     private fun drawLabel(canvas: Canvas, label: String) {
         val textColor = key.getTextColor()
         val textSize = sp(key.keyTextSize.takeIf { it > 0 } ?: if (label.length > 1 && !label.isIconFont) keyboardView.keyLongTextSize else keyboardView.keyTextSize)
 
         if (label.isIconFont) {
-            drawIcon(canvas, label, textSize.toInt(), textColor, key.keyTextOffsetX, key.keyTextOffsetY)
+            drawIcon(canvas, label, textSize.toInt(), textColor, key.keyTextOffsetX, labelOffsetY)
         } else {
             textPaint.apply {
                 color = textColor
@@ -343,7 +363,13 @@ class KeyView(
             val fontMetrics = textPaint.fontMetrics
             val adjustmentY = -(fontMetrics.ascent + fontMetrics.descent) / 2f
 
-            canvas.drawText(label, centerX + sp(key.keyTextOffsetX), centerY + adjustmentY + sp(key.keyTextOffsetY), textPaint)
+            val x = centerX + sp(key.keyTextOffsetX)
+            val y = centerY + adjustmentY + sp(labelOffsetY)
+            if (DistinctLetterGlyph.enabled(label)) {
+                DistinctLetterGlyph.draw(canvas, label, x, y, textPaint)
+            } else {
+                canvas.drawText(label, x, y, textPaint)
+            }
         }
     }
 

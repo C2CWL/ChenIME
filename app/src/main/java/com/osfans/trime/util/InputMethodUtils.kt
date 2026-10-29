@@ -58,8 +58,7 @@ object InputMethodUtils {
     fun voiceInputMethods(): List<Pair<InputMethodInfo, InputMethodSubtype>> = inputMethodManager
         .enabledInputMethodList
         .mapNotNull { info ->
-            for (i in 0 until info.subtypeCount) {
-                val subType = info.getSubtypeAt(i)
+            for (subType in inputMethodManager.getEnabledInputMethodSubtypeList(info, true)) {
                 if (subType.mode.lowercase() == "voice") {
                     return@mapNotNull info to subType
                 }
@@ -78,9 +77,9 @@ object InputMethodUtils {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             service.switchInputMethod(id, subtype)
         } else {
+            val token = service.window.window?.attributes?.token ?: error("IME window is not attached")
             @Suppress("DEPRECATION")
-            inputMethodManager
-                .setInputMethodAndSubtype(service.window.window!!.attributes.token, id, subtype)
+            inputMethodManager.setInputMethodAndSubtype(token, id, subtype)
         }
     }
 }

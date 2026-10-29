@@ -13,7 +13,10 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
+import androidx.paging.filter
 import androidx.recyclerview.widget.RecyclerView
+import com.osfans.trime.core.CompositionProto
+import com.osfans.trime.core.RimeKeyEvent
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.theme.Theme
@@ -26,6 +29,7 @@ import com.osfans.trime.ime.candidates.compact.CompactCandidateDelegate
 import com.osfans.trime.ime.candidates.unrolled.CandidatesPagingSource
 import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
+import com.osfans.trime.ime.candidates.unrolled.isSingleCharacter
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.keyboard.KeyboardWindow
@@ -80,6 +84,14 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     final override fun onCreateView(): View {
         candidateLayout =
             onCreateCandidateLayout().apply {
+                onSingleCharacterToggle = {
+                    singleCharacter = !singleCharacter
+                    resetPosition()
+                    adapter.refresh()
+                }
+                onCompositionKey = { key ->
+                    rime.launchOnReady { it.processKey(RimeKeyEvent.getKeycodeByName(key), 0u) }
+                }
                 recyclerView.apply {
                     // disable item cross-fade animation
                     itemAnimator = null
@@ -113,6 +125,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     override fun onAttached() {
         lifecycleCoroutineScope = candidateLayout.findViewTreeLifecycleOwner()!!.lifecycleScope
+        candidateLayout.updatePreedit(rime.run { compositionCached.preedit })
         bar.unrollButtonStateMachine.push(UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesAttached)
         offsetJob =
             lifecycleCoroutineScope.launch {
@@ -131,9 +144,13 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         candidatesSubmitJob =
             lifecycleCoroutineScope.launch {
                 candidatesPager.flow.collectLatest {
-                    adapter.submitData(it)
+                    adapter.submitData(if (candidateLayout.singleCharacter) it.filter { item -> isSingleCharacter(item.candidate.text) } else it)
                 }
             }
+    }
+
+    override fun onCompositionUpdate(data: CompositionProto) {
+        if (::candidateLayout.isInitialized) candidateLayout.updatePreedit(data.preedit)
     }
 
     fun bindCandidateUiViewHolder(holder: CandidateViewHolder) {

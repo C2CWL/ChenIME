@@ -5,12 +5,14 @@
 # Keep Settings > Keyboard > Hide key symbols disabled.
 # Inherits standard fonts, actions and preview settings from tongwenfeng.
 config_version: '1.0'
-name: 讯飞
+name: New布局
 author: Trime community; based on tongwenfeng
 style:
   __include: tongwenfeng.trime:/style
   horizontal_gap: 4
-  vertical_gap: 12
+  vertical_gap: 4
+  keyboard_padding_bottom: 0
+  keyboard_padding_land_bottom: 0
   round_corner: 8
   keyboard_height: 280
   key_height: 56
@@ -30,7 +32,7 @@ fallback_colors:
   __include: tongwenfeng.trime:/fallback_colors
 preset_color_schemes:
   default:
-    name: 讯飞深色
+    name: New布局深色
     dark_scheme: default
     light_scheme: light
     back_color: '0xff1b1b1b'
@@ -47,7 +49,9 @@ preset_color_schemes:
     preview_text_color: '0xfff5f5f5'
     hilited_key_text_color: '0xfff5f5f5'
     hilited_candidate_text_color: '0xfff5f5f5'
-    key_symbol_color: '0xffaaaaaa'
+    key_symbol_color: '0xffcccccc'
+    off_key_symbol_color: '0xffcccccc'
+    on_key_symbol_color: '0xffffffff'
     comment_text_color: '0xffaaaaaa'
     label_color: '0xffaaaaaa'
     off_key_back_color: '0xff2c2c2c'
@@ -62,7 +66,7 @@ preset_color_schemes:
     border_color: '0xff1b1b1b'
     candidate_separator_color: '0xff1b1b1b'
   light:
-    name: 讯飞浅色
+    name: New布局浅色
     dark_scheme: default
     light_scheme: light
     back_color: '0xffe8e9ed'
@@ -79,7 +83,9 @@ preset_color_schemes:
     preview_text_color: '0xff202124'
     hilited_key_text_color: '0xffffffff'
     hilited_candidate_text_color: '0xffffffff'
-    key_symbol_color: '0xff757980'
+    key_symbol_color: '0xff50545b'
+    off_key_symbol_color: '0xff50545b'
+    on_key_symbol_color: '0xffffffff'
     comment_text_color: '0xff757980'
     label_color: '0xff757980'
     off_key_back_color: '0xffcdd0d7'
@@ -94,33 +100,54 @@ preset_color_schemes:
     border_color: '0xffe8e9ed'
     candidate_separator_color: '0xffe8e9ed'
 tool_bar:
-  button_spacing: 5
+  button_spacing: 2
   primary_button:
+    size: [34, 40]
     foreground:
-      style: "↶"
-      normal: candidate_text_color
-      padding: 10
-    action: undo
-  # Secondary buttons are arranged from right to left.
-  buttons:
-  - foreground:
       style: "⋯"
       normal: candidate_text_color
+      padding: 4
     action: menu_keyboard
-  - foreground:
-      style: ic@clipboard
+  # Secondary buttons are arranged from right to left.
+  buttons:
+  - size: [34, 40]
+    foreground:
+      style: ""
+      normal: candidate_text_color
+    action: Hide
+  - size: [34, 40]
+    foreground:
+      style: "ic@microphone"
+      normal: candidate_text_color
+    action: VOICE_ASSIST
+  - size: [34, 40]
+    foreground:
+      style: "ic@emoticon"
+      normal: candidate_text_color
+    action: liquid_keyboard_emoji
+  - size: [34, 40]
+    foreground:
+      style: "ic@clipboard"
       normal: candidate_text_color
     action: clipboard_window
-  - foreground:
-      style: ic@cursor_text
+  - size: [34, 40]
+    foreground:
+      style: "ic@arrow_all"
       normal: candidate_text_color
     action: Keyboard_editor
-  - foreground:
+  - size: [34, 40]
+    foreground:
       style: "↷"
       normal: candidate_text_color
     action: redo
+  - size: [34, 40]
+    foreground:
+      style: "↶"
+      normal: candidate_text_color
+    action: undo
 preset_keys:
   __include: tongwenfeng.trime:/preset_keys
+  liquid_keyboard_lock: {label: 锁定, send: FUNCTION, command: liquid_keyboard_lock}
   Keyboard_layout:
     label: 布局
     send: Eisu_toggle
@@ -216,16 +243,18 @@ preset_keys:
     label: ;
     commit: ;
   Ifly_symbol_m:
-    label: '`'
-    commit: '`'
+    label: 、
+    commit: 、
+  Ifly_symbol_apostrophe:
+    label: "'"
+    commit: "'"
 preset_keyboards:
   default:
-    name: 讯飞26键
+    name: New布局26键
     ascii_mode: 0
     reset_ascii_mode: false
     lock: true
     width: 10
-    label_transform: uppercase
     keys:
     - click: q
       label_symbol: '1'
@@ -306,7 +335,8 @@ preset_keyboards:
       popup: [Ifly_symbol_l, Letter_commit_l, Letter_commit_L]
     - width: 5
     - click: Shift_L
-      label: ⇧
+      composing: Ifly_separator
+      label: ic@apple_keyboard_shift
       width: 15
       key_back_color: off_key_back_color
     - click: z
@@ -334,12 +364,13 @@ preset_keyboards:
       long_click: Ifly_symbol_n
       popup: [Ifly_symbol_n, Letter_commit_n, Letter_commit_N]
     - click: m
-      label_symbol: '`'
+      label_symbol: "、'"
       long_click: Ifly_symbol_m
-      popup: [Ifly_symbol_m, Letter_commit_m, Letter_commit_M]
+      popup: [Letter_commit_M, Letter_commit_m, Ifly_symbol_m, Ifly_symbol_apostrophe]
     - click: BackSpace
       swipe_up: Ifly_clear_all
-      label: ⌫
+      swipe_down: restore_cleared
+      label: ic@backspace_outline
       width: 15
       key_back_color: off_key_back_color
     - click: Keyboard_number
@@ -362,10 +393,12 @@ preset_keyboards:
       label: 。
       width: 10
     - click: Return
+      label: ic@keyboard_return
+      key_text_color: on_key_text_color
       width: 20
       key_back_color: accent
   number:
-    name: 讯飞数字
+    name: New布局数字
     lock: true
     ascii_mode: 1
     keys:
@@ -380,9 +413,10 @@ preset_keyboards:
       width: 23
     - click: BackSpace
       swipe_up: Ifly_clear_all
+      swipe_down: restore_cleared
       width: 16
       key_back_color: off_key_back_color
-      label: ⌫
+      label: ic@backspace_outline
     - click: minus
       width: 15
       key_back_color: off_key_back_color
@@ -408,6 +442,8 @@ preset_keyboards:
     - click: '9'
       width: 23
     - click: Return
+      label: ic@keyboard_return
+      key_text_color: on_key_text_color
       width: 16
       key_back_color: accent
     - click: Ifly_back
@@ -440,13 +476,19 @@ preset_keyboards:
     - click: redo
     - click: paste
     - click: Ifly_back
+      key_back_color: off_key_back_color
     - click: Ifly_space
       long_click: Mode_switch
       swipe_left: Left
       swipe_right: Right
     - click: BackSpace
+      key_back_color: off_key_back_color
       swipe_up: Ifly_clear_all
+      swipe_down: restore_cleared
     - click: Return
+      key_back_color: accent
+      label: ic@keyboard_return
+      key_text_color: on_key_text_color
 liquid_keyboard:
   row: 4
   row_land: 4
@@ -457,11 +499,12 @@ liquid_keyboard:
   fixed_key_bar:
     position: left
     keys:
-    - liquid_keyboard_exit
+    - liquid_keyboard_lock
     - space1
     - BackSpace
-    - Return
+    - liquid_keyboard_exit
   keyboards:
+  - emoji
   - common
   - cn
   - en
@@ -469,6 +512,9 @@ liquid_keyboard:
   - math
   - email
   - special
+  emoji:
+    __include: tongwenfeng.trime:/liquid_keyboard/emoji
+    name: 表情
   common:
     name: 常用
     type: SINGLE

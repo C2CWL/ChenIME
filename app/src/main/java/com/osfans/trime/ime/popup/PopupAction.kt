@@ -15,6 +15,7 @@ sealed class PopupAction {
         override val viewId: Int,
         val content: String,
         val bounds: Rect,
+        val capsule: Boolean = false,
     ) : PopupAction()
 
     data class PreviewUpdateAction(

@@ -71,6 +71,7 @@ class PopupKeyboardUi(
         override val ctx: Context = this@PopupKeyboardUi.ctx
 
         val textView = view(::AutoScaleTextView) {
+            distinctLetterLabels = true
             scaleMode = AutoScaleTextView.Mode.Proportional
             textSize = theme.style.popupTextSize
             setTextColor(scope.colors.popupTextColor)

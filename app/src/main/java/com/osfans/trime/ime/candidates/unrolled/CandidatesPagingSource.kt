@@ -7,7 +7,6 @@ package com.osfans.trime.ime.candidates.unrolled
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.daemon.RimeSession
 import timber.log.Timber
 
@@ -15,8 +14,8 @@ class CandidatesPagingSource(
     val rime: RimeSession,
     val total: Int,
     val offset: Int,
-) : PagingSource<Int, CandidateProto>() {
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, CandidateProto> {
+) : PagingSource<Int, IndexedCandidate>() {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, IndexedCandidate> {
         // use candidate index for key, null means load from beginning (including offset)
         val startIndex = params.key ?: offset
         val pageSize = params.loadSize
@@ -25,15 +24,15 @@ class CandidatesPagingSource(
             rime.runOnReady {
                 getCandidates(startIndex, pageSize)
             }
-        val prevKey = if (startIndex >= pageSize) startIndex - pageSize else null
+        val prevKey = if (startIndex - pageSize >= offset) startIndex - pageSize else null
         val nextKey = if (total > 0) {
-            if (startIndex + pageSize + 1 >= total) null else startIndex + pageSize
+            if (startIndex + candidates.size >= total) null else startIndex + pageSize
         } else {
             if (candidates.size < pageSize) null else startIndex + pageSize
         }
-        return LoadResult.Page(candidates.toList(), prevKey, nextKey)
+        return LoadResult.Page(candidates.mapIndexed { i, candidate -> IndexedCandidate(startIndex + i, candidate) }, prevKey, nextKey)
     }
 
     // always reload from beginning
-    override fun getRefreshKey(state: PagingState<Int, CandidateProto>) = null
+    override fun getRefreshKey(state: PagingState<Int, IndexedCandidate>) = null
 }

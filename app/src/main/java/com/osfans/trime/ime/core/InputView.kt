@@ -319,7 +319,7 @@ class InputView(
         restarting: Boolean = false,
     ) {
         updateEnterKeyLabel(info)
-        broadcaster.onStartInput(info)
+        broadcaster.onStartInput(info, restarting)
         if (!restarting) {
             windowManager.attachWindow(KeyboardWindow)
         }
@@ -376,11 +376,21 @@ class InputView(
     @RequiresApi(Build.VERSION_CODES.R)
     fun handleInlineSuggestions(response: InlineSuggestionsResponse): Boolean = inputBar.handleInlineSuggestions(response)
 
+    private var disposed = false
+
+    fun dispose() {
+        if (disposed) return
+        disposed = true
+        updateWindowViewHeightJob.cancel()
+        windowManager.destroy()
+        broadcaster.clear()
+    }
+
     override fun onDetachedFromWindow() {
         ViewCompat.setOnApplyWindowInsetsListener(this, null)
         // cancel the notification job and clear all broadcast receivers,
         // implies that InputView should not be attached again after detached.
-        updateWindowViewHeightJob.cancel()
+        dispose()
         popup.root.removeAllViews()
         broadcaster.clear()
         super.onDetachedFromWindow()

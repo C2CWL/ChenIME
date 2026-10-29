@@ -12,6 +12,7 @@ import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
 import com.c2cwl.chenime.R
 import com.osfans.trime.data.db.ClipboardHelper
 import com.osfans.trime.data.db.CollectionHelper
@@ -25,15 +26,27 @@ import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.segments.SegmentsWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
+import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.ClipEditActivity
 import com.osfans.trime.util.AppUtils
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.instance
 import splitties.views.recyclerview.verticalLayoutManager
 
-class ClipboardWindow(di: DI, private val initialTab: Int = 0) : BoardWindow.BarBoardWindow(di) {
+class ClipboardWindow(di: DI) :
+    BoardWindow.BarBoardWindow(di),
+    ResidentWindow {
+    companion object : ResidentWindow.Key
+    override val key: ResidentWindow.Key get() = ClipboardWindow
+    private var selectedTab = 0
+
+    fun selectTab(index: Int) {
+        selectedTab = index.coerceIn(0, 1)
+        if (::clipboardLayout.isInitialized) clipboardLayout.viewPager.setCurrentItem(selectedTab, false)
+    }
 
     private val service: TrimeInputMethodService by instance()
     private val windowManager: BoardWindowManager by instance()
@@ -53,6 +66,14 @@ class ClipboardWindow(di: DI, private val initialTab: Int = 0) : BoardWindow.Bar
     private val collectionBeansPager by lazy {
         Pager(PagingConfig(pageSize = 16)) { CollectionHelper.allBeans() }
     }
+    private val pagingScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
+    private val clipboardFlow by lazy { clipboardBeansPager.flow.cachedIn(pagingScope) }
+    private val collectionFlow by lazy { collectionBeansPager.flow.cachedIn(pagingScope) }
+    override fun onDestroyed() {
+        onDetached()
+        pagingScope.coroutineContext[Job]?.cancel()
+    }
+
     private var clipboardBeansSubmitJob: Job? = null
     private var collectionBeansSubmitJob: Job? = null
 
@@ -134,10 +155,15 @@ class ClipboardWindow(di: DI, private val initialTab: Int = 0) : BoardWindow.Bar
         }
     }
 
+    private val recycledPool = androidx.recyclerview.widget.RecyclerView.RecycledViewPool()
+
     private val clipboardPage by lazy {
         ClipboardPageUi(context).apply {
             recyclerView.apply {
-                layoutManager = verticalLayoutManager()
+                layoutManager = verticalLayoutManager().apply { initialPrefetchItemCount = 4 }
+                setRecycledViewPool(recycledPool)
+                setHasFixedSize(true)
+                itemAnimator = null
                 adapter = clipboardBeansAdapter
             }
         }
@@ -146,13 +172,20 @@ class ClipboardWindow(di: DI, private val initialTab: Int = 0) : BoardWindow.Bar
     private val collectionPage by lazy {
         ClipboardPageUi(context).apply {
             recyclerView.apply {
-                layoutManager = verticalLayoutManager()
+                layoutManager = verticalLayoutManager().apply { initialPrefetchItemCount = 4 }
+                setRecycledViewPool(recycledPool)
+                setHasFixedSize(true)
+                itemAnimator = null
                 adapter = collectionBeansAdapter
             }
         }
     }
 
-    override fun onCreateView() = ClipboardLayout(context, scope).apply {
+    private val cachedView by lazy { createView() }
+
+    override fun onCreateView() = cachedView
+
+    private fun createView() = ClipboardLayout(context, scope).apply {
         clipboardLayout = this
         clipboardPagesAdapter = object : ClipboardPagesAdapter() {
             override fun getItemCount(): Int = 2
@@ -226,14 +259,15 @@ class ClipboardWindow(di: DI, private val initialTab: Int = 0) : BoardWindow.Bar
 
     override fun onAttached() {
         wasAttached = true
-        clipboardLayout.viewPager.setCurrentItem(initialTab, false)
+        clipboardLayout.viewPager.setCurrentItem(selectedTab, false)
+        refreshColors()
         clipboardBeansSubmitJob = service.lifecycleScope.launch {
-            clipboardBeansPager.flow.collect {
+            clipboardFlow.collectLatest {
                 clipboardBeansAdapter.submitData(it)
             }
         }
         collectionBeansSubmitJob = service.lifecycleScope.launch {
-            collectionBeansPager.flow.collect {
+            collectionFlow.collectLatest {
                 collectionBeansAdapter.submitData(it)
             }
         }
@@ -246,8 +280,11 @@ class ClipboardWindow(di: DI, private val initialTab: Int = 0) : BoardWindow.Bar
         collectionBeansSubmitJob?.cancel()
     }
 
+    private var colorRevision = -1L
+
     override fun refreshColors() {
-        if (!wasAttached) return
+        if (!wasAttached || colorRevision == scope.colorRevision) return
+        colorRevision = scope.colorRevision
         clipboardLayout.titleUi.deleteAllButton.refreshColors()
         clipboardLayout.titleUi.tabLayout.reconfigureTabs { tabUi, position ->
             configureTab(tabUi, position)

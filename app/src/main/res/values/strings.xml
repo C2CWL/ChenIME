@@ -20,7 +20,7 @@
     <string name="privacy_policy">Privacy Policy</string>
     <string name="build_info_format">Builder: %1$s\nBuild Git Hash: %2$s\nBuild Time: %3$s</string>
     <string name="selected_theme">Themes</string>
-    <string name="selected_theme_summary">Select desired theme</string>
+    <string name="selected_theme_summary">Choose New布局 or 标准</string>
     <string name="normal_mode_color">Colors</string>
     <string name="normal_mode_color_summary">Select desired color</string>
     <string name="reset">Reset</string>
@@ -245,7 +245,7 @@
     <string name="wide_or_landscape">Wide or landscape</string>
     <string name="always">Always</string>
     <string name="preferred_voice_input">Preferred voice input</string>
-    <string name="no_voice_input_installed">No voice input installed</string>
+    <string name="no_voice_input_installed">No voice input available</string>
     <string name="inline_suggestions">Show inline autofill suggestions</string>
     <string name="update_config">Update config</string>
     <string name="share">Share</string>
@@ -262,4 +262,24 @@
     <string name="import_user_data_failure">Import or deployment failed. Check that this is a valid Chen IME backup.</string>
     <string name="uppercase_key_labels">Uppercase letter key labels</string>
     <string name="uppercase_key_labels_summary">Show letter key labels in uppercase; does not affect typed text.</string>
+    <string name="keyboard_height">Keyboard height</string>
+    <string name="choose_font">Choose font</string>
+    <string name="restore_default_font">Restore default font</string>
+    <string name="default_font">Theme font</string>
+    <string name="custom_font_invalid">Invalid font or file exceeds 50 MiB</string>
+    <string name="custom_phrases">Custom phrases</string>
+    <string name="add_as_custom_phrase">Add as custom phrase</string>
+    <string name="custom_phrase_text">Phrase text</string>
+    <string name="custom_phrase_code">Code (e.g. nh)</string>
+    <string name="custom_phrase_weight">Weight / position (optional, default 1)</string>
+    <string name="custom_phrase_format">Single-line text only: librime does not decode newline escapes. Tabs and line breaks are not allowed; Weight must be a non-negative integer.</string>
+    <string name="custom_phrase_search">Search code or text</string>
+    <string name="custom_phrase_add">Add</string>
+    <string name="custom_phrase_delete">Delete</string>
+    <string name="custom_phrase_save_failed">Could not save/apply phrases. Reopen the editor and try again.</string>
+    <string name="swipe_clear">Clear</string>
+    <string name="swipe_restore_clear">Undo clear</string>
+    <string name="pinyin_correction">拼音纠错</string>
+    <string name="pinyin_correction_summary">仅在原拼写无法完整解析时尝试邻键纠错（雾凇拼音）</string>
+    <string name="pinyin_correction_failed">拼音纠错设置部署失败，请重试</string>
 </resources>

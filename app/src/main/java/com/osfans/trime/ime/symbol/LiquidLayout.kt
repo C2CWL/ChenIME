@@ -9,10 +9,14 @@ import android.content.Context
 import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.setPadding
+import androidx.core.view.updateLayoutParams
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.LiquidKeyboard
+import com.osfans.trime.ime.broadcast.EnterKeyDisplayDelegate
+import com.osfans.trime.ime.core.AutoScaleTextView
 import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
+import org.kodein.di.instance
 import splitties.dimensions.dp
 import splitties.views.dsl.constraintlayout.above
 import splitties.views.dsl.constraintlayout.after
@@ -48,6 +52,18 @@ class LiquidLayout(
 
     // TODO: 继承一个键盘视图嵌入到这里，而不是自定义一个视图
     // The fixed-key items, kept so their colors can be refreshed on scheme switches.
+    private val enterKeyDisplay: EnterKeyDisplayDelegate by commonKeyboardActionListener.instance()
+    private var lockKey: LiquidItemUi? = null
+    private var enterKey: LiquidItemUi? = null
+
+    fun updateLockLabel(locked: Boolean) {
+        lockKey?.mainText?.text = if (locked) "🔒锁定" else "🔓锁定"
+    }
+
+    fun updateEnterLabel() {
+        enterKey?.mainText?.text = enterKeyDisplay.keyLabel
+    }
+
     private val fixedKeyItems = mutableListOf<LiquidItemUi>()
 
     private val fixedKeyBar =
@@ -61,7 +77,23 @@ class LiquidLayout(
                         val presetKey = theme.presetKeys[presetKeyName]
                         val ui = LiquidItemUi(context, scope)
                         fixedKeyItems += ui
+                        if ("liquid_keyboard_lock" in fixedKeys) {
+                            ui.mainText.apply {
+                                textSize = 18f
+                                scaleMode = AutoScaleTextView.Mode.Proportional
+                                setPadding(dp(4))
+                                updateLayoutParams { width = matchParent }
+                            }
+                        }
                         ui.mainText.text = presetKey?.label ?: ""
+                        if (presetKey?.label == "enter_labels") {
+                            enterKey = ui
+                            ui.mainText.text = enterKeyDisplay.keyLabel
+                        }
+                        if (presetKey?.command == "liquid_keyboard_lock") {
+                            lockKey = ui
+                            ui.mainText.text = "🔓锁定"
+                        }
                         ui.root.apply {
                             isRepeatable = presetKey?.repeatable ?: false
                             onClick = {
@@ -80,7 +112,11 @@ class LiquidLayout(
                         btns.forEachIndexed { i, btn ->
                             add(
                                 btn,
-                                lParams(wrapContent, matchConstraints) {
+                                lParams(if (lockKey != null) matchConstraints else wrapContent, matchConstraints) {
+                                    if (lockKey != null) {
+                                        startOfParent()
+                                        endOfParent()
+                                    }
                                     if (i == 0) {
                                         topOfParent()
                                     } else {
@@ -189,7 +225,7 @@ class LiquidLayout(
                 )
                 add(
                     fixedKeyBar,
-                    lParams(wrapContent, matchConstraints) {
+                    lParams(if (lockKey != null) dp(52) else wrapContent, matchConstraints) {
                         centerVertically()
                         startOfParent()
                         endToStartOf(root)
@@ -208,7 +244,7 @@ class LiquidLayout(
                 )
                 add(
                     fixedKeyBar,
-                    lParams(wrapContent, matchConstraints) {
+                    lParams(if (lockKey != null) dp(52) else wrapContent, matchConstraints) {
                         centerVertically()
                         startToEndOf(root)
                         endOfParent()

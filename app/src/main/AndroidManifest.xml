@@ -79,6 +79,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
                 tools:node="remove" />
         </provider>
 
+        <activity
+            android:name="com.osfans.trime.ui.main.VoiceInputActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
         <!-- Settings activity -->
         <activity
             android:name="com.osfans.trime.ui.main.MainActivity"

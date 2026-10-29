@@ -38,7 +38,6 @@ import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
 import com.osfans.trime.ime.keyboard.KeyBehavior
 import com.osfans.trime.ime.keyboard.KeyboardWindow
-import com.osfans.trime.ime.switches.SwitchOptionWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
 import com.osfans.trime.ui.main.ClipEditActivity
@@ -138,7 +137,7 @@ class InputBarDelegate(override val di: DI) :
             if (action.isNotEmpty()) {
                 commonKeyboardActionListener.listener.onAction(theme.resolveAction(action))
             } else {
-                windowManager.attachWindow(SwitchOptionWindow(di))
+                windowManager.showMore()
             }
         }.apply {
             hideKeyboardButton.apply {
@@ -285,7 +284,7 @@ class InputBarDelegate(override val di: DI) :
         tabUi.refreshColors()
     }
 
-    override fun onStartInput(info: EditorInfo) {
+    override fun onStartInput(info: EditorInfo, restarting: Boolean) {
         evalAlwaysUiState()
     }
 

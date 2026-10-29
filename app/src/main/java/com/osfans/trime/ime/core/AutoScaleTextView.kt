@@ -14,6 +14,7 @@ import android.util.AttributeSet
 import android.view.Gravity
 import android.widget.TextView
 import androidx.core.graphics.withSave
+import com.osfans.trime.ime.keyboard.DistinctLetterGlyph
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -43,6 +44,8 @@ constructor(
          */
         Proportional,
     }
+
+    var distinctLetterLabels = false
 
     var scaleMode = Mode.None
 
@@ -121,6 +124,9 @@ constructor(
                     // bottom =
                     ceil(fontMetrics.bottom).toInt(),
                 )
+            }
+            if (distinctLetterLabels && DistinctLetterGlyph.enabled(text.toString())) {
+                textBounds.set(0, -ceil(paint.textSize * 0.76f).toInt(), ceil(paint.textSize * 0.60f).toInt(), 0)
             }
             needsMeasureText = false
         }
@@ -232,7 +238,12 @@ constructor(
             translate(scrollX.toFloat(), scrollY.toFloat())
             scale(textScaleX, textScaleY, 0f, translateY)
             translate(translateX, translateY)
-            drawText(text, 0, text.length, 0f, 0f, paint)
+            val label = text.toString()
+            if (distinctLetterLabels && DistinctLetterGlyph.enabled(label)) {
+                DistinctLetterGlyph.draw(this, label, 0f, 0f, paint)
+            } else {
+                drawText(text, 0, text.length, 0f, 0f, paint)
+            }
         }
     }
 

@@ -82,6 +82,7 @@ class Key(
     val keyBorder: Int = keyDef?.keyBorder?.takeIf { it >= 0 } ?: parent.keyBorder
     var keyTextOffsetX = 0f
         get() = field + keyOffsetX
+    val hasExplicitTextOffsetY = keyDef?.keyTextOffsetY != null
     var keyTextOffsetY = 0f
         get() = field + keyOffsetY
     var keySymbolOffsetX = 0f

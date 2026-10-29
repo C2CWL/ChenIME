@@ -110,7 +110,7 @@ class Keyboard(
                 theme.style.keyboardHeightLand,
                 context.isLandscapeMode(),
             ),
-        ) { context.dp(it) }
+        ) { context.dp(it) }.let { scaleKeyboardHeight(it, AppPrefs.defaultInstance().keyboard.heightPercent.getValue()) }
 
     private val expandKeypressArea: Boolean by AppPrefs.defaultInstance().keyboard.expandKeypressArea
 
@@ -256,7 +256,7 @@ class Keyboard(
                 val key = Key(this, theme, textKey)
 
                 key.keyTextOffsetX = resolveOffset(textKey.keyTextOffsetX, selfConfig.keyTextOffsetX, theme.style.keyTextOffsetX)
-                key.keyTextOffsetY = resolveOffset(textKey.keyTextOffsetY, selfConfig.keyTextOffsetY, theme.style.keyTextOffsetY)
+                key.keyTextOffsetY = textKey.keyTextOffsetY ?: resolveOffset(0f, selfConfig.keyTextOffsetY, theme.style.keyTextOffsetY)
                 key.keySymbolOffsetX = resolveOffset(textKey.keySymbolOffsetX, selfConfig.keySymbolOffsetX, theme.style.keySymbolOffsetX)
                 key.keySymbolOffsetY = resolveOffset(textKey.keySymbolOffsetY, selfConfig.keySymbolOffsetY, theme.style.keySymbolOffsetY)
                 key.keyHintOffsetX = resolveOffset(textKey.keyHintOffsetX, selfConfig.keyHintOffsetX, theme.style.keyHintOffsetX)

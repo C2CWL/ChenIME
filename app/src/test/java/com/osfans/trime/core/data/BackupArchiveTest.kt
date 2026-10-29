@@ -24,6 +24,7 @@ class BackupArchiveTest :
                     parentFile!!.mkdirs()
                     writeText("尘输入法\tchen shu ru fa\n")
                 }
+                user.resolve("custom_phrase.txt").writeText("# Rime table\n你好\tnh\t9\n")
                 val preferences = mapOf(
                     "string" to "iflytek",
                     "boolean" to true,
@@ -40,6 +41,7 @@ class BackupArchiveTest :
                 BackupArchive.write(user, metadata, output)
                 val restored = temp.resolve("restored").apply { mkdirs() }
                 val result = BackupArchive.read(ByteArrayInputStream(output.toByteArray()), restored)
+                restored.resolve("rime/custom_phrase.txt").readText() shouldBe user.resolve("custom_phrase.txt").readText()
                 result.preferences.mapValues { it.value.decode() } shouldBe preferences
                 restored.resolve("rime/themes/empty").isDirectory shouldBe true
                 restored.resolve("rime/sync/device/userdb.txt").readText() shouldBe

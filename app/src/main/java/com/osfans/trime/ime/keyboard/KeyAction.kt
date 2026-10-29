@@ -161,13 +161,10 @@ class KeyAction(
 
     fun getText(keyboard: Keyboard): String {
         ensureLabels()
-        return if (text.isNotEmpty()) {
-            adjustCase(text, keyboard)
-        } else if (keyboard.isShifted && code in KeyEvent.KEYCODE_A..KeyEvent.KEYCODE_Z && modifier == 0) {
-            if (rime.run { statusCached.isAsciiMode }) "" else adjustCase(label, keyboard)
-        } else {
-            text
-        }
+        // Shifted letters must use onKey's uppercase keysym + Shift path, just
+        // like ASCII mode. Simulated text loses the modifier and bypasses the
+        // normal key response/fallback handling.
+        return if (text.isNotEmpty()) adjustCase(text, keyboard) else text
     }
 
     fun getPreview(keyboard: Keyboard): String = preview ?: getLabel(keyboard)

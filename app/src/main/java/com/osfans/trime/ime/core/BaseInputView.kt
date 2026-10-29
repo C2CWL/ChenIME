@@ -7,18 +7,21 @@ package com.osfans.trime.ime.core
 
 import android.annotation.SuppressLint
 import android.content.res.Resources
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowInsets
-import android.widget.PopupMenu
+import android.widget.LinearLayout
+import android.widget.PopupWindow
+import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.text.bold
-import androidx.core.text.buildSpannedString
-import androidx.core.text.color
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
 import com.osfans.trime.core.RimeMessage
 import com.osfans.trime.daemon.RimeSession
+import com.osfans.trime.data.phrase.CustomPhraseDialogs
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeManager
@@ -68,34 +71,57 @@ abstract class BaseInputView(
 
     val themedContext = context.withTheme(android.R.style.Theme_DeviceDefault_Settings)
 
-    private var candidateActionMenu: PopupMenu? = null
+    private var candidateActionMenu: PopupWindow? = null
 
     fun showCandidateActionMenu(idx: Int, text: String, view: View, global: Boolean) {
         candidateActionMenu?.dismiss()
         candidateActionMenu = null
-        val highlightColor = scope.colors.hilitedCandidateTextColor
-        val title = buildSpannedString {
-            bold {
-                color(highlightColor) { append(text) }
+        InputFeedbackManager.keyPressVibrate(view, longPress = true)
+        val row = LinearLayout(themedContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(100f)
+                setColor(scope.colors.candidateBackground)
             }
         }
-        service.lifecycleScope.launch {
-            InputFeedbackManager.keyPressVibrate(view, longPress = true)
-            candidateActionMenu =
-                PopupMenu(themedContext, view).apply {
-                    menu.add(title).apply {
-                        isEnabled = false
-                    }
-                    menu.add(R.string.forget_this_word).setOnMenuItemClickListener {
-                        rime.runIfReady { deleteCandidate(idx, global) }
-                        true
-                    }
-                    setOnDismissListener {
-                        candidateActionMenu = null
-                    }
-                    show()
-                }
+        val popup = PopupWindow(row, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
+            setBackgroundDrawable(row.background)
+            elevation = dp(8f)
+            isOutsideTouchable = true
+            inputMethodMode = PopupWindow.INPUT_METHOD_NOT_NEEDED
+            setOnDismissListener { candidateActionMenu = null }
         }
+        fun button(label: Int, action: () -> Unit) {
+            row.addView(
+                TextView(themedContext).apply {
+                    setText(label)
+                    setTextColor(scope.colors.keyTextColor)
+                    textSize = 14f
+                    gravity = Gravity.CENTER
+                    setPadding(dp(14), dp(12), dp(14), dp(12))
+                    background = GradientDrawable().apply {
+                        cornerRadius = dp(100f)
+                        setColor(scope.colors.keyBackColor)
+                    }
+                    setOnClickListener {
+                        popup.dismiss()
+                        action()
+                    }
+                },
+                LinearLayout.LayoutParams(-2, -2).apply { setMargins(dp(3), 0, dp(3), 0) },
+            )
+        }
+        button(R.string.add_as_custom_phrase) {
+            service.lifecycleScope.launch {
+                val code = rime.runOnReady { getRawInput() }
+                CustomPhraseDialogs.edit(themedContext, service.lifecycleScope, rime, text, code, token = windowToken)
+            }
+        }
+        button(R.string.forget_this_word) { rime.runIfReady { deleteCandidate(idx, global) } }
+        candidateActionMenu = popup
+        row.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
+        popup.showAsDropDown(view, 0, -view.height - row.measuredHeight - dp(8))
     }
 
     private val navBarBackground by ThemeManager.prefs.navbarBackground
@@ -128,7 +154,10 @@ abstract class BaseInputView(
             if (gesturesBottom > 0) 0 else navBarsBottom
         } else {
             val insetsBottom = insets.getInsets(navBars or gestures).bottom
-            if (insetsBottom > 0) max(insetsBottom, navBarFrameHeight) else insetsBottom
+            // Gesture navigation already reports its required space; the legacy button-bar
+            // frame can be much taller and creates an empty strip below the keyboard.
+            val gestureNavigation = insets.getInsets(gestures).bottom > 0
+            if (insetsBottom > 0 && !gestureNavigation) max(insetsBottom, navBarFrameHeight) else insetsBottom
         }
     }
 

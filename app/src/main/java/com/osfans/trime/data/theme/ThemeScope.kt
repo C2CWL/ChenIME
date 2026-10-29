@@ -31,6 +31,9 @@ class ThemeScope internal constructor(
     var activeColorScheme: ColorScheme? = null
         private set
 
+    var colorRevision: Long = 0
+        private set
+
     private var colorsValue: ThemeColors? = null
 
     internal var colorTable: ColorTable? = null
@@ -40,8 +43,13 @@ class ThemeScope internal constructor(
     val colors: ThemeColors
         get() = requireNotNull(colorsValue) { "ThemeScope is not initialized" }
 
+    internal fun invalidateDrawables() {
+        colorRevision++
+    }
+
     /** Activates [scheme], rebuilding the color table and [colors]. */
     internal fun updateScheme(scheme: ColorScheme) {
+        colorRevision++
         activeColorScheme = scheme
         val table = ColorTable.resolve(scheme, theme.fallbackColors, parseColor)
         colorTable = table

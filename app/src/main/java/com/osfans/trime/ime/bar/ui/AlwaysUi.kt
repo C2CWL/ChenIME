@@ -92,6 +92,7 @@ class AlwaysUi(
             add(
                 HorizontalScrollView(ctx).apply {
                     isHorizontalScrollBarEnabled = false
+                    isFillViewport = true
                     addView(
                         buttonsUi.root,
                         FrameLayout.LayoutParams(wrapContent, matchParent),

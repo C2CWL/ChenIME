@@ -65,6 +65,8 @@ class ButtonsBarUi(
             val size = getButtonSize(config)
             val lParams = FlexboxLayout.LayoutParams(size.first, size.second).apply {
                 marginEnd = ctx.dp(theme.toolBar.buttonSpacing)
+                // Share spare viewport width equally, retaining the configured size when scrolling.
+                flexGrow = 1f
                 flexShrink = 0f
             }
             root.addView(button, lParams)

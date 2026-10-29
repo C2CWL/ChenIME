@@ -1,8 +1,9 @@
 #include <rime_api.h>
-#include "pinyin-correction.h"
+
 #include <filesystem>
 
 #include "jni-utils.h"
+#include "pinyin-correction.h"
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_osfans_trime_core_RimeConfig_openRimeConfig(JNIEnv* env,
@@ -107,29 +108,37 @@ Java_com_osfans_trime_core_RimeConfig_setRimeConfigBool(JNIEnv* env,
                        value);
 }
 
-// Returns whether deployment must be refreshed. Never replace an unreadable user file.
+// Returns whether deployment must be refreshed. Never replace an unreadable
+// user file.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_osfans_trime_core_RimeConfig_patchPinyinCorrection(
-    JNIEnv* env, jclass, jstring filename, jboolean enabled) {
-  const std::filesystem::path file(static_cast<const char*>(CString(env, filename)));
+Java_com_osfans_trime_core_RimeConfig_patchPinyinCorrection(JNIEnv* env, jclass,
+                                                            jstring filename,
+                                                            jboolean enabled) {
+  const std::filesystem::path file(
+      static_cast<const char*>(CString(env, filename)));
   rime::Config config;
   if (std::filesystem::exists(file) && !config.LoadFromFile(file)) {
-    env->ThrowNew(env->FindClass("java/io/IOException"), "Cannot parse rime_frost.custom.yaml");
+    env->ThrowNew(env->FindClass("java/io/IOException"),
+                  "Cannot parse rime_frost.custom.yaml");
     return false;
   }
   if (!config.IsNull("patch") && !config.IsMap("patch")) {
-    env->ThrowNew(env->FindClass("java/io/IOException"), "User patch must be a YAML map");
+    env->ThrowNew(env->FindClass("java/io/IOException"),
+                  "User patch must be a YAML map");
     return false;
   }
   if (!chen::PatchPinyinCorrection(config, enabled)) return false;
   auto temporary = file;
   temporary += ".chen-tmp";
   if (!config.SaveToFile(temporary)) {
-    env->ThrowNew(env->FindClass("java/io/IOException"), "Cannot save pinyin correction setting");
+    env->ThrowNew(env->FindClass("java/io/IOException"),
+                  "Cannot save pinyin correction setting");
     return false;
   }
   std::error_code error;
   std::filesystem::rename(temporary, file, error);
-  if (error) env->ThrowNew(env->FindClass("java/io/IOException"), "Cannot replace pinyin correction config");
+  if (error)
+    env->ThrowNew(env->FindClass("java/io/IOException"),
+                  "Cannot replace pinyin correction config");
   return !error;
 }

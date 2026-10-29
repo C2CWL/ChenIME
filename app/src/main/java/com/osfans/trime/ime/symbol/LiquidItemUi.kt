@@ -6,6 +6,9 @@
 package com.osfans.trime.ime.symbol
 
 import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.Typeface
+import android.graphics.drawable.StateListDrawable
 import android.widget.TextView
 import androidx.core.text.PrecomputedTextCompat
 import com.osfans.trime.data.theme.Theme
@@ -62,6 +65,8 @@ class LiquidItemUi(
         add(content, lParams(matchParent, matchParent))
     }
 
+    internal var fixedKeyStyle: FixedKeyStyle? = null
+
     private var label = ""
     private var fallback = ""
 
@@ -79,6 +84,40 @@ class LiquidItemUi(
 
     /** Restyles the item after a scheme switch. */
     fun refreshColors() {
+        val style = fixedKeyStyle
+        if (style != null) {
+            mainText.setTypeface(theme.fonts.key, if (style.bold) Typeface.BOLD else Typeface.NORMAL)
+            mainText.isDuplicateParentStateEnabled = true
+            content.isDuplicateParentStateEnabled = true
+            mainText.setTextColor(
+                ColorStateList(
+                    arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf()),
+                    intArrayOf(scope.color(style.pressedText), scope.color(style.text)),
+                ),
+            )
+            content.background = StateListDrawable().apply {
+                addState(
+                    intArrayOf(android.R.attr.state_pressed),
+                    scope.decorDrawable(
+                        style.pressedBackground,
+                        style.pressedBorder,
+                        ctx.dp(theme.style.keyBorder),
+                        ctx.dp(theme.style.roundCorner),
+                    ),
+                )
+                addState(
+                    intArrayOf(),
+                    scope.decorDrawable(
+                        style.background,
+                        style.border,
+                        ctx.dp(theme.style.keyBorder),
+                        ctx.dp(theme.style.roundCorner),
+                    ),
+                )
+            }
+            mainText.setThemeLabel(label, fallback)
+            return
+        }
         mainText.setTextColor(scope.colors.keyTextColor)
         mainText.setThemeLabel(label, fallback)
         content.background = scope.decorDrawable(

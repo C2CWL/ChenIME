@@ -12,6 +12,7 @@ import androidx.core.view.setPadding
 import androidx.core.view.updateLayoutParams
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
+import com.osfans.trime.data.theme.model.KeyActionToken
 import com.osfans.trime.data.theme.model.LiquidKeyboard
 import com.osfans.trime.ime.broadcast.EnterKeyDisplayDelegate
 import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
@@ -70,11 +71,17 @@ class LiquidLayout(
             val fixedKeys =
                 theme.liquidKeyboard.fixedKeyBar.keys
             if (fixedKeys.isNotEmpty()) {
+                val enterDefinition = theme.presetKeyboards.values.asSequence()
+                    .flatMap { it.keys.asSequence() }
+                    .firstOrNull { (it.click as? KeyActionToken.Plain)?.token == "Return" }
                 val btns =
                     Array(fixedKeys.size) { index ->
                         val presetKeyName = fixedKeys[index]
                         val presetKey = theme.presetKeys[presetKeyName]
-                        val ui = LiquidItemUi(context, scope)
+                        val ui = LiquidItemUi(context, scope).apply {
+                            fixedKeyStyle = fixedKeyStyle(presetKeyName, enterDefinition)
+                            refreshColors()
+                        }
                         fixedKeyItems += ui
                         ui.mainText.apply {
                             textSize = 18f

@@ -158,6 +158,10 @@ class CandidateItemUi(
         )
     }
 
+    private var backgroundColor: Int? = null
+    private var backgroundContentColor: Int? = null
+    private var backgroundCornerRadius: Float? = null
+
     @SuppressLint("UseKtx")
     fun update(
         item: CandidateProto,
@@ -168,13 +172,22 @@ class CandidateItemUi(
         val cornerRadius = ctx.dp(theme.style.candidateCornerRadius)
         val contentColor = if (highlighted) hlBackColor else Color.TRANSPARENT
 
-        content.background = roundedRippleDrawable(hlBackColor, cornerRadius, contentColor)
-        text.text = item.text
-        text.setTextColor(tColor)
+        val rippleColor = hlBackColor
+        if (backgroundColor != rippleColor ||
+            backgroundContentColor != contentColor ||
+            backgroundCornerRadius != cornerRadius
+        ) {
+            content.background = roundedRippleDrawable(rippleColor, cornerRadius, contentColor)
+            backgroundColor = rippleColor
+            backgroundContentColor = contentColor
+            backgroundCornerRadius = cornerRadius
+        }
+        if (!text.text.contentEquals(item.text)) text.text = item.text
+        if (text.currentTextColor != tColor) text.setTextColor(tColor)
 
         val commentText = item.comment
-        comment.text = commentText
-        comment.setTextColor(cColor)
+        if (!comment.text.contentEquals(commentText)) comment.text = commentText
+        if (comment.currentTextColor != cColor) comment.setTextColor(cColor)
         comment.isVisible = commentText.isNotEmpty()
     }
 }

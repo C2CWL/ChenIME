@@ -7,7 +7,6 @@ package com.osfans.trime.ime.candidates.compact
 
 import android.content.Context
 import android.view.ViewGroup
-import androidx.core.view.updateLayoutParams
 import com.chad.library.adapter4.BaseQuickAdapter
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.core.CandidateProto
@@ -78,9 +77,12 @@ open class CompactCandidateViewAdapter(
         holder.text = item.text
         holder.comment = item.comment
         holder.idx = position // unused
-        holder.ui.root.updateLayoutParams<FlexboxLayoutManager.LayoutParams> {
-            minWidth = this@CompactCandidateViewAdapter.layoutMinWidth
-            flexGrow = this@CompactCandidateViewAdapter.layoutFlexGrow
+        val root = holder.ui.root
+        val params = root.layoutParams as FlexboxLayoutManager.LayoutParams
+        if (params.minWidth != layoutMinWidth || params.flexGrow != layoutFlexGrow) {
+            params.minWidth = layoutMinWidth
+            params.flexGrow = layoutFlexGrow
+            root.layoutParams = params
         }
     }
 }

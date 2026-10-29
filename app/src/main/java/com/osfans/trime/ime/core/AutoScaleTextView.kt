@@ -63,6 +63,7 @@ constructor(
         charSequence: CharSequence?,
         bufferType: BufferType,
     ) {
+        if (charSequence != null && text.contentEquals(charSequence)) return
         super.setText(charSequence, bufferType)
         // TextView also calls this from its constructor, before our paint caches exist.
         needsMeasureText = true

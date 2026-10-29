@@ -5,6 +5,7 @@
 
 package com.osfans.trime.data.theme
 
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -57,6 +58,7 @@ object ThemeManager {
         }
         private set(value) {
             if (::_activeTheme.isInitialized && _activeTheme == value) return
+            value.fonts.prepareForDrawing()
             _activeTheme = value
             fireChange()
         }
@@ -75,7 +77,17 @@ object ThemeManager {
         onChangeListeners.forEach { it.onThemeChange(_activeTheme) }
     }
 
+    private val fontPreferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if ((key == null || key == AppPrefs.defaultInstance().customFont.key) && ::_activeTheme.isInitialized) {
+            refreshFonts(force = true)
+        }
+    }
+
     val prefs = AppPrefs.defaultInstance().registerProvider(::ThemePrefs)
+
+    init {
+        AppPrefs.defaultInstance().customFont.sharedPreferences.registerOnSharedPreferenceChangeListener(fontPreferenceListener)
+    }
 
     private data class ResolvedTheme(
         val configId: String,
@@ -123,19 +135,20 @@ object ThemeManager {
         // The findings describe the file this load read; they are not tied to the
         // views, so they are refreshed even when the theme itself is unchanged.
         _activeFindings = resolvedTheme.findings
-        // A structurally equal theme suppresses the change notification below, so the
-        // UI tree keeps its views and their injected scope. Replace neither the
-        // caches nor the scope in that case, or later scheme changes would update
-        // the new global scope while existing views still read the old one.
-        if (::_activeTheme.isInitialized && _activeTheme == theme) return
+        // Keep the existing scope for equal themes so views and ColorManager stay
+        // attached to the same instance. Font files may still have changed on disk.
+        if (::_activeTheme.isInitialized && _activeTheme == theme) {
+            refreshFonts()
+            return
+        }
         ColorManager.attachTheme(theme)
         activeTheme = theme
     }
 
-    fun refreshFonts() {
-        ensureActiveTheme()
-        _activeTheme.fonts.clearCache()
-        fireChange()
+    fun refreshFonts(force: Boolean = false) {
+        if (!::_activeTheme.isInitialized) return
+        val changed = _activeTheme.fonts.refresh()
+        if (changed || force) fireChange()
     }
 
     fun init(configuration: Configuration) {

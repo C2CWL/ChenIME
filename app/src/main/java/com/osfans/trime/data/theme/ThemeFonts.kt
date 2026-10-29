@@ -38,40 +38,74 @@ class ThemeFonts(private val theme: Theme) {
             }
         }
 
-    fun clearCache() {
+    private val roleFonts by lazy {
+        mapOf(
+            "hanb" to style.hanbFont.toList(),
+            "latin" to style.latinFont.toList(),
+            "candidate" to style.candidateFont.toList(),
+            "comment" to style.commentFont.toList(),
+            "key" to style.keyFont.toList(),
+            "label" to style.labelFont.toList(),
+            "popup" to style.popupFont.toList(),
+            "symbol" to style.symbolFont.toList(),
+            "text" to style.textFont.toList(),
+            "toolbar" to theme.toolBar.buttonFont.toList(),
+        )
+    }
+
+    private val resolved = ResolvedFontCache<Typeface>()
+    private val resolvedKeys = mutableMapOf<String, TypefaceKey>()
+
+    fun refresh(): Boolean {
+        val previousKeys = resolvedKeys.toMap()
+        resolved.invalidate()
+        resolvedKeys.clear()
         typefaceCache.evictAll()
         fontFamilyCache.evictAll()
+        previousKeys.keys.forEach { getResolvedTypeface(it) }
+        prepareForDrawing()
+        return previousKeys.any { (role, key) -> resolvedKeys[role] != key }
+    }
+
+    // Resolve the draw-time roles before views receive the theme.
+    fun prepareForDrawing() {
+        key
+        symbol
     }
 
     val hanb: Typeface
-        get() = getTypeface(style.hanbFont.toList())
+        get() = getResolvedTypeface("hanb")
 
     val latin: Typeface
-        get() = getTypeface(style.latinFont.toList())
+        get() = getResolvedTypeface("latin")
 
     val candidate: Typeface
-        get() = getTypeface(style.candidateFont.toList())
+        get() = getResolvedTypeface("candidate")
 
     val comment: Typeface
-        get() = getTypeface(style.commentFont.toList())
+        get() = getResolvedTypeface("comment")
 
     val key: Typeface
-        get() = getTypeface(style.keyFont.toList())
+        get() = getResolvedTypeface("key")
 
     val label: Typeface
-        get() = getTypeface(style.labelFont.toList())
+        get() = getResolvedTypeface("label")
 
     val popup: Typeface
-        get() = getTypeface(style.popupFont.toList())
+        get() = getResolvedTypeface("popup")
 
     val symbol: Typeface
-        get() = getTypeface(style.symbolFont.toList())
+        get() = getResolvedTypeface("symbol")
 
     val text: Typeface
-        get() = getTypeface(style.textFont.toList())
+        get() = getResolvedTypeface("text")
 
     val toolbar: Typeface
-        get() = getTypeface(theme.toolBar.buttonFont.toList())
+        get() = getResolvedTypeface("toolbar")
+
+    private fun getResolvedTypeface(role: String): Typeface = resolved.get(role) {
+        getTypeface(role, roleFonts.getValue(role))
+    }
 
     private fun makeFileStateList(names: List<String>): List<FileState> = names.asSequence()
         .map { File(fontDir, it) }
@@ -82,24 +116,24 @@ class ThemeFonts(private val theme: Theme) {
     private fun resolveKey(fonts: List<String>): TypefaceKey {
         val existing = makeFileStateList(fonts)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            TypefaceKey(existing)
+            TypefaceKey(if (existing.isEmpty()) emptyList() else makeFileStateList(style.latinFont.toList() + fonts + style.hanbFont.toList()))
         } else {
             TypefaceKey(existing.take(1))
         }
     }
 
-    private fun getTypeface(fonts: List<String>): Typeface {
+    private fun getTypeface(role: String, fonts: List<String>): Typeface {
         val custom = AppPrefs.defaultInstance().customFont.getValue()
-        val override = makeFileStateList(listOf(custom)).takeIf { custom.isNotEmpty() }.orEmpty()
+        val override = if (custom.isEmpty()) emptyList() else makeFileStateList(listOf(custom))
         val key = if (override.isNotEmpty()) TypefaceKey(override) else resolveKey(fonts)
+        resolvedKeys[role] = key
         val typeface = typefaceCache[key]
         return if (typeface == null) {
             Timber.d("getTypeface: key=$key")
             val newTypeface = if (key.files.isEmpty()) {
                 Typeface.DEFAULT
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val bulk = if (override.isNotEmpty()) override else makeFileStateList(style.latinFont.toList() + fonts + style.hanbFont.toList())
-                val fontFamilies = bulk.map { getFontFamily(it) }
+                val fontFamilies = key.files.map { getFontFamily(it) }
                 Typeface.CustomFallbackBuilder(fontFamilies.first())
                     .apply {
                         for (i in 1 until fontFamilies.size) {

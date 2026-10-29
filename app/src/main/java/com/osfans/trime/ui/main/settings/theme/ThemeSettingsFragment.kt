@@ -78,7 +78,7 @@ class ThemeSettingsFragment : PreferenceDelegateFragment(ThemeManager.prefs) {
 
     private fun fontChanged() {
         fontChoice?.summary = fontPref.getValue().ifEmpty { getString(R.string.default_font) }
-        ThemeManager.refreshFonts()
+        ThemeManager.refreshFonts(force = true)
     }
 
     override fun onCreatePreferences(

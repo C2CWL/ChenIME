@@ -10,6 +10,7 @@ import com.osfans.trime.core.data.DataManager
 import com.osfans.trime.core.data.UserDataManager
 import com.osfans.trime.data.opencc.OpenCCDictManager
 import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.ime.core.InlinePreeditMode
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -127,6 +128,8 @@ class Rime :
                     }
                 }
             check(success) { "Rime deploy failed" }
+            // Sync/deploy can replace font files even when no IME service is running.
+            withContext(Dispatchers.Main.immediate) { ThemeManager.refreshFonts() }
         } finally {
             unregisterRimeMessageHandler(deployHandler)
         }

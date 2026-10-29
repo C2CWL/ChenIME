@@ -162,6 +162,47 @@ class BuiltinThemeTest :
                 letters.resetAsciiMode shouldBe false
                 letters.asciiKeyboard shouldBe ""
                 layouts.getValue("number").asciiMode shouldBe 1
+                val symbolAction = KeyActionToken.Plain(if (id == "iflytek.trime") "Ifly_symbols" else "Keyboard_bqrw")
+                val mainWidths = if (id == "iflytek.trime") {
+                    listOf(14.0, 11.5, 44.5, 10.0, 20.0)
+                } else {
+                    listOf(14.0, 11.5, 39.5, 10.0, 10.0, 15.0)
+                }
+                for (layout in letterLayouts) {
+                    val keyboard = layouts.getValue(layout)
+                    keyboard.keys.any { it.click == symbolAction } shouldBe false
+                    val bottomRow = keyboard.keys.dropWhile { it.click != KeyActionToken.Plain("Keyboard_number") }
+                    val widths = bottomRow.map { key ->
+                        (key.width.takeIf { it > 0f } ?: keyboard.width.takeIf { it > 0f } ?: 10f).toDouble()
+                    }
+                    widths shouldBe mainWidths
+                    widths.sum() shouldBe 100.0
+                }
+                val numberKeys = layouts.getValue("number").keys
+                val numberWidths = if (id == "iflytek.trime") {
+                    listOf(12.0, 25.0, 25.0, 25.0, 13.0)
+                } else {
+                    listOf(13.5, 13.5, 20.0, 20.0, 20.0, 13.0)
+                }
+                numberKeys.size shouldBe numberWidths.size * 4
+                numberKeys.chunked(numberWidths.size).forEach { row ->
+                    row.map { it.width.toDouble() } shouldBe numberWidths
+                    row.sumOf { it.width.toDouble() } shouldBe 100.0
+                }
+                val movedSymbols = numberKeys.single { it.click == symbolAction }
+                movedSymbols.labelSymbol shouldBe "简洁"
+                movedSymbols.longClick shouldBe KeyActionToken.Plain("{hide_key_symbol}{hide_key_hint}")
+                if (id == "iflytek.trime") {
+                    numberKeys.any { it.click == KeyActionToken.Plain("comma") } shouldBe false
+                    movedSymbols.keyBackColor shouldBe ""
+                } else {
+                    movedSymbols.swipeUp shouldBe KeyActionToken.Plain("Color_switch")
+                    movedSymbols.swipeDown shouldBe KeyActionToken.Plain("Color_switch")
+                    movedSymbols.keyBackColor shouldBe "bgn"
+                    movedSymbols.keyTextColor shouldBe "tgn"
+                    numberKeys.single { it.click == KeyActionToken.Plain(".") }
+                        .longClick shouldBe KeyActionToken.Plain("/")
+                }
                 for (layout in letterLayouts) {
                     val shift = layouts.getValue(layout).keys.first { it.click == KeyActionToken.Plain("Shift_L") }
                     shift.composing shouldBe if (id == "iflytek.trime") KeyActionToken.Plain("Ifly_separator") else null
@@ -279,7 +320,7 @@ class BuiltinThemeTest :
                     theme.toolBar.primaryButton?.foreground shouldBe standard.toolBar.primaryButton?.foreground
                     theme.toolBar.buttonSpacing shouldBe standard.toolBar.buttonSpacing
                     theme.toolBar.buttons.forEach { it.foreground.padding shouldBe standard.toolBar.buttons.first().foreground.padding }
-                    val symbols = theme.presetKeyboards.getValue("default").keys
+                    val symbols = theme.presetKeyboards.getValue("number").keys
                         .first { it.click == KeyActionToken.Plain("Ifly_symbols") }
                     symbols.labelSymbol shouldBe "简洁"
                     val mainKeys = theme.presetKeyboards.getValue("default").keys

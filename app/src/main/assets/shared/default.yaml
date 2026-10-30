@@ -13,7 +13,6 @@ switcher:
     - Control+Shift+grave
     - F4
   save_options:
-    - full_shape
     - ascii_punct
     - simplification
     - extended_charset
@@ -57,3 +56,24 @@ ascii_composer:
     Control_R: noop
     Caps_Lock: clear
     Eisu_toggle: clear
+
+zhime_zhuyin:
+  initials: zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA1234567890;/.,-
+  delimiter: " '"
+  algebra:
+    - erase/^.*$/
+
+pinyin:
+  initial_quality: 1.2
+  preedit_format:
+    - xform/([nl])v/$1ü/
+    - xform/([nl])ue/$1üe/
+    - "xlit|bpmfdtnlgkhjqxZCSrzcsywVueaoeiuv|bpmfdtnlgkhjqxZCSrzcsywVüeaoeiuv|"
+  comment_format:
+    - xform/([nl])v/$1ü/
+    - xform/([nl])ue/$1üe/
+    - "xlit|bpmfdtnlgkhjqxZCSrzcsywVueaoeiuv|bpmfdtnlgkhjqxZCSrzcsywVüeaoeiuv|"
+  enable_correction: false
+
+lua:
+  __include: rime_frost.schema:/lua

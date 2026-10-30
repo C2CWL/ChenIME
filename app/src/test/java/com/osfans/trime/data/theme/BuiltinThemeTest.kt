@@ -360,7 +360,7 @@ class BuiltinThemeTest :
                 val toolbarButtons = theme.toolBar.buttons + listOfNotNull(theme.toolBar.primaryButton)
                 val toolbarWidth = toolbarButtons.sumOf { it.size.first() } +
                     (theme.toolBar.buttons.size - 1) * theme.toolBar.buttonSpacing
-                toolbarWidth shouldBe 350
+                toolbarWidth shouldBe 355
                 for (screenWidth in listOf(360, 411)) {
                     val fixedWidth = theme.toolBar.primaryButton!!.size.first() + theme.toolBar.buttons.first().size.first()
                     (screenWidth - fixedWidth >= 280) shouldBe true

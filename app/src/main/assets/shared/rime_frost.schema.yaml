@@ -30,8 +30,10 @@ switches:
   - name: traditionalization
     states: [ 简体, 繁体 ]
   - name: full_shape
+    reset: 0
     states: [ 半角, 全角 ]
   - name: ascii_punct  # 中英标点
+    reset: 0
     states: [ 。，, ．， ]
 
   - name: emoji
@@ -44,8 +46,6 @@ switches:
     reset: 0
     states: [ 地, 煋 ] #火星文
 
-  - name: chaifen
-    states: [ 拆分不提示, 拆分提示 ]
   - name: pin_cand
     states: [ 固顶关, 固顶开 ]
 
@@ -94,8 +94,6 @@ engine:
     - lua_filter@*aux_lookup_filter                  # ` phrase aux lookup
     - lua_filter@*chen_custom_phrase_pos             # 自定义短语候选位置
     - simplifier@emoji                              # Emoji
-    - simplifier@chaifen
-    - simplifier@chaifen_all
     - simplifier@chinese_english
     - simplifier@traditionalize                     # 简繁切换
     - simplifier@mars                               #火星文
@@ -288,23 +286,6 @@ custom_phrase:
   enable_completion: false  # 补全提示
   enable_sentence: false    # 禁止造句
   initial_quality: 99       # custom_phrase 的权重应该比 pinyin 和 melt_eng 大
-
-# 显示墨奇码拆分
-chaifen:
-  option_name: chaifen
-  opencc_config: moqi_chaifen.json
-  tips: char
-  show_in_comment: true
-  comment_format:
-    - "xform/	/ /"
-
-chaifen_all:
-  option_name: chaifen_all
-  opencc_config: moqi_chaifen_all.json
-  tips: char
-  show_in_comment: true
-  comment_format:
-    - "xform/	/ /"
 
 #中文转英文
 chinese_english:

@@ -304,7 +304,7 @@ class BuiltinThemeTest :
                 if (id == "tongwenfeng.trime") {
                     theme.toolBar.buttons.map { it.action } shouldBe listOf(
                         "Hide", "VOICE_ASSIST", "liquid_keyboard_emoji", "clipboard_window",
-                        "Keyboard_editor", "Mode_switch", "Zenkaku_Hankaku", "redo", "undo",
+                        "Keyboard_editor", "Mode_switch", "redo", "undo",
                     )
                 }
                 theme.toolBar.buttons[1].foreground.style shouldBe "ic@microphone"
@@ -312,7 +312,7 @@ class BuiltinThemeTest :
                 val toolbarButtons = theme.toolBar.buttons + listOfNotNull(theme.toolBar.primaryButton)
                 val toolbarWidth = toolbarButtons.sumOf { it.size.first() } +
                     (theme.toolBar.buttons.size - 1) * theme.toolBar.buttonSpacing
-                toolbarWidth shouldBe if (id == "tongwenfeng.trime") 440 else 350
+                toolbarWidth shouldBe if (id == "tongwenfeng.trime") 400 else 350
                 for (screenWidth in listOf(360, 411)) {
                     val fixedWidth = theme.toolBar.primaryButton!!.size.first() + theme.toolBar.buttons.first().size.first()
                     (screenWidth - fixedWidth >= 280) shouldBe true

@@ -7,14 +7,10 @@ package com.osfans.trime.ime.switches
 
 import android.app.Dialog
 import android.view.View
-import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
 import com.osfans.trime.core.RimeApi
-import com.osfans.trime.core.RimeConfig
-import com.osfans.trime.core.RimeMessage
-import com.osfans.trime.core.SchemaItem
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.theme.Theme
@@ -23,16 +19,11 @@ import com.osfans.trime.ime.bar.ui.ToolButton
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.dialog.EnabledSchemaPickerDialog
-import com.osfans.trime.ime.keyboard.KeyboardWindow
-import com.osfans.trime.ime.keyboard.switchCharset
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.settings.ThemePickerDialog
 import com.osfans.trime.util.AppUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.kodein.di.DI
 import org.kodein.di.instance
 import splitties.dimensions.dp
@@ -48,55 +39,36 @@ class SwitchOptionWindow(di: DI) :
     InputBroadcastReceiver,
     ResidentWindow {
     companion object : ResidentWindow.Key
+
     override val key: ResidentWindow.Key get() = SwitchOptionWindow
-    private var entriesJob: Job? = null
-    private var attached = false
     private val service: TrimeInputMethodService by instance()
     private val rime: RimeSession by instance()
-    private val keyboardWindow: KeyboardWindow by instance()
     private val scope: ThemeScope by instance()
     private val theme: Theme get() = scope.theme
 
     private val staticEntries by lazy {
         arrayOf(
-            SwitchOptionEntry.Static(
+            SwitchOptionEntry(
                 context.getString(R.string.theme),
                 R.drawable.ic_baseline_color_lens_24,
-                SwitchOptionEntry.Static.Type.ThemeList,
+                SwitchOptionEntry.Type.ThemeList,
             ),
-            SwitchOptionEntry.Static(
+            SwitchOptionEntry(
                 context.getString(R.string.schemata),
                 R.drawable.ic_round_view_list_24,
-                SwitchOptionEntry.Static.Type.SchemaList,
+                SwitchOptionEntry.Type.SchemaList,
             ),
-            SwitchOptionEntry.Static(
+            SwitchOptionEntry(
                 context.getString(R.string.update_config),
                 R.drawable.ic_baseline_sync_24,
-                SwitchOptionEntry.Static.Type.UpdateConfig,
+                SwitchOptionEntry.Type.UpdateConfig,
             ),
-            SwitchOptionEntry.Static(
+            SwitchOptionEntry(
                 context.getString(R.string.virtual_keyboard),
                 R.drawable.ic_baseline_keyboard_24,
-                SwitchOptionEntry.Static.Type.Keyboard,
+                SwitchOptionEntry.Type.Keyboard,
             ),
         )
-    }
-
-    var popupMenu: PopupMenu? = null
-
-    private val saveOptions by lazy {
-        RimeConfig.openConfig("default").use {
-            it.getList("switcher/save_options", RimeConfig::getString).toSet()
-        }
-    }
-
-    private suspend fun RimeApi.applyOption(option: String, value: Boolean) {
-        setRuntimeOption(option, value)
-        if (option in saveOptions) {
-            RimeConfig.openUserConfig("user").use {
-                it.setBool("var/option/$option", value)
-            }
-        }
     }
 
     private fun showDialog(builder: suspend (RimeApi) -> Dialog) {
@@ -115,59 +87,27 @@ class SwitchOptionWindow(di: DI) :
                 view: View,
                 entry: SwitchOptionEntry,
             ) {
-                when (entry) {
-                    is SwitchOptionEntry.Static -> when (entry.type) {
-                        SwitchOptionEntry.Static.Type.SchemaList -> showDialog { r ->
-                            EnabledSchemaPickerDialog.build(r, service.lifecycleScope, context) {
-                                setNegativeButton(R.string.enable_schemata) { _, _ ->
-                                    AppUtils.launchMainToSchemaList(context)
-                                }
-                            }
-                        }
-
-                        SwitchOptionEntry.Static.Type.UpdateConfig -> rime.launchOnReady { r ->
-                            r.updateConfig()
-                            service.lifecycleScope.launch {
-                                Toast.makeText(service, R.string.done, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-
-                        SwitchOptionEntry.Static.Type.Keyboard -> AppUtils.launchMainToKeyboard(context)
-
-                        SwitchOptionEntry.Static.Type.ThemeList -> showDialog { r ->
-                            ThemePickerDialog.build(service.lifecycleScope, context) {
-                                r.commitComposition()
+                when (entry.type) {
+                    SwitchOptionEntry.Type.SchemaList -> showDialog { r ->
+                        EnabledSchemaPickerDialog.build(r, service.lifecycleScope, context) {
+                            setNegativeButton(R.string.enable_schemata) { _, _ ->
+                                AppUtils.launchMainToSchemaList(context)
                             }
                         }
                     }
 
-                    is SwitchOptionEntry.Custom -> {
-                        val options = entry.switch.options
-                        if (entry.switch.name == "ascii_mode") {
-                            service.switchCharset(entry.switch.name, keyboardWindow)
-                        } else if (options.isEmpty()) {
-                            rime.launchOnReady {
-                                val oldValue = it.getRuntimeOption(entry.switch.name)
-                                it.applyOption(entry.switch.name, !oldValue)
-                            }
-                        } else {
-                            val popup = PopupMenu(context, view)
-                            val menu = popup.menu
-                            entry.switch.states.forEachIndexed { i, state ->
-                                menu.add(0, 0, 0, state).apply {
-                                    setOnMenuItemClickListener {
-                                        rime.launchOnReady {
-                                            options.forEachIndexed { j, option ->
-                                                it.applyOption(option, i == j)
-                                            }
-                                        }
-                                        true
-                                    }
-                                }
-                            }
-                            popupMenu?.dismiss()
-                            popupMenu = popup
-                            popup.show()
+                    SwitchOptionEntry.Type.UpdateConfig -> rime.launchOnReady { r ->
+                        r.updateConfig()
+                        service.lifecycleScope.launch {
+                            Toast.makeText(service, R.string.done, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    SwitchOptionEntry.Type.Keyboard -> AppUtils.launchMainToKeyboard(context)
+
+                    SwitchOptionEntry.Type.ThemeList -> showDialog { r ->
+                        ThemePickerDialog.build(service.lifecycleScope, context) {
+                            r.commitComposition()
                         }
                     }
                 }
@@ -177,32 +117,11 @@ class SwitchOptionWindow(di: DI) :
 
     val view by lazy {
         context.recyclerView {
-            layoutManager = gridLayoutManager(4).apply { initialPrefetchItemCount = 8 }
+            layoutManager = gridLayoutManager(4).apply { initialPrefetchItemCount = staticEntries.size }
             adapter = this@SwitchOptionWindow.adapter
             itemAnimator = null
             setHasFixedSize(true)
         }
-    }
-
-    private fun updateSchemaOptionEntries() {
-        if (!attached) return
-        // Cancel obsolete snapshots when several option messages arrive together.
-        entriesJob?.cancel()
-        val static = staticEntries.toList()
-        entriesJob = service.lifecycleScope.launch(Dispatchers.Default) {
-            val entries = rime.runOnReady {
-                static + currentSchema().switches.mapNotNull { SwitchOptionEntry.fromSwitch(this, it) }
-            }
-            withContext(Dispatchers.Main) { adapter.submitList(entries) }
-        }
-    }
-
-    override fun onRimeSchemaUpdated(schema: SchemaItem) {
-        updateSchemaOptionEntries()
-    }
-
-    override fun onRimeOptionUpdated(value: RimeMessage.OptionMessage.Data) {
-        updateSchemaOptionEntries()
     }
 
     private var viewCreated = false
@@ -243,19 +162,8 @@ class SwitchOptionWindow(di: DI) :
     override fun onCreateBarView() = barExternalView
 
     override fun onAttached() {
-        attached = true
         refreshColors()
-        updateSchemaOptionEntries()
     }
 
-    override fun onDestroyed() {
-        onDetached()
-    }
-
-    override fun onDetached() {
-        attached = false
-        entriesJob?.cancel()
-        popupMenu?.dismiss()
-        popupMenu = null
-    }
+    override fun onDetached() = Unit
 }

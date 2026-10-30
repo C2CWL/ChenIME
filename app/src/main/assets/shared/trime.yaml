@@ -914,7 +914,6 @@ preset_keys:
   DeleteCandidate: {label: 刪詞, send: Control+Delete}
   # rime狀態
   Mode_switch: {toggle: ascii_mode, send: SWITCH_CHARSET, states: [ 中文, 西文 ]}
-  Zenkaku_Hankaku: {toggle: full_shape, send: SWITCH_CHARSET, states: [ 半角, 全角 ]}
   Henkan: {toggle: simplification, send: SWITCH_CHARSET, states: [ 漢字, 汉字 ]}
   Charset_switch: {toggle: extended_charset, send: SWITCH_CHARSET, states: [ 常用, 增廣 ]}
   Punct_switch: {toggle: ascii_punct, send: SWITCH_CHARSET, states: [ 。，, ．， ]}

@@ -254,7 +254,10 @@ class BuiltinThemeTest :
                 theme.presetKeyboards.getValue("number").lock shouldBe true
                 // Named actions must resolve after includes; single characters and symbol
                 // strings are intentional literal input, and these names are native keys.
-                val nativeKeys = setOf("at", "comma", "minus", "period", "plus", "slash")
+                val nativeKeys = setOf(
+                    "at", "colon", "comma", "exclam", "minus", "period",
+                    "plus", "question", "semicolon", "slash",
+                )
                 val literalFaces = setOf("QwQ", "QAQ", "T_T", "o_O")
                 fun checkAction(action: String) {
                     if (action.matches(Regex("[A-Za-z_][A-Za-z_0-9]+"))) {
@@ -301,10 +304,55 @@ class BuiltinThemeTest :
                         "undo",
                     )
                 }
+                for (layout in letterLayouts) {
+                    val keys = theme.presetKeyboards.getValue(layout).keys
+                    val comma = keys.single { it.click == KeyActionToken.Plain(",") }
+                    comma.longClick shouldBe KeyActionToken.Plain("comma")
+                    comma.popup shouldBe listOf(
+                        "comma", "semicolon", "colon", "Literal_left_book", "Literal_right_book",
+                        "Literal_left_parenthesis", "Literal_right_parenthesis", "Literal_left_double_quote",
+                        "Literal_right_double_quote", "Literal_left_single_quote", "Literal_right_single_quote",
+                    )
+                    val period = keys.single { it.click == KeyActionToken.Plain(".") }
+                    period.longClick shouldBe KeyActionToken.Plain("period")
+                    period.popup shouldBe listOf(
+                        "period", "Literal_period", "exclam", "question", "Literal_ellipsis", "Literal_percent",
+                        "Literal_plus", "Literal_minus", "Literal_multiply", "Literal_divide", "Literal_equal",
+                    )
+                    for ((name, symbol) in mapOf(
+                        "Literal_left_book" to "《",
+                        "Literal_right_book" to "》",
+                        "Literal_left_parenthesis" to "（",
+                        "Literal_right_parenthesis" to "）",
+                        "Literal_left_double_quote" to "“",
+                        "Literal_right_double_quote" to "”",
+                        "Literal_left_single_quote" to "‘",
+                        "Literal_right_single_quote" to "’",
+                        "Literal_period" to ".",
+                        "Literal_ellipsis" to "…",
+                        "Literal_percent" to "%",
+                        "Literal_plus" to "+",
+                        "Literal_minus" to "-",
+                        "Literal_multiply" to "×",
+                        "Literal_divide" to "÷",
+                        "Literal_equal" to "=",
+                    )) {
+                        theme.presetKeys.getValue(name).label shouldBe symbol
+                        theme.presetKeys.getValue(name).commit shouldBe symbol
+                        theme.presetKeys.getValue(name).send shouldBe ""
+                        theme.presetKeys.getValue(name).text shouldBe ""
+                    }
+                }
                 if (id == "tongwenfeng.trime") {
                     theme.toolBar.buttons.map { it.action } shouldBe listOf(
-                        "Hide", "VOICE_ASSIST", "liquid_keyboard_emoji", "clipboard_window",
-                        "Keyboard_editor", "Mode_switch", "Zenkaku_Hankaku", "redo", "undo",
+                        "Hide",
+                        "VOICE_ASSIST",
+                        "liquid_keyboard_emoji",
+                        "clipboard_window",
+                        "Keyboard_editor",
+                        "Mode_switch",
+                        "redo",
+                        "undo",
                     )
                 }
                 theme.toolBar.buttons[1].foreground.style shouldBe "ic@microphone"
@@ -312,7 +360,7 @@ class BuiltinThemeTest :
                 val toolbarButtons = theme.toolBar.buttons + listOfNotNull(theme.toolBar.primaryButton)
                 val toolbarWidth = toolbarButtons.sumOf { it.size.first() } +
                     (theme.toolBar.buttons.size - 1) * theme.toolBar.buttonSpacing
-                toolbarWidth shouldBe if (id == "tongwenfeng.trime") 440 else 350
+                toolbarWidth shouldBe if (id == "tongwenfeng.trime") 395 else 350
                 for (screenWidth in listOf(360, 411)) {
                     val fixedWidth = theme.toolBar.primaryButton!!.size.first() + theme.toolBar.buttons.first().size.first()
                     (screenWidth - fixedWidth >= 280) shouldBe true
@@ -367,16 +415,39 @@ class BuiltinThemeTest :
             }
         }
 
-        "Frost question punctuation is Chinese in both shape modes" {
+        "Frost keeps shape mode fixed and resets Chinese punctuation" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
+            val switches = schema["switches"]!!.sequence!!.items.associateBy { it["name"]?.string }
+            switches.containsKey("full_shape") shouldBe false
+            switches["ascii_punct"]?.get("reset")?.string shouldBe "0"
+            switches.containsKey("chaifen") shouldBe false
+            val filters = schema["engine"]!!["filters"]!!.sequence!!.items.map { it.string }
+            for (option in listOf("chaifen", "chaifen_all")) {
+                filters.contains("simplifier@$option") shouldBe false
+                schema[option] shouldBe null
+            }
+        }
+
+        "Frost punctuation remains Chinese while letter shape is fixed" {
             val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
             val defaults = ThemeYaml.parser.parseToYamlNode(root.resolve("default.yaml").readText())
             val punctuation = ThemeYaml.parser.parseToYamlNode(root.resolve("punctuation.yaml").readText())
+            defaults["switcher"]!!["save_options"]!!.sequence!!.items.map { it.string }
+                .contains("full_shape") shouldBe false
+            for (file in listOf("trime.yaml", "tongwenfeng.trime.yaml")) {
+                val theme = ThemeYaml.parser.parseToYamlNode(root.resolve(file).readText())
+                theme["preset_keys"]?.get("Zenkaku_Hankaku") shouldBe null
+            }
             for (shape in listOf("full_shape", "half_shape")) {
                 schema["punctuator"]?.get(shape)?.get("__include")?.string shouldBe "default:/punctuator/$shape"
                 defaults["punctuator"]?.get(shape)?.get("__include")?.string shouldBe "punctuation:/$shape"
-                punctuation[shape]?.get("?")?.get("commit")?.string shouldBe "？"
+                for ((key, value) in mapOf("?" to "？", "," to "，", "." to "。")) {
+                    punctuation[shape]?.get(key)?.get("commit")?.string shouldBe value
+                }
             }
-            punctuation["ascii_style"]?.get("?")?.get("commit")?.string shouldBe "?"
+            for (key in listOf("?", ",", ".")) {
+                punctuation["ascii_style"]?.get(key)?.get("commit")?.string shouldBe key
+            }
         }
 
         "Frost defaults native correction off through a bundled patch" {
@@ -405,6 +476,11 @@ class BuiltinThemeTest :
             val schemas = defaults["schema_list"]!!.sequence!!.items.map { it["schema"]?.string }
             schemas shouldBe listOf("rime_frost")
             schemas.contains("chen_eng") shouldBe false
+        }
+
+        "default ascii composer does not turn Caps Lock input into delimited uppercase words" {
+            val defaults = ThemeYaml.parser.parseToYamlNode(root.resolve("default.yaml").readText())
+            defaults["ascii_composer"]?.get("good_old_caps_lock")?.string shouldBe "false"
         }
 
         "the old include id prevents both loading and picker metadata expansion" {

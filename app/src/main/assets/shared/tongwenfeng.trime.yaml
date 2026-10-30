@@ -1075,12 +1075,6 @@ tool_bar:
       padding: 10
     action: Mode_switch
 
-  full_shape_button: &full_shape_button
-    size: [40, 40]
-    foreground:
-      option_styles: ["ic@arrow_collapse_horizontal", "ic@arrow_expand_horizontal"]
-    action: Zenkaku_Hankaku
-
   undo_button: &undo_button
     size: [40, 40]
     foreground:
@@ -1096,7 +1090,7 @@ tool_bar:
     action: redo
 
   # 右侧按钮列表（从右向左排列）
-  buttons: [ *hide_button, *voice_button, *emoji_button, *clipboard_button, *edit_button, *ascii_mode_button, *full_shape_button, *redo_button, *undo_button ]
+  buttons: [ *hide_button, *voice_button, *emoji_button, *clipboard_button, *edit_button, *ascii_mode_button, *redo_button, *undo_button ]
 
 #键盘布局
 preset_keyboards:
@@ -1142,9 +1136,9 @@ preset_keyboards:
       - {click: BackSpace2, swipe_up: Ifly_clear_all, swipe_down: restore_cleared, width: 15, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_number, long_click: Menu, width: 18, key_back_color: bgn, key_text_color: tgn}
-      - {click: ',', label: '，', long_click: '<>{Left}', width: 13, key_back_color: bh4, key_text_color: th4}
+      - {click: ',', label: '，', long_click: comma, popup: [comma, semicolon, colon, Literal_left_book, Literal_right_book, Literal_left_parenthesis, Literal_right_parenthesis, Literal_left_double_quote, Literal_right_double_quote, Literal_left_single_quote, Literal_right_single_quote], width: 13, key_back_color: bh4, key_text_color: th4}
       - {click: space, long_click: Mode_switch, swipe_left: "Left", swipe_right: "Right", swipe_up: Schema_switchcn, width: 34, key_back_color: bkg, key_text_color: tkg}
-      - {click: '.', label: '。', long_click: clipboard_window, key_back_color: bh4, key_text_color: th4}
+      - {click: '.', label: '。', long_click: period, popup: [period, Literal_period, exclam, question, Literal_ellipsis, Literal_percent, Literal_plus, Literal_minus, Literal_multiply, Literal_divide, Literal_equal], key_back_color: bh4, key_text_color: th4}
       - {click: '/', long_click: liquid_keyboard_switch , key_text_size: "18", key_back_color: bh4, key_text_color: th4}
       - {click: Return, label_symbol: "wiki", popup: ["TrimeWiki", "Settings"], composing: Return1, swipe_up: Escape, width: 15, key_back_color: benter, key_text_color: tenter}
 
@@ -1191,9 +1185,9 @@ preset_keyboards:
       - {click: BackSpace, swipe_up: Ifly_clear_all, swipe_down: restore_cleared, width: 15, key_back_color: bbs, key_text_color: tbs}
 
       - {click: Keyboard_number, long_click: Menu, width: 18, key_back_color: bgn, key_text_color: tgn}
-      - {click: ',', label: '，', long_click: '<>{Left}', width: 13, key_back_color: bh4, key_text_color: th4}
+      - {click: ',', label: '，', long_click: comma, popup: [comma, semicolon, colon, Literal_left_book, Literal_right_book, Literal_left_parenthesis, Literal_right_parenthesis, Literal_left_double_quote, Literal_right_double_quote, Literal_left_single_quote, Literal_right_single_quote], width: 13, key_back_color: bh4, key_text_color: th4}
       - {label: '______', click: space, long_click: space_R2, swipe_left: "Left", swipe_right: "Right", swipe_up: Keyboard_fbj, width: 34, key_back_color: bkg, key_text_color: tkg}
-      - {click: '.', label: '。', long_click: Keyboard_kao, key_back_color: bh4, key_text_color: th4}
+      - {click: '.', label: '。', long_click: period, popup: [period, Literal_period, exclam, question, Literal_ellipsis, Literal_percent, Literal_plus, Literal_minus, Literal_multiply, Literal_divide, Literal_equal], key_back_color: bh4, key_text_color: th4}
       - {click: space_R2, long_click: liquid_keyboard_switch, key_text_size: "18", key_back_color: bh4, key_text_color: th4}
       - {click: Return, composing: Return1, swipe_up: Escape, width: 15, key_back_color: benter, key_text_color: tenter}
 
@@ -3989,6 +3983,23 @@ preset_keyboards:
 
 
 preset_keys:
+  # Literal punctuation choices for comma/period long-press pickers.
+  Literal_left_book: {label: "《", commit: "《"}
+  Literal_right_book: {label: "》", commit: "》"}
+  Literal_left_parenthesis: {label: "（", commit: "（"}
+  Literal_right_parenthesis: {label: "）", commit: "）"}
+  Literal_left_double_quote: {label: "“", commit: "“"}
+  Literal_right_double_quote: {label: "”", commit: "”"}
+  Literal_left_single_quote: {label: "‘", commit: "‘"}
+  Literal_right_single_quote: {label: "’", commit: "’"}
+  Literal_period: {label: ".", commit: "."}
+  Literal_ellipsis: {label: "…", commit: "…"}
+  Literal_percent: {label: "%", commit: "%"}
+  Literal_plus: {label: "+", commit: "+"}
+  Literal_minus: {label: "-", commit: "-"}
+  Literal_multiply: {label: "×", commit: "×"}
+  Literal_divide: {label: "÷", commit: "÷"}
+  Literal_equal: {label: "=", commit: "="}
   # Route only unambiguous hint punctuation through Rime.
   Hint_exclam: {label: "!", send: exclam}
   Hint_question: {label: "?", send: question}
@@ -4132,7 +4143,6 @@ preset_keys:
   clipboard_window: { label: "剪贴", send: FUNCTION, command: "clipboard_window", option: '0' } #0剪贴板，1收藏夹
   # rime状态
   Mode_switch: {toggle: ascii_mode, functional: false, send: SWITCH_CHARSET, states: [ 中文, 英文 ]}
-  Zenkaku_Hankaku: {toggle: full_shape, send: SWITCH_CHARSET, states: [ 半角, 全角 ]}
   Henkan: {toggle: simplification, send: SWITCH_CHARSET, states: [ 漢字, 汉字 ]}
   Charset_switch: {toggle: extended_charset, send: SWITCH_CHARSET, states: [ 常用, 增广 ]}
   Punct_switch: {toggle: ascii_punct, send: SWITCH_CHARSET, states: [ 。，, ．， ]}

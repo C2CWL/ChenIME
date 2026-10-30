@@ -380,10 +380,16 @@ class BuiltinThemeTest :
             }
         }
 
-        "Frost punctuation is Chinese in both shape modes" {
+        "Frost punctuation remains Chinese while letter shape is fixed" {
             val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
             val defaults = ThemeYaml.parser.parseToYamlNode(root.resolve("default.yaml").readText())
             val punctuation = ThemeYaml.parser.parseToYamlNode(root.resolve("punctuation.yaml").readText())
+            defaults["switcher"]!!["save_options"]!!.sequence!!.items.map { it.string }
+                .contains("full_shape") shouldBe false
+            for (file in listOf("trime.yaml", "tongwenfeng.trime.yaml")) {
+                val theme = ThemeYaml.parser.parseToYamlNode(root.resolve(file).readText())
+                theme["preset_keys"]?.get("Zenkaku_Hankaku") shouldBe null
+            }
             for (shape in listOf("full_shape", "half_shape")) {
                 schema["punctuator"]?.get(shape)?.get("__include")?.string shouldBe "default:/punctuator/$shape"
                 defaults["punctuator"]?.get(shape)?.get("__include")?.string shouldBe "punctuation:/$shape"

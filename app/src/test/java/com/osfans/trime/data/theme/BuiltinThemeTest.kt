@@ -367,12 +367,11 @@ class BuiltinThemeTest :
             }
         }
 
-        "Frost defaults to half-width letters and Chinese punctuation without decomposition hints" {
+        "Frost keeps shape mode fixed and resets Chinese punctuation" {
             val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
             val switches = schema["switches"]!!.sequence!!.items.associateBy { it["name"]?.string }
-            for (option in listOf("full_shape", "ascii_punct")) {
-                switches[option]?.get("reset")?.string shouldBe "0"
-            }
+            switches.containsKey("full_shape") shouldBe false
+            switches["ascii_punct"]?.get("reset")?.string shouldBe "0"
             switches.containsKey("chaifen") shouldBe false
             val filters = schema["engine"]!!["filters"]!!.sequence!!.items.map { it.string }
             for (option in listOf("chaifen", "chaifen_all")) {

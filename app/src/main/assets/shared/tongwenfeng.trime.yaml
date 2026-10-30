@@ -1075,12 +1075,6 @@ tool_bar:
       padding: 10
     action: Mode_switch
 
-  full_shape_button: &full_shape_button
-    size: [40, 40]
-    foreground:
-      option_styles: ["ic@arrow_collapse_horizontal", "ic@arrow_expand_horizontal"]
-    action: Zenkaku_Hankaku
-
   undo_button: &undo_button
     size: [40, 40]
     foreground:
@@ -1096,7 +1090,7 @@ tool_bar:
     action: redo
 
   # 右侧按钮列表（从右向左排列）
-  buttons: [ *hide_button, *voice_button, *emoji_button, *clipboard_button, *edit_button, *ascii_mode_button, *full_shape_button, *redo_button, *undo_button ]
+  buttons: [ *hide_button, *voice_button, *emoji_button, *clipboard_button, *edit_button, *ascii_mode_button, *redo_button, *undo_button ]
 
 #键盘布局
 preset_keyboards:
@@ -4132,7 +4126,6 @@ preset_keys:
   clipboard_window: { label: "剪贴", send: FUNCTION, command: "clipboard_window", option: '0' } #0剪贴板，1收藏夹
   # rime状态
   Mode_switch: {toggle: ascii_mode, functional: false, send: SWITCH_CHARSET, states: [ 中文, 英文 ]}
-  Zenkaku_Hankaku: {toggle: full_shape, send: SWITCH_CHARSET, states: [ 半角, 全角 ]}
   Henkan: {toggle: simplification, send: SWITCH_CHARSET, states: [ 漢字, 汉字 ]}
   Charset_switch: {toggle: extended_charset, send: SWITCH_CHARSET, states: [ 常用, 增广 ]}
   Punct_switch: {toggle: ascii_punct, send: SWITCH_CHARSET, states: [ 。，, ．， ]}

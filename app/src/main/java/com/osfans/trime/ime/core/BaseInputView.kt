@@ -21,13 +21,13 @@ import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
 import com.osfans.trime.core.RimeMessage
 import com.osfans.trime.daemon.RimeSession
-import com.osfans.trime.data.phrase.CustomPhraseDialogs
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.data.theme.ThemePrefs
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.keyboard.InputFeedbackManager
+import com.osfans.trime.util.AppUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import splitties.dimensions.dp
@@ -119,7 +119,7 @@ abstract class BaseInputView(
         button(R.string.add_as_custom_phrase) {
             service.lifecycleScope.launch {
                 val code = rime.runOnReady { getRawInput() }
-                CustomPhraseDialogs.edit(themedContext, service.lifecycleScope, rime, text, code, token = windowToken)
+                AppUtils.launchCustomPhraseEdit(service, text, code)
             }
         }
         button(R.string.forget_this_word) { rime.runIfReady { deleteCandidate(idx, global) } }

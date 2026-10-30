@@ -9,7 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.util.SparseArray
 import android.view.KeyEvent
+import com.osfans.trime.data.phrase.CustomPhraseDocument
 import com.osfans.trime.ui.main.ClipEditActivity
+import com.osfans.trime.ui.main.CustomPhraseEditActivity
 import com.osfans.trime.ui.main.LogActivity
 import com.osfans.trime.ui.main.MainActivity
 import com.osfans.trime.ui.main.NavigationRoute
@@ -66,6 +68,22 @@ object AppUtils {
 
     fun launchLogActivity(context: Context) {
         context.startActivity<LogActivity>()
+    }
+
+    fun launchCustomPhraseEdit(
+        context: Context,
+        text: String = "",
+        code: String = "",
+        weight: Int? = null,
+        row: CustomPhraseDocument.Row? = null,
+    ) {
+        context.startActivity<CustomPhraseEditActivity> {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(CustomPhraseEditActivity.TEXT, row?.entry?.text ?: text)
+            putExtra(CustomPhraseEditActivity.CODE, row?.entry?.code ?: code)
+            (row?.entry?.weight ?: weight)?.let { putExtra(CustomPhraseEditActivity.WEIGHT, it) }
+            row?.let { putExtra(CustomPhraseEditActivity.ROW, it.line) }
+        }
     }
 
     fun launchClipEdit(

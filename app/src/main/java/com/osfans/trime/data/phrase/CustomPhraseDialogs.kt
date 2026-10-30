@@ -3,10 +3,8 @@ package com.osfans.trime.data.phrase
 
 import android.app.AlertDialog
 import android.content.Context
-import android.os.IBinder
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.WindowManager
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -19,17 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 object CustomPhraseDialogs {
-    private fun show(dialog: AlertDialog, token: IBinder?) {
-        if (token != null) {
-            dialog.window?.apply {
-                setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
-                attributes = attributes.apply { this.token = token }
-            }
-        }
-        dialog.show()
-    }
-
-    fun edit(context: Context, scope: CoroutineScope, rime: RimeSession, text: String = "", code: String = "", row: CustomPhraseDocument.Row? = null, token: IBinder? = null, changed: () -> Unit = {}) {
+    fun edit(context: Context, scope: CoroutineScope, rime: RimeSession, text: String = "", code: String = "", row: CustomPhraseDocument.Row? = null, changed: () -> Unit = {}) {
         val fields = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 16, 32, 16)
@@ -51,12 +39,17 @@ object CustomPhraseDialogs {
             .setPositiveButton(android.R.string.ok, null)
             .apply { if (row != null) setNeutralButton(R.string.custom_phrase_delete, null) }
             .create()
-        show(dialog, token)
+        dialog.show()
         fun save(delete: Boolean) {
-            val entry = if (delete) null else CustomPhraseDocument.Entry(phrase.text.toString(), input.text.toString().trim(' '), weight.text.toString().ifBlank { "1" }.toIntOrNull() ?: -1)
-            if (entry != null && runCatching { CustomPhraseDocument("").validateEdit(entry) }.isFailure) {
-                phrase.error = context.getString(R.string.custom_phrase_format)
-                return
+            val entry = if (delete) {
+                null
+            } else {
+                runCatching {
+                    CustomPhraseStore.editEntry(phrase.text.toString(), input.text.toString(), weight.text.toString())
+                }.getOrElse {
+                    phrase.error = context.getString(R.string.custom_phrase_format)
+                    return
+                }
             }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
             dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.isEnabled = false

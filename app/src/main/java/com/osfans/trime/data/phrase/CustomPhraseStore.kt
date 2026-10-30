@@ -9,6 +9,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object CustomPhraseStore {
+    fun editEntry(text: String, code: String, weight: String): CustomPhraseDocument.Entry = CustomPhraseDocument.Entry(text, code.trim(' '), weight.ifBlank { "1" }.toIntOrNull() ?: -1).also {
+        CustomPhraseDocument("").validateEdit(it)
+    }
+
     private val file get() = UserDataManager.userDataDir.resolve("custom_phrase.txt")
 
     private fun read(context: Context): String = if (file.exists()) file.readText() else context.assets.open("shared/custom_phrase.txt").bufferedReader().use { it.readText() }

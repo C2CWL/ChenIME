@@ -271,8 +271,8 @@
     <string name="add_as_custom_phrase">新增為自訂詞組</string>
     <string name="custom_phrase_text">詞組內容</string>
     <string name="custom_phrase_code">編碼（例如 nh）</string>
-    <string name="custom_phrase_weight">權重 / 位置（選填，預設 1）</string>
-    <string name="custom_phrase_format">僅支援單行：librime 不解析換行跳脫。不允許定位字元、換行；權重須為非負整數。</string>
+    <string name="custom_phrase_weight">候選位置（選填，預設 1）</string>
+    <string name="custom_phrase_format">僅支援單行：librime 不解析換行跳脫。不允許定位字元、換行；候選位置須為正整數。</string>
     <string name="custom_phrase_search">搜尋編碼或詞組</string>
     <string name="custom_phrase_add">新增</string>
     <string name="custom_phrase_delete">刪除</string>

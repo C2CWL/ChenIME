@@ -229,7 +229,8 @@ function M.func(input, env)
     -- yield pined others 及后续的候选项
     for _, cand in ipairs(pined) do
         if cand ~= "" then
-            yield(cand)
+            -- Preserve this prefix through the custom-phrase position filter.
+            yield(ShadowCandidate(cand, "chen_pinned", cand.text, cand.comment))
         end
     end
     for _, cand in ipairs(others) do

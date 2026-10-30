@@ -54,7 +54,7 @@ object CustomPhraseDialogs {
         show(dialog, token)
         fun save(delete: Boolean) {
             val entry = if (delete) null else CustomPhraseDocument.Entry(phrase.text.toString(), input.text.toString().trim(' '), weight.text.toString().ifBlank { "1" }.toIntOrNull() ?: -1)
-            if (entry != null && runCatching { entry.serialize() }.isFailure) {
+            if (entry != null && runCatching { CustomPhraseDocument("").validateEdit(entry) }.isFailure) {
                 phrase.error = context.getString(R.string.custom_phrase_format)
                 return
             }

@@ -11,6 +11,12 @@ class CustomPhraseDocument(private var source: String) {
         }
     }
 
+    /** New edits require positive positions; parsing/serialization remains lossless for legacy zero. */
+    fun validateEdit(entry: Entry) {
+        entry.serialize()
+        require(entry.weight > 0)
+    }
+
     data class Row(val line: Int, val entry: Entry)
 
     fun entries(): List<Row> = source.split('\n').mapIndexedNotNull { index, line ->
@@ -21,6 +27,7 @@ class CustomPhraseDocument(private var source: String) {
     }
 
     fun replace(line: Int?, entry: Entry?) {
+        entry?.let { validateEdit(it) }
         val serialized = entry?.serialize()
         if (line == null) {
             requireNotNull(serialized)

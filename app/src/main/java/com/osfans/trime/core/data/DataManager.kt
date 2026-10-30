@@ -96,6 +96,31 @@ object DataManager {
         Timber.d("Synced!")
     }
 
+    /** Refresh app-owned runtime files on upgrade, leaving user phrase data untouched. */
+    fun syncCustomPhraseRuntime(): Boolean = lock.withLock {
+        val paths = listOf(
+            "rime_frost.schema.yaml",
+            "lua/pin_cand_filter.lua",
+            "lua/reduce_english_filter.lua",
+            "lua/chen_custom_phrase_pos.lua",
+        )
+        val marker = File(dataDir, "custom-phrase-runtime.sha256")
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val contents = paths.associateWith { appContext.assets.open("shared/$it").use { input -> input.readBytes() } }
+        contents.values.forEach { digest.update(it) }
+        val revision = digest.digest().joinToString("") { "%02x".format(it) }
+        if (marker.exists() && marker.readText() == revision && paths.all { File(userDataDir, it).exists() }) {
+            return@withLock false
+        }
+        contents.forEach { (path, bytes) ->
+            val target = File(userDataDir, path)
+            target.parentFile?.mkdirs()
+            target.writeBytes(bytes)
+        }
+        marker.writeText(revision)
+        true
+    }
+
     private fun AssetManager.copyFile(filename: String) {
         open(filename).use { i ->
             File(externalFilesDir, filename)

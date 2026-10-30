@@ -344,6 +344,7 @@ class Rime :
 
     private fun startRime(fullCheck: Boolean) {
         DataManager.sync()
+        val customPhraseRuntimeChanged = DataManager.syncCustomPhraseRuntime()
         UserDataManager.ensureDefaultCustomConfig()
         // Apply after asset/external sync and before startup, including upgrades with stale build output.
         val correctionChanged = RimeConfig.patchPinyinCorrection(
@@ -364,7 +365,7 @@ class Rime :
             sharedDataDir,
             userDataDir,
             BuildConfig.BUILD_VERSION_NAME,
-            fullCheck || correctionChanged,
+            fullCheck || correctionChanged || customPhraseRuntimeChanged,
         )
     }
 

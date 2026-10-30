@@ -23,6 +23,19 @@ class CustomPhraseDocumentTest :
             document.replace(null, CustomPhraseDocument.Entry("邮箱", "yx", 8))
             document.toString() shouldBe "# keep\n你好\tnh\n邮箱\tyx\t8\n"
         }
+        "new positions must be positive while legacy zero survives unrelated edits" {
+            val original = "旧词\tjc\t0\n省略\tsl\n"
+            val document = CustomPhraseDocument(original)
+            document.entries().first().entry.weight shouldBe 0
+            document.entries().first().entry.serialize() shouldBe "旧词\tjc\t0"
+            document.toString() shouldBe original
+            for (position in listOf(0, -1)) {
+                shouldThrowAny { document.replace(null, CustomPhraseDocument.Entry("新增", "xz", position)) }
+                shouldThrowAny { document.replace(0, CustomPhraseDocument.Entry("旧词", "jc", position)) }
+            }
+            document.replace(null, CustomPhraseDocument.Entry("新增", "xz"))
+            document.toString() shouldBe original + "新增\txz\t1\n"
+        }
         "tabs are separators and newline escapes remain literal" {
             for (text in listOf("a\tb", "a\nb", "a\rb", "#comment")) {
                 shouldThrowAny { CustomPhraseDocument.Entry(text, "ab").serialize() }

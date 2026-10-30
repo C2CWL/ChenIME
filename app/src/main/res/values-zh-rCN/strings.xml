@@ -270,8 +270,8 @@
     <string name="add_as_custom_phrase">添加为自定义词组</string>
     <string name="custom_phrase_text">词组内容</string>
     <string name="custom_phrase_code">编码（例如 nh）</string>
-    <string name="custom_phrase_weight">权重 / 位置（选填，默认 1）</string>
-    <string name="custom_phrase_format">仅支持单行：librime 不解析换行转义。不允许制表符、换行；权重须为非负整数。</string>
+    <string name="custom_phrase_weight">候选位置（选填，默认 1）</string>
+    <string name="custom_phrase_format">仅支持单行：librime 不解析换行转义。不允许制表符、换行；候选位置须为正整数。</string>
     <string name="custom_phrase_search">搜索编码或词组</string>
     <string name="custom_phrase_add">添加</string>
     <string name="custom_phrase_delete">删除</string>

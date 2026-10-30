@@ -6,7 +6,7 @@
 schema:
   schema_id: rime_frost
   name: 白霜拼音
-  version: "2024-02-25"
+  version: "2026-10-30"
   author:
     - Dvel
     - gaboolic
@@ -92,6 +92,7 @@ engine:
     # - lua_filter@*long_word_filter                   # 长词优先（顺序要求：长词优先 > Emoji）
     - lua_filter@*reduce_english_filter              # 降低部分英语单词在候选项的位置
     - lua_filter@*aux_lookup_filter                  # ` phrase aux lookup
+    - lua_filter@*chen_custom_phrase_pos             # 自定义短语候选位置
     - simplifier@emoji                              # Emoji
     - simplifier@chaifen
     - simplifier@chaifen_all

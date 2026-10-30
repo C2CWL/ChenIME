@@ -6,47 +6,17 @@
 package com.osfans.trime.ime.switches
 
 import androidx.annotation.DrawableRes
-import com.osfans.trime.core.RimeApi
-import com.osfans.trime.core.RimeSchema
-import com.osfans.trime.ime.keyboard.EnglishMode
 
-sealed class SwitchOptionEntry(
+class SwitchOptionEntry(
     val label: String,
     @param:DrawableRes
     val icon: Int,
+    val type: Type,
 ) {
-    class Static(label: String, icon: Int, val type: Type) : SwitchOptionEntry(label, icon) {
-        enum class Type {
-            SchemaList,
-            UpdateConfig,
-            Keyboard,
-            ThemeList,
-        }
-    }
-
-    class Custom(
-        val switch: RimeSchema.Switch,
-        label: String,
-        icon: Int,
-    ) : SwitchOptionEntry(label, icon)
-
-    companion object {
-        suspend fun fromSwitch(api: RimeApi, it: RimeSchema.Switch): Custom? {
-            val labels = it.states
-            if (labels.size <= 1) return null
-            return if (it.name.isNotEmpty()) {
-                if (labels.size != 2) return null
-                val (disabledText, enabledText) = labels
-                val value = EnglishMode.optionEnabled(it.name, api.getRuntimeOption(it.name), api.statusCached.schemaId)
-                val label = if (value) "$enabledText → $disabledText" else "$disabledText → $enabledText"
-                Custom(it, label, 0)
-            } else {
-                val options = it.options
-                if (options.size != labels.size) return null
-                val index = options.indexOfFirst { api.getRuntimeOption(it) }
-                val label = labels[if (index >= 0) index else 0]
-                Custom(it, label, 0)
-            }
-        }
+    enum class Type {
+        SchemaList,
+        UpdateConfig,
+        Keyboard,
+        ThemeList,
     }
 }

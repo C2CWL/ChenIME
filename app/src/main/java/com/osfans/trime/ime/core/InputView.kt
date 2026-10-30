@@ -166,6 +166,10 @@ class InputView(
 
     val keyboardView: View
 
+    fun invalidateAllKeys() {
+        keyboardWindow.invalidateAllKeys()
+    }
+
     /** Restyles colors after a scheme switch without rebuilding the view tree. */
     fun refreshColors() {
         keyboardBackground.imageDrawable = scope.drawable("keyboard_background")

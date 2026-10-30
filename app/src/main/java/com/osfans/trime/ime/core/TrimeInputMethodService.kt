@@ -102,12 +102,24 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     private val recreateInputViewPrefs: Array<PreferenceDelegate<*>> = arrayOf(
         prefs.keyboard.heightPercent,
         prefs.keyboard.expandKeypressArea,
-        prefs.keyboard.hideKeySymbol,
-        prefs.keyboard.hideKeyHint,
         prefs.keyboard.uppercaseKeyLabels,
         prefs.keyboard.hideInputBar,
         prefs.advanced.ignoreSystemGestureInsets,
     )
+
+    private val redrawKeyboardPrefs: Array<PreferenceDelegate<*>> = arrayOf(
+        prefs.keyboard.hideKeySymbol,
+        prefs.keyboard.hideKeyHint,
+    )
+
+    @Keep
+    private val redrawKeyboardListener =
+        PreferenceDelegate.OnChangeListener<Any> { _, _ ->
+            ContextCompat.getMainExecutor(this).execute {
+                // Keep KeyboardWindow and its saved letter ASCII mode alive.
+                inputView?.invalidateAllKeys()
+            }
+        }
 
     private val themeScope: ThemeScope?
         get() = ColorManager.currentScope()
@@ -197,6 +209,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         }
         recreateInputViewPrefs.forEach {
             it.registerOnChangeListener(recreateInputViewListener)
+        }
+        redrawKeyboardPrefs.forEach {
+            it.registerOnChangeListener(redrawKeyboardListener)
         }
         prefs.candidates.registerOnChangeListener(recreateCandidatesViewListener)
         // ensure theme and color managers are initialized after rime is ready
@@ -342,6 +357,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         inputView = null
         recreateInputViewPrefs.forEach {
             it.unregisterOnChangeListener(recreateInputViewListener)
+        }
+        redrawKeyboardPrefs.forEach {
+            it.unregisterOnChangeListener(redrawKeyboardListener)
         }
         prefs.candidates.unregisterOnChangeListener(recreateCandidatesViewListener)
         ThemeManager.removeOnChangedListener(onThemeChangeListener)

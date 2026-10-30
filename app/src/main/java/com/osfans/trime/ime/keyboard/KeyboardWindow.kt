@@ -291,6 +291,11 @@ class KeyboardWindow(di: DI) :
 
     /** Repaints the keyboard after a color-scheme switch; keys re-resolve their colors. */
     override fun refreshColors() {
+        invalidateAllKeys()
+    }
+
+    /** Redraws visible and cached layouts; visibility preferences are read on each draw. */
+    fun invalidateAllKeys() {
         cachedKeyboards.values.forEach { (_, view) -> view.invalidateAllKeys() }
     }
 

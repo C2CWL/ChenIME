@@ -15,7 +15,10 @@ import com.osfans.trime.data.theme.ThemeScope
 abstract class SwitchOptionAdapter :
     ListAdapter<SwitchOptionEntry, SwitchOptionAdapter.ViewHolder>(
         object : DiffUtil.ItemCallback<SwitchOptionEntry>() {
-            override fun areItemsTheSame(oldItem: SwitchOptionEntry, newItem: SwitchOptionEntry): Boolean = oldItem.type == newItem.type
+            override fun areItemsTheSame(
+                oldItem: SwitchOptionEntry,
+                newItem: SwitchOptionEntry,
+            ): Boolean = oldItem.type == newItem.type
 
             override fun areContentsTheSame(oldItem: SwitchOptionEntry, newItem: SwitchOptionEntry) =
                 oldItem.label == newItem.label && oldItem.icon == newItem.icon

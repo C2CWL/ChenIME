@@ -39,6 +39,7 @@ class SwitchOptionWindow(di: DI) :
     InputBroadcastReceiver,
     ResidentWindow {
     companion object : ResidentWindow.Key
+
     override val key: ResidentWindow.Key get() = SwitchOptionWindow
     private val service: TrimeInputMethodService by instance()
     private val rime: RimeSession by instance()

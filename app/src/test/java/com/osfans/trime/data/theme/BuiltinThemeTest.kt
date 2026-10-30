@@ -301,6 +301,45 @@ class BuiltinThemeTest :
                         "undo",
                     )
                 }
+                for (layout in letterLayouts) {
+                    val keys = theme.presetKeyboards.getValue(layout).keys
+                    val comma = keys.single { it.click == KeyActionToken.Plain(",") }
+                    comma.longClick shouldBe KeyActionToken.Plain("comma")
+                    comma.popup shouldBe listOf(
+                        "comma", "semicolon", "colon", "Literal_left_book", "Literal_right_book",
+                        "Literal_left_parenthesis", "Literal_right_parenthesis", "Literal_left_double_quote",
+                        "Literal_right_double_quote", "Literal_left_single_quote", "Literal_right_single_quote",
+                    )
+                    val period = keys.single { it.click == KeyActionToken.Plain(".") }
+                    period.longClick shouldBe KeyActionToken.Plain("period")
+                    period.popup shouldBe listOf(
+                        "period", "Literal_period", "exclam", "question", "Literal_ellipsis", "Literal_percent",
+                        "Literal_plus", "Literal_minus", "Literal_multiply", "Literal_divide", "Literal_equal",
+                    )
+                    for ((name, symbol) in mapOf(
+                        "Literal_left_book" to "《",
+                        "Literal_right_book" to "》",
+                        "Literal_left_parenthesis" to "（",
+                        "Literal_right_parenthesis" to "）",
+                        "Literal_left_double_quote" to "“",
+                        "Literal_right_double_quote" to "”",
+                        "Literal_left_single_quote" to "‘",
+                        "Literal_right_single_quote" to "’",
+                        "Literal_period" to ".",
+                        "Literal_ellipsis" to "…",
+                        "Literal_percent" to "%",
+                        "Literal_plus" to "+",
+                        "Literal_minus" to "-",
+                        "Literal_multiply" to "×",
+                        "Literal_divide" to "÷",
+                        "Literal_equal" to "=",
+                    )) {
+                        theme.presetKeys.getValue(name).label shouldBe symbol
+                        theme.presetKeys.getValue(name).commit shouldBe symbol
+                        theme.presetKeys.getValue(name).send shouldBe ""
+                        theme.presetKeys.getValue(name).text shouldBe ""
+                    }
+                }
                 if (id == "tongwenfeng.trime") {
                     theme.toolBar.buttons.map { it.action } shouldBe listOf(
                         "Hide", "VOICE_ASSIST", "liquid_keyboard_emoji", "clipboard_window",

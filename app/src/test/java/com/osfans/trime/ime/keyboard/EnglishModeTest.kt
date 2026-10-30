@@ -28,6 +28,13 @@ class EnglishModeTest :
             }
         }
 
+        given("explicit language switch tips") {
+            then("schema switches announce Chinese or English independently of ASCII reset") {
+                EnglishMode.languageTip(EnglishMode.SCHEMA) shouldBe "英文"
+                EnglishMode.languageTip(EnglishMode.CHINESE_SCHEMA) shouldBe "中文"
+            }
+        }
+
         given("cached toggle labels and automatic capitalization") {
             then("English is displayed without enabling the engine ASCII option") {
                 EnglishMode.isEnglish("chen_eng", false) shouldBe true

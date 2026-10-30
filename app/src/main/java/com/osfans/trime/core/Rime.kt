@@ -15,6 +15,7 @@ import com.osfans.trime.ime.core.InlinePreeditMode
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -278,16 +279,39 @@ class Rime :
         setRimeOption(option, value)
     }
 
-    private var quietAsciiSwitch = false
+    private var quietAsciiSwitchDepth = 0
 
     override suspend fun setKeyboardAsciiMode(value: Boolean): Unit = withRimeContext {
-        quietAsciiSwitch = true
-        try {
+        withQuietAsciiSwitch {
             setRimeOption("ascii_mode", value)
             lastAsciiTipsText = asciiTipsText(getRimeStatus())
-        } finally {
-            quietAsciiSwitch = false
         }
+    }
+
+    override suspend fun <T> withQuietAsciiSwitch(block: suspend RimeApi.() -> T): T {
+        var entered = false
+        try {
+            withRimeContext {
+                quietAsciiSwitchDepth++
+                entered = true
+            }
+            // Keep the switch body in the caller's context, as with postRimeJob.
+            return block(this)
+        } finally {
+            // Entry can complete even if cancellation prevents resuming the caller.
+            if (entered) {
+                withContext(NonCancellable + dispatcher) {
+                    // Native option/schema notifications invoke handleRimeMessage
+                    // synchronously before their Rime call returns. Flow collectors
+                    // run later, but automatic tips have already been suppressed.
+                    quietAsciiSwitchDepth--
+                }
+            }
+        }
+    }
+
+    override suspend fun showLanguageTip(text: String): Unit = withRimeContext {
+        if (showAsciiSwitchTips && text.isNotEmpty()) showSwitchTip(text)
     }
 
     override suspend fun getRuntimeOption(option: String): Boolean = withRimeContext {
@@ -462,13 +486,17 @@ class Rime :
     }
 
     private fun showAsciiSwitchTips(status: StatusProto) {
-        if (quietAsciiSwitch || !showAsciiSwitchTips) return
+        if (quietAsciiSwitchDepth > 0 || !showAsciiSwitchTips) return
         val tipsText = asciiTipsText(status)
         if (tipsText.isEmpty()) return
 
         lastAsciiTipsText = tipsText
 
-        val tips = CompositionProto(tipsText)
+        showSwitchTip(tipsText)
+    }
+
+    private fun showSwitchTip(text: String) {
+        val tips = CompositionProto(text)
         messageFlow_.tryEmit(RimeMessage.CompositionMessage(tips))
         compositionCached = tips
         asciiSwitchTipsJob?.cancel()

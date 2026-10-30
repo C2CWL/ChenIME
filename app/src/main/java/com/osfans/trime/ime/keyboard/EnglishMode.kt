@@ -10,6 +10,8 @@ internal object EnglishMode {
 
     fun isEnglish(schemaId: String, asciiMode: Boolean): Boolean = schemaId == SCHEMA || asciiMode
 
+    fun languageTip(schemaId: String): String = if (schemaId == SCHEMA) "英文" else "中文"
+
     fun optionEnabled(option: String, enabled: Boolean, schemaId: String): Boolean = enabled || (option == "ascii_mode" && schemaId == SCHEMA)
 
     fun targetSchema(schemaId: String, asciiMode: Boolean, forcedAscii: Boolean): String? = when {

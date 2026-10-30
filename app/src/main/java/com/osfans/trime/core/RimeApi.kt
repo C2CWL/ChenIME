@@ -88,6 +88,12 @@ interface RimeApi {
     /** Temporary keyboard mode changes do not announce a language switch. */
     suspend fun setKeyboardAsciiMode(value: Boolean)
 
+    /** Suppress automatic ASCII tips during a language change, preserving the caller context. */
+    suspend fun <T> withQuietAsciiSwitch(block: suspend RimeApi.() -> T): T
+
+    /** Explicit language feedback; does not change automatic tip deduplication. */
+    suspend fun showLanguageTip(text: String)
+
     suspend fun getRuntimeOption(option: String): Boolean
 
     /** Read a label seed in one Rime dispatcher operation, away from drawing. */

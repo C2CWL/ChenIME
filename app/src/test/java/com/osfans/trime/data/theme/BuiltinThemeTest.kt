@@ -79,10 +79,8 @@ class BuiltinThemeTest :
                 theme.liquidKeyboard.fixedKeyBar.keys.forEach { theme.presetKeys.containsKey(it) shouldBe true }
                 val builtinEmojiKeyboard = theme.liquidKeyboard.keyboards.single { it.id == "emoji" }
                 builtinEmojiKeyboard.type shouldBe LiquidKeyboard.DataType.SINGLE
-                builtinEmojiKeyboard.keys.take(2) shouldBe listOf(
-                    LiquidKeyboard.KeyItem("[旺柴]"),
-                    LiquidKeyboard.KeyItem("[狗头]"),
-                )
+                builtinEmojiKeyboard.keys.first() shouldBe LiquidKeyboard.KeyItem("🙂")
+                builtinEmojiKeyboard.keys.any { it.text.contains("[旺柴]") || it.text.contains("[狗头]") } shouldBe false
 
                 val letterLayouts = if (id == "iflytek.trime") listOf("default") else listOf("default", "letter")
                 for (layout in letterLayouts) {

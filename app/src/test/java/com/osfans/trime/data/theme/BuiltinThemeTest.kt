@@ -342,8 +342,14 @@ class BuiltinThemeTest :
                 }
                 if (id == "tongwenfeng.trime") {
                     theme.toolBar.buttons.map { it.action } shouldBe listOf(
-                        "Hide", "VOICE_ASSIST", "liquid_keyboard_emoji", "clipboard_window",
-                        "Keyboard_editor", "Mode_switch", "redo", "undo",
+                        "Hide",
+                        "VOICE_ASSIST",
+                        "liquid_keyboard_emoji",
+                        "clipboard_window",
+                        "Keyboard_editor",
+                        "Mode_switch",
+                        "redo",
+                        "undo",
                     )
                 }
                 theme.toolBar.buttons[1].foreground.style shouldBe "ic@microphone"

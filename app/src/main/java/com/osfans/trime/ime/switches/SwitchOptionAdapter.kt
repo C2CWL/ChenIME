@@ -20,8 +20,7 @@ abstract class SwitchOptionAdapter :
                 newItem: SwitchOptionEntry,
             ): Boolean = oldItem.type == newItem.type
 
-            override fun areContentsTheSame(oldItem: SwitchOptionEntry, newItem: SwitchOptionEntry) =
-                oldItem.label == newItem.label && oldItem.icon == newItem.icon
+            override fun areContentsTheSame(oldItem: SwitchOptionEntry, newItem: SwitchOptionEntry) = oldItem.label == newItem.label && oldItem.icon == newItem.icon
         },
     ) {
     inner class ViewHolder(

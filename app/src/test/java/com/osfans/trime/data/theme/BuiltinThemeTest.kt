@@ -254,7 +254,7 @@ class BuiltinThemeTest :
                 theme.presetKeyboards.getValue("number").lock shouldBe true
                 // Named actions must resolve after includes; single characters and symbol
                 // strings are intentional literal input, and these names are native keys.
-                val nativeKeys = setOf("at", "comma", "minus", "period", "plus", "slash")
+                val nativeKeys = setOf("at", "colon", "comma", "exclam", "minus", "period", "plus", "question", "semicolon", "slash")
                 val literalFaces = setOf("QwQ", "QAQ", "T_T", "o_O")
                 fun checkAction(action: String) {
                     if (action.matches(Regex("[A-Za-z_][A-Za-z_0-9]+"))) {

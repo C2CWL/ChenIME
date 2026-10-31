@@ -327,7 +327,11 @@ class KeyView(
         val bg = k.getBackgroundDrawable() ?: return
 
         if (bg is GradientDrawable) {
-            k.roundCorner.takeIf { it > 0f }?.let { bg.cornerRadius = dp(it) }
+            if (k.roundCornerOverridden) {
+                bg.cornerRadius = dp(k.roundCorner)
+            } else {
+                k.roundCorner.takeIf { it > 0f }?.let { bg.cornerRadius = dp(it) }
+            }
             k.keyBorder.takeIf { it > 0 }?.let { bg.setStroke(dp(it), k.getBorderColor()) }
         }
 

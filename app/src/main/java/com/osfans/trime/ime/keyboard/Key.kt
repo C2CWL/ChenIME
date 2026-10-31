@@ -9,6 +9,7 @@ import android.view.KeyEvent
 import androidx.annotation.ColorInt
 import com.osfans.trime.daemon.RimeDaemon
 import com.osfans.trime.data.theme.ColorManager
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.model.KeyActionToken
 import com.osfans.trime.data.theme.model.TextKeyboard
@@ -78,7 +79,13 @@ class Key(
 
     val keyTextSize: Float = keyDef?.keyTextSize ?: 0f
     val symbolTextSize: Float = keyDef?.symbolTextSize ?: 0f
-    val roundCorner: Float = keyDef?.roundCorner?.takeIf { it >= 0 } ?: parent.roundCorner
+    val roundCorner: Float = CornerRadiusOverrides.resolve(
+        parent.keyCornerOverride,
+        keyDef?.roundCorner?.takeIf { it >= 0 } ?: parent.roundCorner,
+    )
+
+    /** The user picked a key radius, so it applies even when it is 0. */
+    val roundCornerOverridden: Boolean = CornerRadiusOverrides.isOverridden(parent.keyCornerOverride)
     val keyBorder: Int = keyDef?.keyBorder?.takeIf { it >= 0 } ?: parent.keyBorder
     var keyTextOffsetX = 0f
         get() = field + keyOffsetX

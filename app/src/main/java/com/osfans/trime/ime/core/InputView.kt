@@ -6,9 +6,11 @@
 package com.osfans.trime.ime.core
 
 import android.annotation.SuppressLint
+import android.graphics.Outline
 import android.os.Build
 import android.view.ContextThemeWrapper
 import android.view.View
+import android.view.ViewOutlineProvider
 import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InlineSuggestionsResponse
@@ -23,6 +25,7 @@ import com.osfans.trime.core.RimeLifecycle
 import com.osfans.trime.core.RimeMessage
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.bar.InputBarDelegate
@@ -241,6 +244,8 @@ class InputView(
                 )
             }
 
+        clipPanelTopCorners(keyboardView, dp(CornerRadiusOverrides.current().panel()))
+
         updateWindowViewHeightJob =
             service.lifecycleScope.launch {
                 keyboardWindow.currentKeyboardHeight.collect {
@@ -274,6 +279,25 @@ class InputView(
                 centerInParent()
             },
         )
+    }
+
+    /** Rounds the top corners of the keyboard panel; popups live outside it and are not clipped. */
+    private fun clipPanelTopCorners(
+        panel: View,
+        radius: Float,
+    ) {
+        if (radius <= 0f) return
+        panel.outlineProvider =
+            object : ViewOutlineProvider() {
+                override fun getOutline(
+                    view: View,
+                    outline: Outline,
+                ) {
+                    // Extend below the view so only the top corners are rounded.
+                    outline.setRoundRect(0, 0, view.width, view.height + radius.toInt(), radius)
+                }
+            }
+        panel.clipToOutline = true
     }
 
     private fun updateKeyboardSize() {

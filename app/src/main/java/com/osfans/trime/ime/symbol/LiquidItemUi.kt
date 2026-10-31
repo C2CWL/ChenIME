@@ -16,6 +16,7 @@ import android.text.style.ImageSpan
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.text.PrecomputedTextCompat
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.keyboard.GestureFrame
@@ -56,7 +57,7 @@ class LiquidItemUi(
             "key_back_color",
             "key_border_color",
             dp(theme.style.keyBorder),
-            dp(theme.style.roundCorner),
+            dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
         )
         add(
             mainText,
@@ -107,7 +108,7 @@ class LiquidItemUi(
                         style.pressedBackground,
                         style.pressedBorder,
                         ctx.dp(theme.style.keyBorder),
-                        ctx.dp(theme.style.roundCorner),
+                        ctx.dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
                     ),
                 )
                 addState(
@@ -116,7 +117,7 @@ class LiquidItemUi(
                         style.background,
                         style.border,
                         ctx.dp(theme.style.keyBorder),
-                        ctx.dp(theme.style.roundCorner),
+                        ctx.dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
                     ),
                 )
             }
@@ -129,7 +130,7 @@ class LiquidItemUi(
             "key_back_color",
             "key_border_color",
             ctx.dp(theme.style.keyBorder),
-            ctx.dp(theme.style.roundCorner),
+            ctx.dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
         )
     }
 }

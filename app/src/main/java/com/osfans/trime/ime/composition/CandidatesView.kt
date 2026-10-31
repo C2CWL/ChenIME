@@ -24,6 +24,7 @@ import com.osfans.trime.core.RimeMessage
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.candidates.popup.PagedCandidatesUi
 import com.osfans.trime.ime.core.BaseInputView
@@ -147,7 +148,7 @@ class CandidatesView(
                 colorKey = "text_back_color",
                 borderColorKey = "candidate_border_color",
                 borderPx = dp(theme.window.border),
-                cornerRadius = dp(theme.window.cornerRadius),
+                cornerRadius = dp(CornerRadiusOverrides.current().popup(theme.window.cornerRadius)),
             )
         preeditUi.refreshColors()
         preeditUi.update(composition)
@@ -265,7 +266,7 @@ class CandidatesView(
                 colorKey = "text_back_color",
                 borderColorKey = "candidate_border_color",
                 borderPx = dp(theme.window.border),
-                cornerRadius = dp(theme.window.cornerRadius),
+                cornerRadius = dp(CornerRadiusOverrides.current().popup(theme.window.cornerRadius)),
             )
         clipToOutline = true
         outlineProvider = ViewOutlineProvider.BACKGROUND

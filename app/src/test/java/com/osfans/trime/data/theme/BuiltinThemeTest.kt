@@ -493,7 +493,7 @@ class BuiltinThemeTest :
 
         "chen_eng ranks completions with attributed frequency data for melt_eng words" {
             val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("chen_eng.schema.yaml").readText())
-            schema["schema"]?.get("version")?.string shouldBe "1.1"
+            schema["schema"]?.get("version")?.string shouldBe "1.2"
             schema["chen_eng_translator"]?.get("frequent_completions")?.string shouldBe "8"
             val lines = root.resolve("en_dicts/chen_eng_rank.txt").readLines()
             lines.filter { it.startsWith("#") }.joinToString("\n") shouldContain "CC BY-SA 4.0"
@@ -517,6 +517,33 @@ class BuiltinThemeTest :
             val schemas = defaults["schema_list"]!!.sequence!!.items.map { it["schema"]?.string }
             schemas shouldBe listOf("rime_frost")
             schemas.contains("chen_eng") shouldBe false
+        }
+
+        "chen_eng offers contractions without the apostrophe and from full forms" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("chen_eng.schema.yaml").readText())
+            val algebra = schema["speller"]?.get("algebra")!!.sequence!!.items.map { it.string }
+            algebra.first() shouldBe "derive/'//"
+            val melt = ThemeYaml.parser.parseToYamlNode(
+                root.resolve("melt_eng.dict.yaml").readText().substringBefore("\n...\n"),
+            )
+            melt["import_tables"]!!.sequence!!.items.map { it.string }.first() shouldBe "en_dicts/en_contractions"
+            fun entries(name: String) = root.resolve(name).readText().substringAfter("\n...\n").lines()
+                .filterNot { it.isBlank() || it.startsWith("#") }
+                .map { it.split('\t') }
+                .filter { it.size >= 2 }
+            val contractions = entries("en_dicts/en_contractions.dict.yaml")
+            fun texts(code: String) = contractions.filter { it[1] == code }.sortedByDescending { it.getOrNull(2)?.toInt() ?: 0 }.map { it[0] }
+            texts("iam") shouldBe listOf("I'm", "I am")
+            texts("donot") shouldBe listOf("don't", "do not")
+            texts("isnot") shouldBe listOf("isn't", "is not")
+            texts("cannot") shouldBe listOf("cannot", "can't", "can not")
+            texts("willnot") shouldBe listOf("won't", "will not")
+            texts("were") shouldBe listOf("were")
+            // Every contraction listed here is also a word of the main English tables.
+            val words = (entries("en_dicts/en_ext.dict.yaml") + entries("en_dicts/en.dict.yaml")).map { it[0] }.toSet()
+            for (text in contractions.map { it[0] }.filter { "'" in it }) {
+                withClue(text) { words.contains(text) shouldBe true }
+            }
         }
 
         "default ascii composer does not turn Caps Lock input into delimited uppercase words" {

@@ -8,6 +8,7 @@
 name: melt_eng
 version: "2023-05-09"
 import_tables:
+  - en_dicts/en_contractions # Chen IME：英文缩写（I'm、don't 等）的无撇号与全拼写法，放最上面以决定同码排序
   - en_dicts/en_ext # 补充（里面有些许带权重的，且和 en 重复，需要把 en_ext 放在上面）
   - en_dicts/en     # 英文主词库
 ...

@@ -1,0 +1,141 @@
+# Rime dictionary
+# encoding: utf-8
+#
+# Chen IME: English contractions, imported first by melt_eng.
+#
+# chen_eng.schema.yaml drops apostrophes in its speller (derive/'//), so `im`
+# already finds I'm and `dont` finds don't. This table adds the full-form codes:
+# `donot` lists don't, then do not. A word that is already spelled that way
+# (cannot) stays first. Entries repeated from en/en_ext only fix the order where
+# a code without its apostrophe is also a word; the first definition wins.
+---
+name: en_contractions
+version: "2026-10-31"
+sort: by_weight
+...
+
+# Full forms typed without spaces: contraction first, then the full form.
+I'm	iam	2
+I am	iam	1
+I'll	iwill	2
+I will	iwill	1
+I'd	iwould	2
+I would	iwould	1
+I've	ihave	2
+I have	ihave	1
+you're	youare	2
+you are	youare	1
+you'll	youwill	2
+you will	youwill	1
+you'd	youwould	2
+you would	youwould	1
+you've	youhave	2
+you have	youhave	1
+he's	heis	2
+he is	heis	1
+he'll	hewill	2
+he will	hewill	1
+he'd	hewould	2
+he would	hewould	1
+she's	sheis	2
+she is	sheis	1
+she'll	shewill	2
+she will	shewill	1
+she'd	shewould	2
+she would	shewould	1
+it's	itis	2
+it is	itis	1
+it'll	itwill	2
+it will	itwill	1
+it'd	itwould	2
+it would	itwould	1
+we're	weare	2
+we are	weare	1
+we'll	wewill	2
+we will	wewill	1
+we'd	wewould	2
+we would	wewould	1
+we've	wehave	2
+we have	wehave	1
+they're	theyare	2
+they are	theyare	1
+they'll	theywill	2
+they will	theywill	1
+they'd	theywould	2
+they would	theywould	1
+they've	theyhave	2
+they have	theyhave	1
+that's	thatis	2
+that is	thatis	1
+there's	thereis	2
+there is	thereis	1
+here's	hereis	2
+here is	hereis	1
+what's	whatis	2
+what is	whatis	1
+who's	whois	2
+who is	whois	1
+where's	whereis	2
+where is	whereis	1
+when's	whenis	2
+when is	whenis	1
+why's	whyis	2
+why is	whyis	1
+how's	howis	2
+how is	howis	1
+let's	letus	2
+let us	letus	1
+don't	donot	2
+do not	donot	1
+doesn't	doesnot	2
+does not	doesnot	1
+didn't	didnot	2
+did not	didnot	1
+isn't	isnot	2
+is not	isnot	1
+aren't	arenot	2
+are not	arenot	1
+wasn't	wasnot	2
+was not	wasnot	1
+weren't	werenot	2
+were not	werenot	1
+haven't	havenot	2
+have not	havenot	1
+hasn't	hasnot	2
+has not	hasnot	1
+hadn't	hadnot	2
+had not	hadnot	1
+won't	willnot	2
+will not	willnot	1
+wouldn't	wouldnot	2
+would not	wouldnot	1
+cannot	cannot	3
+can't	cannot	2
+can not	cannot	1
+couldn't	couldnot	2
+could not	couldnot	1
+shouldn't	shouldnot	2
+should not	shouldnot	1
+mustn't	mustnot	2
+must not	mustnot	1
+mightn't	mightnot	2
+might not	mightnot	1
+needn't	neednot	2
+need not	neednot	1
+shan't	shallnot	2
+shall not	shallnot	1
+
+# Codes that are words once the apostrophe is dropped. Common words stay first
+# (were, its, lets, wed); rare spellings give way to the contraction (can't, won't).
+were	were	2
+we're	we're	1
+its	its	2
+it's	it's	1
+lets	lets	2
+let's	let's	1
+wed	wed	2
+we'd	we'd	1
+can't	can't	2
+cant	cant	1
+won't	won't	2
+wont	wont	1

@@ -8,7 +8,8 @@ fully qualified class names. Build plugin IDs and JNI keep rules retain their
 upstream names. Chen IME can be installed alongside Trime.
 
 白霜拼音 is the only switchable bundled schema for a fresh installation.
-Its melt_eng, radical_pinyin and rime_frost_aux dependencies remain bundled. Existing user schema selections are preserved. The bundled
+Its melt_eng and rime_frost_aux dependencies remain bundled; the radical_pinyin
+拆字 lookup and the chaifen OpenCC comment data were removed. Existing user schema selections are preserved. The bundled
 New布局 theme is selectable in Settings. See `THIRD_PARTY_RIME_FROST.md`
 for the bundled subset and upstream license.
 

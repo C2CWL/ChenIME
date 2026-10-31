@@ -486,14 +486,12 @@ class BuiltinThemeTest :
                 root.resolve("melt_eng.dict.yaml").readText().substringBefore("\n...\n"),
             )
             melt["import_tables"]!!.sequence!!.items.map { it.string }.first() shouldBe "en_dicts/en_contractions"
-            fun entries(name: String) =
-                root.resolve(name).readText().substringAfter("\n...\n").lines()
-                    .filterNot { it.isBlank() || it.startsWith("#") }
-                    .map { it.split('\t') }
-                    .filter { it.size >= 2 }
+            fun entries(name: String) = root.resolve(name).readText().substringAfter("\n...\n").lines()
+                .filterNot { it.isBlank() || it.startsWith("#") }
+                .map { it.split('\t') }
+                .filter { it.size >= 2 }
             val contractions = entries("en_dicts/en_contractions.dict.yaml")
-            fun texts(code: String) =
-                contractions.filter { it[1] == code }.sortedByDescending { it.getOrNull(2)?.toInt() ?: 0 }.map { it[0] }
+            fun texts(code: String) = contractions.filter { it[1] == code }.sortedByDescending { it.getOrNull(2)?.toInt() ?: 0 }.map { it[0] }
             texts("iam") shouldBe listOf("I'm", "I am")
             texts("donot") shouldBe listOf("don't", "do not")
             texts("isnot") shouldBe listOf("isn't", "is not")

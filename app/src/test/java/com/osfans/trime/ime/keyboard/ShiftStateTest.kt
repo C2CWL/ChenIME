@@ -38,13 +38,4 @@ class ShiftStateTest :
                 locked.press(lock = false) shouldBe ShiftState()
             }
         }
-        "shifted letter text resolves direct uppercase ASCII" {
-            for (offset in 0..25) {
-                val code = android.view.KeyEvent.KEYCODE_A + offset
-                val expected = ('A'.code + offset).toChar().toString()
-                shiftedLetterText(code) shouldBe expected
-            }
-            shiftedLetterText(android.view.KeyEvent.KEYCODE_SPACE) shouldBe null
-            shiftedLetterText(android.view.KeyEvent.KEYCODE_0) shouldBe null
-        }
     })

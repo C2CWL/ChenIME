@@ -50,7 +50,6 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.composition.CandidatesView
 import com.osfans.trime.ime.keyboard.InputFeedbackManager
 import com.osfans.trime.ime.keyboard.UndoRedoShortcut
-import com.osfans.trime.ime.keyboard.sendUndoRedoCombination
 import com.osfans.trime.ime.keyboard.undoRedoShortcut
 import com.osfans.trime.receiver.RimeIntentReceiver
 import com.osfans.trime.util.any
@@ -96,6 +95,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     private var lastCommittedText: String = ""
 
     private var composingText: String = ""
+
+    /** IME-side undo/redo steps for the toolbar buttons, see [ImeEditHistory]. */
+    private val editHistory = ImeEditHistory()
 
     private var cursorUpdateIndex = 0
 
@@ -266,15 +268,14 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
                                 val keyCode = it.value.keyCode
                                 if (keyCode != KeyEvent.KEYCODE_UNKNOWN) {
                                     // recognized keyCode
-                                    sendDownUpKeyEvent(
-                                        keyCode,
-                                        it.modifiers.metaState or meta(
-                                            alt = it.modifiers.alt,
-                                            shift = it.modifiers.shift,
-                                            ctrl = it.modifiers.ctrl,
-                                            meta = it.modifiers.meta,
-                                        ),
+                                    val metaState = it.modifiers.metaState or meta(
+                                        alt = it.modifiers.alt,
+                                        shift = it.modifiers.shift,
+                                        ctrl = it.modifiers.ctrl,
+                                        meta = it.modifiers.meta,
                                     )
+                                    if (keyCode == KeyEvent.KEYCODE_DEL && metaState == 0) recordBackspace()
+                                    sendDownUpKeyEvent(keyCode, metaState)
                                     if (it.modifiers.ctrl && keyCode == KeyEvent.KEYCODE_C) clearTextSelection()
                                 } else {
                                     if (it.value.value > 0) {
@@ -469,6 +470,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             candidatesStart,
             candidatesEnd,
         )
+        editHistory.onSelectionUpdate(oldSelStart, newSelStart, newSelEnd)
         cursorUpdateIndex += 1
         handleCursorUpdate(newSelStart, newSelEnd, candidatesStart, candidatesEnd, cursorUpdateIndex)
         inputView?.updateSelection(newSelStart, newSelEnd)
@@ -564,6 +566,8 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         restarting: Boolean,
     ) {
         composingText = ""
+        // A new field, or the same field restarted (often after the app replaced its text).
+        editHistory.reset(attribute.initialSelStart, attribute.initialSelEnd)
         Timber.d("onStartInput: restarting=$restarting")
         val isNullType = attribute.inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_NULL
         postRimeJob {
@@ -675,8 +679,13 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     fun commitText(text: String) {
         val ic = currentInputConnection ?: return
 
+        val hadComposing = composingText.isNotEmpty()
+        val replaced = if (!hadComposing && editHistory.mayHaveSelection) ic.getSelectedText(0)?.toString().orEmpty() else ""
+        // Record first: this may run off the main thread, and the editor's
+        // selection update must find the expected cursor move already queued.
+        editHistory.recordCommit(text, replaced, cursorKnown = !hadComposing)
         // when composing text equals commit content, finish composing text as-is
-        if (composingText.isNotEmpty() && composingText == text) {
+        if (hadComposing && composingText == text) {
             ic.finishComposingText()
         } else {
             ic.commitText(text, 1)
@@ -897,7 +906,10 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         val otherModifiers = mask and (KeyEvent.META_ALT_MASK or KeyEvent.META_META_MASK or KeyEvent.META_SYM_ON)
         val shortcut = undoRedoShortcut(code, mask)
         if (shortcut != null) {
-            sendUndoRedoCombination(ic, redo = shortcut == UndoRedoShortcut.REDO)
+            // Run on the main thread, in order with commits and selection updates.
+            ContextCompat.getMainExecutor(this).execute {
+                undoRedoImeEdit(redo = shortcut == UndoRedoShortcut.REDO)
+            }
             return true
         }
         if (!ctrl || shift || otherModifiers != 0) return false
@@ -995,6 +1007,57 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         return false
     }
 
+    /**
+     * Records what the backspace key about to be sent to the editor will delete,
+     * so the toolbar undo can put it back.
+     */
+    private fun recordBackspace() {
+        val ic = currentInputConnection ?: return
+        if (composingText.isNotEmpty()) return
+        if (editHistory.mayHaveSelection) {
+            val selected = ic.getSelectedText(0)?.toString().orEmpty()
+            if (selected.isNotEmpty()) {
+                editHistory.recordDelete(selected, wasSelection = true)
+                return
+            }
+        }
+        val before = ic.getTextBeforeCursor(ImeEditHistory.BACKSPACE_CONTEXT, 0) ?: return
+        // If the editor deletes something else, the cursor moves by a different
+        // amount and onUpdateSelection drops the history.
+        editHistory.recordDelete(ImeEditHistory.lastGrapheme(before))
+    }
+
+    /**
+     * Toolbar undo/redo: reverts or re-applies one IME commit or backspace.
+     *
+     * Ctrl+Z is not sent when there is nothing to undo: the editor's own undo
+     * merges all typed text into one step and keeps text from earlier
+     * messages, which is the behavior this replaces.
+     */
+    private fun undoRedoImeEdit(redo: Boolean) {
+        val ic = currentInputConnection ?: return
+        // Inline preedit sits before the cursor and would fail the text check.
+        if (composingText.isNotEmpty()) return
+        val editor =
+            object : ImeEditHistory.Editor {
+                override fun selectedText() = ic.getSelectedText(0)
+
+                override fun textBeforeCursor(length: Int) = ic.getTextBeforeCursor(length, 0)
+
+                override fun replaceBeforeCursor(
+                    deleteLength: Int,
+                    insert: String,
+                ) {
+                    ic.beginBatchEdit()
+                    if (deleteLength > 0) ic.deleteSurroundingText(deleteLength, 0)
+                    if (insert.isNotEmpty()) ic.commitText(insert, 1)
+                    ic.endBatchEdit()
+                }
+            }
+        val applied = if (redo) editHistory.redo(editor) else editHistory.undo(editor)
+        Timber.d("undoRedoImeEdit: redo=$redo applied=$applied")
+    }
+
     fun clearTextSelection() {
         val ic = currentInputConnection ?: return
         val etr = ExtractedTextRequest().apply { token = 0 }
@@ -1013,6 +1076,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             if (!ic.getSelectedText(0).isNullOrEmpty()) {
                 ic.deleteSurroundingText(1, 0)
             }
+            editHistory.expectComposingChange()
             ic.setComposingText(text, 1)
             if (text.isEmpty()) {
                 ic.finishComposingText()

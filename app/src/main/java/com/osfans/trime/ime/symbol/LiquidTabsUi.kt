@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.chad.library.adapter4.BaseQuickAdapter
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.LiquidKeyboard
@@ -36,7 +37,7 @@ class LiquidTabsUi(
 
     inner class TabUi : Ui {
         override val ctx = this@LiquidTabsUi.ctx
-        private val cornerRadius = ctx.dp(theme.style.candidateCornerRadius)
+        private val cornerRadius = ctx.dp(CornerRadiusOverrides.current().bar(theme.style.candidateCornerRadius))
 
         val text =
             textView {

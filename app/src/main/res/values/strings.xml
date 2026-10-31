@@ -82,6 +82,11 @@
     <string name="setup__skip_hint_yes">OK, thanks</string>
     <string name="setup__skip_hint_no">No, please leave me here</string>
     <string name="follow_system_day_night_color">Follow system day/night color</string>
+    <string name="follow_theme">Follow theme</string>
+    <string name="key_corner_radius">Key corner radius</string>
+    <string name="panel_corner_radius">Keyboard panel corner radius</string>
+    <string name="bar_corner_radius">Candidate bar corner radius</string>
+    <string name="popup_corner_radius">Popup panel corner radius</string>
     <string name="hook_ctrl_a">Hook Ctrl+A</string>
     <string name="hook_ctrl_cv">Hook Ctrl+C/V/X</string>
     <string name="hook_ctrl_lr">Hook Ctrl+Left/Right</string>

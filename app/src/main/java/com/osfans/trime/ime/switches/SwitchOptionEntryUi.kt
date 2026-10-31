@@ -13,6 +13,7 @@ import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.core.AutoScaleTextView
@@ -49,7 +50,7 @@ class SwitchOptionEntryUi(
                     "key_back_color",
                     "key_border_color",
                     dp(theme.style.keyBorder),
-                    dp(theme.style.roundCorner),
+                    dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
                 )
         }
 
@@ -123,7 +124,7 @@ class SwitchOptionEntryUi(
                 "key_back_color",
                 "key_border_color",
                 ctx.dp(theme.style.keyBorder),
-                ctx.dp(theme.style.roundCorner),
+                ctx.dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
             )
         label.setTextColor(scope.colors.keyTextColor)
     }

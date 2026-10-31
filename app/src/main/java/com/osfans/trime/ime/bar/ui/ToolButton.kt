@@ -20,6 +20,7 @@ import androidx.core.view.isVisible
 import com.c2cwl.chenime.R
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.utils.sizeDp
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.ToolBar
 import com.osfans.trime.ime.core.AutoScaleTextView
@@ -191,7 +192,7 @@ class ToolButton(context: Context, private val scope: ThemeScope) : GestureFrame
         return when (bg.type) {
             ToolBar.Button.Background.Type.RECTANGLE -> GradientDrawable().apply {
                 setColor(color)
-                cornerRadius = dp(bg.cornerRadius)
+                cornerRadius = dp(CornerRadiusOverrides.current().bar(bg.cornerRadius))
             }
 
             ToolBar.Button.Background.Type.CIRCLE -> ShapeDrawable(OvalShape()).apply { paint.color = color }

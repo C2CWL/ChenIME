@@ -78,6 +78,11 @@
     <string name="setup__skip_hint_yes">好的，谢谢</string>
     <string name="setup__skip_hint_no">不，我想留在这儿</string>
     <string name="follow_system_day_night_color">跟随系统夜间模式</string>
+    <string name="follow_theme">跟随主题</string>
+    <string name="key_corner_radius">按键圆角</string>
+    <string name="panel_corner_radius">键盘面板圆角</string>
+    <string name="bar_corner_radius">候选栏圆角</string>
+    <string name="popup_corner_radius">弹出面板圆角</string>
     <string name="hook_ctrl_a">拦截 Ctrl+A</string>
     <string name="hook_ctrl_cv">拦截 Ctrl+C/V/X</string>
     <string name="hook_ctrl_lr">拦截 Ctrl+Left/Right</string>

@@ -9,6 +9,7 @@ import android.content.Context
 import android.text.TextUtils
 import android.view.View
 import com.c2cwl.chenime.R
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.keyboard.GestureFrame
@@ -81,7 +82,7 @@ class ClipboardBeanUi(
                     "key_back_color",
                     "key_border_color",
                     dp(theme.style.keyBorder),
-                    dp(theme.style.roundCorner),
+                    dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
                 )
             add(layout, lParams(matchParent, matchParent))
             layoutParams = lParams(matchParent, wrapContent)
@@ -104,7 +105,7 @@ class ClipboardBeanUi(
                 "key_back_color",
                 "key_border_color",
                 ctx.dp(theme.style.keyBorder),
-                ctx.dp(theme.style.roundCorner),
+                ctx.dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner)),
             )
     }
 }

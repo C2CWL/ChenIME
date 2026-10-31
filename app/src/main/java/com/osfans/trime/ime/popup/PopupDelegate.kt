@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.lifecycle.lifecycleScope
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.core.TrimeInputMethodService
@@ -50,7 +51,7 @@ class PopupDelegate(override val di: DI) : DIAware {
         context.dp(theme.style.popupKeyHeight)
     }
     private val popupRadius by lazy {
-        context.dp(theme.style.roundCorner)
+        context.dp(CornerRadiusOverrides.current().popup(theme.style.roundCorner))
     }
     private val hideThreshold = 100L
 

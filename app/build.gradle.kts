@@ -25,8 +25,8 @@ android {
         applicationId = "com.c2cwl.chenime"
         minSdk = 21
         targetSdk = 37
-        versionCode = 20261115
-        versionName = "0.3.3-chen"
+        versionCode = 20261116
+        versionName = "0.3.4-chen"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")

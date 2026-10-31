@@ -251,6 +251,8 @@ translator:
     # - xform/([nl])ue/$1üe/  # 显示为 nüe lüe
     - xform/([nl])v/$1v/      # 显示为 nv lv
     - xform/([nl])ue/$1ve/    # 显示为 nve lve
+    - xform/([A-Z]) ([A-Z])/$1$2/  # 消除大写连续字母之间的音节切分空格
+    - xform/([A-Z]) ([A-Z])/$1$2/
 
 
 # 次翻译器，英文
@@ -369,7 +371,7 @@ speller:
   # 如果不想让什么标点直接上屏，可以加在 alphabet，或者编辑标点符号为两个及以上的映射
   alphabet: zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA`/
   # initials 定义仅作为始码的按键，排除 ` 让单个的 ` 可以直接上屏
-  initials: zyxwvutsrqponmlkjihgfedcba
+  initials: zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA
   delimiter: " '"  # 第一位<空格>是拼音之间的分隔符；第二位<'>表示可以手动输入单引号来分割拼音。
   algebra:
     # 支持大写锁定连续输入组词

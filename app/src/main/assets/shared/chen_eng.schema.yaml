@@ -2,7 +2,7 @@
 schema:
   schema_id: chen_eng
   name: 英文
-  version: "1.0"
+  version: "1.1"
 
 switches:
   - name: ascii_mode
@@ -47,6 +47,11 @@ speller:
     - derive/^.+$/\L$0/
     - derive/^.+$/\U$0/
     - derive/^./\U$0/
+
+# Words from en_dicts/chen_eng_rank.txt (most frequent first) inserted after exact
+# matches and learned words; table_translator alone lists short rare words first.
+chen_eng_translator:
+  frequent_completions: 8
 
 translator:
   dictionary: melt_eng

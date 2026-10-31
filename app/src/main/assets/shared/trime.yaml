@@ -12,11 +12,11 @@ author: osfans #作者資訊
 style:
   auto_caps: false #自動句首大寫:true|false
   candidate_font: han.ttf #候選字型
-  candidate_padding: 5 #候選項內邊距
+  candidate_padding: 7 #候選項內邊距
   candidate_spacing: 0.0 #候选分割线
   candidate_text_size: 22 #候選字號
   candidate_text_vertical_bias: 1.0 #候选文本垂直偏移位置（仅 overlay 模式使用，需要间隙空间足够，范围 0.0~1.0，0.0=top，0.5=center，1.0=bottom）
-  candidate_view_height: 28 #候選區高度
+  candidate_view_height: 34 #候選區高度（加大觸控區，避免誤觸上方拼音）
   #candidate_corner_radius: 4 #候選項圓角半徑
   comment_font: comment.ttf #編碼提示字型
   comment_height: 12 #编码提示区高度（仅 top 模式约束高度，其余模式与 candidate_view_height 无区别）

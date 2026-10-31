@@ -65,6 +65,8 @@ style:
 
 preedit:                  # 预编辑文本视图参数
   horizontal_padding: 8     # 横向内边距（整数）
+  bottom_margin: 8          # 预编辑与候选栏之间的间距（整数，dp），防止误触拼音
+  tap_to_move_cursor: false # 点击预编辑移动光标（默认关闭，防止退格删错字母）
 #  alpha: 0.8                 # 透明度（0-1，浮点）
   top_start_radius: 4       # 始上端圆角（浮点）
   top_end_radius: 4         # 末上端圆角（浮点）

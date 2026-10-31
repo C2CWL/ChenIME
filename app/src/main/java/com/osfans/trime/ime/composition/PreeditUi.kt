@@ -40,7 +40,8 @@ open class PreeditUi(
             textSize = theme.preedit.foreground.fontSize
             typeface = theme.fonts.text
             setupPreeditView?.invoke(this)
-            onMoveCursor = this@PreeditUi.onMoveCursor
+            // Touches are still consumed, so a stray tap never reaches the editor below.
+            onMoveCursor = this@PreeditUi.onMoveCursor.takeIf { theme.preedit.tapToMoveCursor }
         }
 
     override val root =

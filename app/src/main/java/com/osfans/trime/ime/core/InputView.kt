@@ -308,7 +308,9 @@ class InputView(
                 endToStartOf(rightPaddingSpace)
             }
         }
-        preedit.ui.root.setPadding(sidePadding, 0, sidePadding, 0)
+        // Bottom padding (not margin) keeps the gap inside the preedit touch receiver, so a
+        // tap that lands between the preedit and the candidates is swallowed harmlessly.
+        preedit.ui.root.setPadding(sidePadding, 0, sidePadding, dp(theme.preedit.bottomMargin))
         inputBar.view.setPadding(sidePadding, 0, sidePadding, 0)
     }
 

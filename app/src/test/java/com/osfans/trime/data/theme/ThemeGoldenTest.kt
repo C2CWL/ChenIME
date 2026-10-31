@@ -55,6 +55,11 @@ class ThemeGoldenTest :
                     enterLabel.default shouldBe "Enter"
                 }
 
+                Then("preedit keeps a gap above candidates and taps do not move the caret") {
+                    theme.preedit.bottomMargin shouldBe 8
+                    theme.preedit.tapToMoveCursor shouldBe false
+                }
+
                 Then("all 50 preset keyboards are decoded") {
                     theme.presetKeyboards.size shouldBe 50
                     theme.presetKeyboards shouldContainKey "default"

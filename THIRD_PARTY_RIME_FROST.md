@@ -9,8 +9,7 @@ license is included at `app/src/main/assets/shared/rime_frost/LICENSE`.
 Preserve the individual dictionary, Lua, and OpenCC copyright/license notices.
 
 The subset includes the `8105`, `base`, `ext`, `others`, and `corrections`
-dictionaries; English and mixed Chinese/English data; auxiliary and radical
-lookup; the Lua modules referenced by the full pinyin schema; `symbols_v.yaml`;
+dictionaries; English and mixed Chinese/English data; auxiliary lookup; the Lua modules referenced by the full pinyin schema; `symbols_v.yaml`;
 the `zh-moqi.gram` grammar model; and the converters referenced by that schema.
 It omits Tencent, optional extended character tables, cell dictionaries, and raw
 corpora. These assets total approximately 32 MiB before APK compression.

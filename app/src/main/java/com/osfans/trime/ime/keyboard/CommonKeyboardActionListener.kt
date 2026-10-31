@@ -155,6 +155,22 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
             }
 
             override fun onAction(action: KeyAction) {
+                val keyboard = KeyboardWindow.currentKeyboard
+                val shiftedLetter = if (keyboard.isShifted && action.modifier == 0 && !rime.run { statusCached }.isAsciiMode) {
+                    shiftedLetterText(action.code)
+                } else {
+                    null
+                }
+                if (shiftedLetter != null) {
+                    service.postRimeJob {
+                        if (statusCached.isComposing) {
+                            commitComposition()
+                        }
+                        service.commitText(shiftedLetter)
+                    }
+                    return
+                }
+
                 val text = action.getText(KeyboardWindow.currentKeyboard)
                 val shouldHandle = when {
                     action.commit.isNotEmpty() -> {

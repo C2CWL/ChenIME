@@ -286,3 +286,16 @@ compilation, 59/59 tests, four YAML and three locale XML parses, and
   ktlint, 59/59 tests, four YAML files, three locale strings XML files and
   `git diff --check`. AndroidManifest.xml also parses. No full APK build or device
   frame-time measurement was performed; no commit/push or secret-file reads.
+
+## English keyboard suggestions
+
+The 英文 keyboard uses the hidden `chen_eng` schema and the unweighted melt_eng
+word list. librime's table_translator lists completions by length, so typing
+`th` used to show `tho`, `Thursday`, and `Thai` before `that` or `this`.
+`lua/chen_eng_translator.lua` keeps exact matches and learned words first. It
+then inserts the eight most frequent completions from
+`en_dicts/chen_eng_rank.txt`, which ranks only words with wordfreq Zipf ≥ 3.0.
+Remaining dictionary completions follow. Inserted words come from the same
+translator, so choosing one still trains the `chen_eng` user dictionary.
+Adjust the count with `chen_eng_translator/frequent_completions` (`0` disables it).
+The pinyin schema's mixed English (`melt_eng` inside `rime_frost`) is unchanged.

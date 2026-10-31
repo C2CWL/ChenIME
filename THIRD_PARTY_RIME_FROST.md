@@ -29,3 +29,15 @@ Local adaptations:
 
 All other Frost files reside alongside the existing schemas under
 `app/src/main/assets/shared/`, retaining the paths expected by upstream.
+
+## English completion ranking (wordfreq)
+
+`app/src/main/assets/shared/en_dicts/chen_eng_rank.txt` orders the existing
+melt_eng words by frequency for the 英文 (`chen_eng`) keyboard. It adds no
+words. Frequencies come from [wordfreq](https://github.com/rspeer/wordfreq) 3.1.1
+by Robyn Speer, whose data is licensed under CC BY-SA 4.0
+(`LICENSES/CC-BY-SA-4.0.txt`). The ranking file is distributed under the same
+license. wordfreq includes SUBTLEX word lists by Marc Brysbaert et al. (freely
+available data), OpenSubtitles data (<http://www.opensubtitles.org/>), and Google
+Books Ngram Viewer data (<http://books.google.com/ngrams>).
+Regenerate it with `python3 tools/generate_chen_eng_rank.py`.

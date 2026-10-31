@@ -18,5 +18,6 @@ class SwitchOptionEntry(
         UpdateConfig,
         Keyboard,
         ThemeList,
+        InputMethodPicker,
     }
 }

@@ -18,9 +18,8 @@ internal data class ShiftState(val shifted: Boolean = false, val locked: Boolean
 internal fun useComposingAction(composing: Boolean, isShift: Boolean, locked: Boolean): Boolean = composing && !(isShift && locked)
 
 /** Resolve a direct uppercase ASCII character when Shift is active in Chinese mode. */
-internal fun shiftedLetterText(keyCode: Int): String? =
-    if (keyCode in android.view.KeyEvent.KEYCODE_A..android.view.KeyEvent.KEYCODE_Z) {
-        ('A'.code + (keyCode - android.view.KeyEvent.KEYCODE_A)).toChar().toString()
-    } else {
-        null
-    }
+internal fun shiftedLetterText(keyCode: Int): String? = if (keyCode in android.view.KeyEvent.KEYCODE_A..android.view.KeyEvent.KEYCODE_Z) {
+    ('A'.code + (keyCode - android.view.KeyEvent.KEYCODE_A)).toChar().toString()
+} else {
+    null
+}

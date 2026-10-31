@@ -8,6 +8,7 @@ package com.osfans.trime.ime.keyboard
 import android.content.Context
 import android.view.KeyEvent
 import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.model.TextKeyboard
 import com.osfans.trime.data.theme.model.orAbsent
@@ -44,6 +45,9 @@ class Keyboard(
     /** 默認按鍵圓角半徑  */
     val roundCorner: Float =
         resolveNonNegative(selfConfig?.roundCorner, theme.style.roundCorner)
+
+    /** 用户设置的按键圆角 (dp)，负数表示跟随主题 */
+    internal val keyCornerOverride: Int = CornerRadiusOverrides.current().key
 
     /** 默認按鍵邊框寬度  */
     val keyBorder: Int =

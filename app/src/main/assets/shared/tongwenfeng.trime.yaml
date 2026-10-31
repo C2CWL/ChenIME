@@ -29,11 +29,11 @@ round_corner:
 style:
   auto_caps: false #自動句首大寫:true|false
   candidate_font: han.ttf  #候选字体
-  candidate_padding: 5  #候选项内边距
+  candidate_padding: 7  #候选项内边距
   candidate_spacing: 0.0  #候选分割线
   candidate_text_size: 18  #候选字号
   candidate_text_vertical_bias: 1.0 #候选文本垂直偏移位置（仅 overlay 模式使用，需要间隙空间足够，范围 0.0~1.0，0.0=top，0.5=center，1.0=bottom）
-  candidate_view_height: 28 #候选区高度
+  candidate_view_height: 34 #候选区高度（含加大触控区，避免误触上方拼音）
   comment_font: comment.ttf #编码提示字体
   comment_height: 12 #编码提示区高度（仅 top 模式约束高度，其余模式与 candidate_view_height 无区别）
   comment_position: right #编码提示布局位置：right / top / overlay

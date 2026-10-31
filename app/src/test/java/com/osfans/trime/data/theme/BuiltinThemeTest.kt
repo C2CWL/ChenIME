@@ -16,6 +16,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.io.File
 
@@ -456,10 +457,29 @@ class BuiltinThemeTest :
             ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
         }
 
+        "Frost bundles no character decomposition lookup or comments" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
+            val dependencies = schema["schema"]!!["dependencies"]!!.sequence!!.items.map { it.string }
+            dependencies.contains("radical_pinyin") shouldBe false
+            val engine = schema["engine"]!!
+            for (section in listOf("processors", "segmentors", "translators", "filters")) {
+                engine[section]!!.sequence!!.items.map { it.string!! }.forEach {
+                    it.contains("radical") shouldBe false
+                    it.contains("chaifen") shouldBe false
+                }
+            }
+            schema["radical_lookup"] shouldBe null
+            schema["radical_reverse_lookup"] shouldBe null
+            schema["recognizer"]!!["patterns"]!!["radical_lookup"] shouldBe null
+            root.resolve("radical_pinyin.dict.yaml").exists() shouldBe false
+            File("data/rime-frost/opencc").listFiles().orEmpty()
+                .filter { it.name.contains("chaifen") } shouldBe emptyList()
+        }
+
         "only Frost and its dependency schemas are bundled" {
             root.listFiles()!!.filter { it.name.endsWith(".schema.yaml") }
                 .map { it.name.removeSuffix(".schema.yaml") }.toSet() shouldBe
-                setOf("rime_frost", "melt_eng", "radical_pinyin", "rime_frost_aux", "chen_eng")
+                setOf("rime_frost", "melt_eng", "rime_frost_aux", "chen_eng")
         }
 
         "chen_eng shares the English dictionary with its own prism and user dictionary" {
@@ -469,6 +489,27 @@ class BuiltinThemeTest :
             translator?.get("prism")?.string shouldBe "chen_eng"
             translator?.get("user_dict")?.string shouldBe "chen_eng"
             translator?.get("enable_completion")?.string shouldBe "true"
+        }
+
+        "chen_eng ranks completions with attributed frequency data for melt_eng words" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("chen_eng.schema.yaml").readText())
+            schema["schema"]?.get("version")?.string shouldBe "1.2"
+            schema["chen_eng_translator"]?.get("frequent_completions")?.string shouldBe "8"
+            val lines = root.resolve("en_dicts/chen_eng_rank.txt").readLines()
+            lines.filter { it.startsWith("#") }.joinToString("\n") shouldContain "CC BY-SA 4.0"
+            val ranked = lines.filterNot { it.isBlank() || it.startsWith("#") }.map { it.split('\t') }
+            ranked.take(5).map { it[0] } shouldBe listOf("the", "to", "and", "of", "in")
+            val dictionary = listOf("en_dicts/en_ext.dict.yaml", "en_dicts/en.dict.yaml")
+                .flatMap { root.resolve(it).readText().substringAfter("\n...\n").lines() }
+                .filterNot { it.isBlank() || it.startsWith("#") }
+                .map { it.split('\t') }
+                .filter { it.size >= 2 }
+                .map { it[0] to it[1] }
+                .toSet()
+            for (fields in ranked) {
+                val entry = fields[0] to (fields.getOrNull(1) ?: fields[0])
+                withClue(entry) { dictionary.contains(entry) shouldBe true }
+            }
         }
 
         "chen_eng is excluded from the default schema list" {

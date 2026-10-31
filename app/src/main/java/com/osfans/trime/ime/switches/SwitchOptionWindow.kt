@@ -27,12 +27,14 @@ import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.instance
 import splitties.dimensions.dp
+import splitties.systemservices.inputMethodManager
 import splitties.views.dsl.constraintlayout.constraintLayout
 import splitties.views.dsl.constraintlayout.endOfParent
 import splitties.views.dsl.constraintlayout.lParams
 import splitties.views.dsl.core.add
 import splitties.views.dsl.recyclerview.recyclerView
 import splitties.views.recyclerview.gridLayoutManager
+import timber.log.Timber
 
 class SwitchOptionWindow(di: DI) :
     BoardWindow.BarBoardWindow(di),
@@ -68,6 +70,11 @@ class SwitchOptionWindow(di: DI) :
                 R.drawable.ic_baseline_keyboard_24,
                 SwitchOptionEntry.Type.Keyboard,
             ),
+            SwitchOptionEntry(
+                context.getString(R.string.switch_input_method),
+                R.drawable.ic_baseline_language_24,
+                SwitchOptionEntry.Type.InputMethodPicker,
+            ),
         )
     }
 
@@ -77,6 +84,15 @@ class SwitchOptionWindow(di: DI) :
                 service.showDialog(builder(api))
             }
         }
+    }
+
+    private fun showInputMethodPicker() {
+        // The system picker lists every enabled IME; it may be refused while the IME window is hidden.
+        runCatching { inputMethodManager.showInputMethodPicker() }
+            .onFailure {
+                Timber.w(it, "Unable to show the input method picker; switching to the next IME instead.")
+                service.switchToNextIme()
+            }
     }
 
     private val adapter: SwitchOptionAdapter by lazy {
@@ -104,6 +120,8 @@ class SwitchOptionWindow(di: DI) :
                     }
 
                     SwitchOptionEntry.Type.Keyboard -> AppUtils.launchMainToKeyboard(context)
+
+                    SwitchOptionEntry.Type.InputMethodPicker -> showInputMethodPicker()
 
                     SwitchOptionEntry.Type.ThemeList -> showDialog { r ->
                         ThemePickerDialog.build(service.lifecycleScope, context) {

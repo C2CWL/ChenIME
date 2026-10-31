@@ -14,6 +14,7 @@ import androidx.annotation.ColorInt
 import androidx.core.text.buildSpannedString
 import androidx.core.text.inSpans
 import com.osfans.trime.core.CandidateProto
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.util.sp
@@ -79,7 +80,7 @@ class LabeledCandidateItemUi(
             GradientDrawable().apply {
                 if (highlighted) {
                     setColor(highlightCandidateBackColor)
-                    cornerRadius = ctx.dp(theme.style.candidateCornerRadius)
+                    cornerRadius = ctx.dp(CornerRadiusOverrides.current().bar(theme.style.candidateCornerRadius))
                 } else {
                     setColor(Color.TRANSPARENT)
                 }

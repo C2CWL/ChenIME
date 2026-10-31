@@ -137,6 +137,14 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         }
 
     @Keep
+    private val cornerRadiusListener =
+        PreferenceDelegate.OnChangeListener<Int> { _, _ ->
+            ContextCompat.getMainExecutor(this).execute {
+                themeScope?.let { replaceInputViews(it) }
+            }
+        }
+
+    @Keep
     private val onThemeChangeListener =
         ThemeManager.OnThemeChangeListener {
             themeScope?.let { replaceInputViews(it) }
@@ -214,6 +222,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             it.registerOnChangeListener(redrawKeyboardListener)
         }
         prefs.candidates.registerOnChangeListener(recreateCandidatesViewListener)
+        ThemeManager.prefs.cornerRadiusPrefs.forEach {
+            it.registerOnChangeListener(cornerRadiusListener)
+        }
         // ensure theme and color managers are initialized after rime is ready
         lifecycleScope.launch {
             rime.runOnReady {
@@ -362,6 +373,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             it.unregisterOnChangeListener(redrawKeyboardListener)
         }
         prefs.candidates.unregisterOnChangeListener(recreateCandidatesViewListener)
+        ThemeManager.prefs.cornerRadiusPrefs.forEach {
+            it.unregisterOnChangeListener(cornerRadiusListener)
+        }
         ThemeManager.removeOnChangedListener(onThemeChangeListener)
         ColorManager.removeOnChangedListener(onColorChangeListener)
         super.onDestroy()

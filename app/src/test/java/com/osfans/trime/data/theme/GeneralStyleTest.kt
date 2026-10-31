@@ -32,11 +32,11 @@ class GeneralStyleTest :
                 Then("plain scalar values from the file are preserved") {
                     style shouldNotBe null
                     style.autoCaps shouldBe false
-                    style.candidatePadding shouldBe 5
+                    style.candidatePadding shouldBe 7
                     style.candidateSpacing shouldBe 0f
                     style.candidateTextSize shouldBe 22f
                     style.candidateTextVerticalBias shouldBe 1f
-                    style.candidateViewHeight shouldBe 28
+                    style.candidateViewHeight shouldBe 34
                     style.commentHeight shouldBe 12
                     style.commentPosition shouldBe GeneralStyle.CommentPosition.RIGHT
                     style.commentTextSize shouldBe 10f

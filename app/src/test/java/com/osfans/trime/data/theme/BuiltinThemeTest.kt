@@ -456,10 +456,29 @@ class BuiltinThemeTest :
             ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
         }
 
+        "Frost bundles no character decomposition lookup or comments" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
+            val dependencies = schema["schema"]!!["dependencies"]!!.sequence!!.items.map { it.string }
+            dependencies.contains("radical_pinyin") shouldBe false
+            val engine = schema["engine"]!!
+            for (section in listOf("processors", "segmentors", "translators", "filters")) {
+                engine[section]!!.sequence!!.items.map { it.string }.forEach {
+                    it.contains("radical") shouldBe false
+                    it.contains("chaifen") shouldBe false
+                }
+            }
+            schema["radical_lookup"] shouldBe null
+            schema["radical_reverse_lookup"] shouldBe null
+            schema["recognizer"]!!["patterns"]!!["radical_lookup"] shouldBe null
+            root.resolve("radical_pinyin.dict.yaml").exists() shouldBe false
+            File("data/rime-frost/opencc").listFiles().orEmpty()
+                .filter { it.name.contains("chaifen") } shouldBe emptyList()
+        }
+
         "only Frost and its dependency schemas are bundled" {
             root.listFiles()!!.filter { it.name.endsWith(".schema.yaml") }
                 .map { it.name.removeSuffix(".schema.yaml") }.toSet() shouldBe
-                setOf("rime_frost", "melt_eng", "radical_pinyin", "rime_frost_aux", "chen_eng")
+                setOf("rime_frost", "melt_eng", "rime_frost_aux", "chen_eng")
         }
 
         "chen_eng shares the English dictionary with its own prism and user dictionary" {

@@ -462,7 +462,7 @@ class BuiltinThemeTest :
             dependencies.contains("radical_pinyin") shouldBe false
             val engine = schema["engine"]!!
             for (section in listOf("processors", "segmentors", "translators", "filters")) {
-                engine[section]!!.sequence!!.items.map { it.string }.forEach {
+                engine[section]!!.sequence!!.items.map { it.string!! }.forEach {
                     it.contains("radical") shouldBe false
                     it.contains("chaifen") shouldBe false
                 }

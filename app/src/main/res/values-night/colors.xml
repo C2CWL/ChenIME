@@ -9,4 +9,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
 <resources>
     <color name="colorAccent">#0A7CB2</color>
     <color name="colorAccentDark">#28566d</color>
+    <color name="settings_background">#101010</color>
+    <color name="settings_surface">#1C1C1E</color>
+    <color name="settings_text">#F2F2F7</color>
+    <color name="settings_text_secondary">#A0A0A8</color>
+    <color name="settings_accent">#669DFF</color>
+    <color name="settings_divider">#303034</color>
 </resources>

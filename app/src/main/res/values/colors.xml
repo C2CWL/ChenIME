@@ -22,4 +22,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
     <color name="colorAccentDark">#317086</color> <!-- 深强调色 -->
 
     <color name="toolbarForegroundColor">#FFFFFF</color>  <!-- 工具栏前景色 -->
+    <color name="settings_background">#F5F5F5</color>
+    <color name="settings_surface">#FFFFFF</color>
+    <color name="settings_text">#191919</color>
+    <color name="settings_text_secondary">#787880</color>
+    <color name="settings_accent">#3482FF</color>
+    <color name="settings_divider">#EEEEF0</color>
 </resources>

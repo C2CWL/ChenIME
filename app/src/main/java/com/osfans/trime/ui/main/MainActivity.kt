@@ -6,6 +6,7 @@
 package com.osfans.trime.ui.main
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.Menu
 import android.view.ViewGroup
@@ -96,14 +97,15 @@ class MainActivity : AppCompatActivity() {
         )
         WindowCompat
             .getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = false
+            .isAppearanceLightStatusBars =
+            resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
 
         setContentView(binding.root)
         // always show toolbar back arrow icon
         binding.mainToolbar.toolbar.navigationIcon =
             DrawerArrowDrawable(this).apply {
                 progress = 1f
-                color = ContextCompat.getColor(this@MainActivity, R.color.toolbarForegroundColor)
+                color = ContextCompat.getColor(this@MainActivity, R.color.settings_text)
             }
         // show menu icon and other action icons on toolbar
         // don't use `setSupportActionBar(binding.toolbar)` here,

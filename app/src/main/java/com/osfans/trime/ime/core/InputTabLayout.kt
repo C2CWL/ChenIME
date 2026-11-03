@@ -6,13 +6,15 @@
 package com.osfans.trime.ime.core
 
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Typeface
 import android.view.Gravity
 import android.widget.LinearLayout
 import androidx.viewpager2.widget.ViewPager2
-import com.osfans.trime.data.theme.ColorManager
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.ime.keyboard.GestureFrame
 import com.osfans.trime.util.alpha
+import com.osfans.trime.util.roundedRippleDrawable
 import splitties.dimensions.dp
 import splitties.views.dsl.core.Ui
 import splitties.views.dsl.core.add
@@ -20,6 +22,7 @@ import splitties.views.dsl.core.lParams
 import splitties.views.dsl.core.textView
 import splitties.views.dsl.core.view
 import splitties.views.gravityCenter
+import splitties.views.setPaddingDp
 
 class InputTabLayout(context: Context) : LinearLayout(context) {
     inner class TabUi : Ui {
@@ -27,7 +30,11 @@ class InputTabLayout(context: Context) : LinearLayout(context) {
 
         var position: Int = -1
 
-        val label = textView()
+        val label = textView {
+            isSingleLine = true
+            includeFontPadding = false
+            setPaddingDp(12, 6, 12, 6)
+        }
 
         override val root = view(::GestureFrame) {
             add(
@@ -46,6 +53,13 @@ class InputTabLayout(context: Context) : LinearLayout(context) {
             val color = label.currentTextColor
                 .alpha(if (active) 1f else 0.5f)
             label.setTextColor(color)
+            label.setTypeface(label.typeface, if (active) Typeface.BOLD else Typeface.NORMAL)
+            root.isSelected = active
+            root.background = roundedRippleDrawable(
+                color.alpha(0.12f),
+                ctx.dp(CornerRadiusOverrides.current().bar(12f)),
+                if (active) color.alpha(0.1f) else Color.TRANSPARENT,
+            )
         }
     }
 
@@ -88,11 +102,15 @@ class InputTabLayout(context: Context) : LinearLayout(context) {
         }
         onPageChangeCallback = callback
         pager.registerOnPageChangeCallback(callback)
+        activateTab(pager.currentItem)
     }
 
     /** Re-runs [setup] on the existing tabs, e.g. to re-apply scheme colors. */
     fun reconfigureTabs(setup: (TabUi, Int) -> Unit) {
-        tabs.forEach { tabUi -> setup(tabUi, tabUi.position) }
+        tabs.forEach { tabUi ->
+            setup(tabUi, tabUi.position)
+            tabUi.setActive(tabUi.position == selected)
+        }
     }
 
     private fun activateTab(index: Int) {

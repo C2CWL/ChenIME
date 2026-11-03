@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Rime community
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <style name="TextAppearance.SettingsTitle" parent="TextAppearance.AppCompat.Title">
+        <item name="android:textSize">24sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+</resources>

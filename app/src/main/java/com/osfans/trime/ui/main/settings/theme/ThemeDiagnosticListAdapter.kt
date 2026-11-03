@@ -8,6 +8,7 @@ package com.osfans.trime.ui.main.settings.theme
 
 import android.content.Context
 import android.graphics.Typeface
+import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R

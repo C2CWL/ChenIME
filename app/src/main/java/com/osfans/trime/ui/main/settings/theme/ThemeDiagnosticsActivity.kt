@@ -8,6 +8,7 @@ package com.osfans.trime.ui.main.settings.theme
 
 import android.content.ClipData
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.ViewGroup
 import androidx.activity.enableEdgeToEdge
@@ -49,7 +50,8 @@ class ThemeDiagnosticsActivity : AppCompatActivity() {
         }
         WindowCompat
             .getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = false
+            .isAppearanceLightStatusBars =
+            resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
 
         setContentView(binding.root)
         val theme = ThemeManager.activeTheme

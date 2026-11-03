@@ -16,9 +16,23 @@ SPDX-License-Identifier: GPL-3.0-or-later
         <item name="android:textColorSecondary">@color/settings_text_secondary</item>
         <item name="android:windowBackground">@color/settings_background</item>
         <item name="android:colorBackground">@color/settings_background</item>
+        <item name="editTextStyle">@style/Widget.SettingsEditText</item>
+        <item name="android:editTextStyle">@style/Widget.SettingsPlatformEditText</item>
+        <item name="popupMenuStyle">@style/Widget.SettingsPopupMenu</item>
+        <item name="android:popupMenuStyle">@style/Widget.SettingsPlatformPopupMenu</item>
         <item name="alertDialogTheme">@style/ThemeOverlay.SettingsDialog</item>
         <item name="android:alertDialogTheme">@style/ThemeOverlay.SettingsPlatformDialog</item>
     </style>
 
-    <style name="Theme.DialogTheme" parent="@android:style/Theme.DeviceDefault.Dialog" />
+    <style name="Theme.DialogTheme" parent="@android:style/Theme.Material.Dialog">
+        <item name="android:windowBackground">@drawable/settings_dialog_background</item>
+        <item name="android:colorBackground">@color/settings_surface</item>
+        <item name="android:textColorPrimary">@color/settings_text</item>
+        <item name="android:textColorSecondary">@color/settings_text_secondary</item>
+        <item name="android:colorAccent">@color/settings_accent</item>
+        <item name="android:editTextStyle">@style/Widget.SettingsPlatformEditText</item>
+        <item name="android:alertDialogTheme">@style/ThemeOverlay.SettingsPlatformDialog</item>
+        <item name="android:windowMinWidthMajor">92%</item>
+        <item name="android:windowMinWidthMinor">92%</item>
+    </style>
 </resources>

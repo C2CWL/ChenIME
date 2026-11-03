@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape>
+            <solid android:color="@color/settings_background" />
+            <corners android:radius="16dp" />
+            <stroke android:width="2dp" android:color="@color/settings_accent" />
+            <padding android:left="16dp" android:top="12dp" android:right="16dp" android:bottom="12dp" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <solid android:color="@color/settings_background" />
+            <corners android:radius="16dp" />
+            <padding android:left="16dp" android:top="12dp" android:right="16dp" android:bottom="12dp" />
+        </shape>
+    </item>
+</selector>

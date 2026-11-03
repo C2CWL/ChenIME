@@ -28,6 +28,7 @@ import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doAfterTextChanged
 import com.c2cwl.chenime.R
 import splitties.dimensions.dp
+import splitties.resources.color
 import splitties.resources.drawable
 import splitties.resources.styledColor
 import splitties.resources.styledDrawable
@@ -86,14 +87,14 @@ constructor(
                     intArrayOf(android.R.attr.state_selected),
                     GradientDrawable().apply {
                         setColor(styledColor(android.R.attr.colorControlHighlight))
-                        cornerRadius = dp(6f)
+                        cornerRadius = dp(16f)
                     },
                 )
                 addState(
                     intArrayOf(),
                     GradientDrawable().apply {
-                        setStroke(dp(1), styledColor(android.R.attr.colorControlNormal))
-                        cornerRadius = dp(6f)
+                        setStroke(dp(1), color(R.color.settings_divider))
+                        cornerRadius = dp(16f)
                     },
                 )
             }
@@ -194,14 +195,14 @@ constructor(
                 intArrayOf(android.R.attr.state_focused),
                 GradientDrawable().apply {
                     setStroke(dp(2), styledColor(android.R.attr.colorAccent))
-                    cornerRadius = dp(6f)
+                    cornerRadius = dp(16f)
                 },
             )
             addState(
                 intArrayOf(),
                 GradientDrawable().apply {
-                    setStroke(dp(1), styledColor(android.R.attr.colorControlNormal))
-                    cornerRadius = dp(6f)
+                    setStroke(dp(1), color(R.color.settings_divider))
+                    cornerRadius = dp(16f)
                 },
             )
         }
@@ -272,9 +273,9 @@ constructor(
         orientation = VERTICAL
         setPadding(dp(12))
         background = GradientDrawable().apply {
-            val r = dp(8f)
+            val r = dp(24f)
             cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
-            setColor(styledColor(android.R.attr.colorBackground))
+            setColor(color(R.color.settings_surface))
         }
         add(
             header,

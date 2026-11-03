@@ -51,8 +51,7 @@ class InputTabLayout(context: Context) : LinearLayout(context) {
 
         fun setActive(active: Boolean) {
             val color = label.currentTextColor
-                .alpha(if (active) 1f else 0.5f)
-            label.setTextColor(color)
+            label.alpha = if (active) 1f else 0.5f
             label.setTypeface(label.typeface, if (active) Typeface.BOLD else Typeface.NORMAL)
             root.isSelected = active
             root.background = roundedRippleDrawable(

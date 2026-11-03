@@ -29,7 +29,7 @@ object ThemePickerDialog {
         val selectedTheme by ThemeManager.prefs.selectedTheme
         val selectedIndex = allThemes.indexOfFirst { it.configId == selectedTheme }
         return AlertDialog
-            .Builder(context)
+            .Builder(context, R.style.ThemeOverlay_SettingsPlatformDialog)
             .apply {
                 setTitle(R.string.selected_theme)
                 if (allThemes.isEmpty()) {

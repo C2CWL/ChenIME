@@ -25,7 +25,7 @@ object EnabledSchemaPickerDialog {
         val selectedSchemaId = rime.selectedSchemaId()
         val selectedIndex = selecteds.indexOfFirst { it.id == selectedSchemaId }
         return AlertDialog
-            .Builder(context)
+            .Builder(context, R.style.ThemeOverlay_SettingsPlatformDialog)
             .apply {
                 setTitle(R.string.select_current_schema)
                 if (rime.isEmpty()) {

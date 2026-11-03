@@ -308,6 +308,10 @@ class KeyboardWindow(di: DI) :
         // or clear_all, with a different inputType or the same EditorInfo instance.
         // Neither its pad nor its language mode belongs to that restart.
         val target = inputStartKeyboard(info.inputType, restarting, currentKeyboardId)
+        if (!EnglishMode.isEnglish(rime.run { statusCached.schemaId }, rime.run { statusCached.isAsciiMode })) {
+            activeKeyboard?.resetShift()
+            currentKeyboardView?.invalidateAllKeys()
+        }
         if (restarting) return
         lastLockKeyboardId = evalKeyboard("default")
         switchKeyboard(target)

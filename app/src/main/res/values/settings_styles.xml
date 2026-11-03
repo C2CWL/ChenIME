@@ -6,4 +6,19 @@
         <item name="android:textSize">24sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
+    <style name="ThemeOverlay.SettingsDialog" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/settings_dialog_background</item>
+        <item name="android:colorBackground">@color/settings_surface</item>
+        <item name="android:textColorPrimary">@color/settings_text</item>
+        <item name="android:textColorSecondary">@color/settings_text_secondary</item>
+        <item name="colorAccent">@color/settings_accent</item>
+        <item name="android:colorAccent">@color/settings_accent</item>
+    </style>
+    <style name="ThemeOverlay.SettingsPlatformDialog" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/settings_dialog_background</item>
+        <item name="android:colorBackground">@color/settings_surface</item>
+        <item name="android:textColorPrimary">@color/settings_text</item>
+        <item name="android:textColorSecondary">@color/settings_text_secondary</item>
+        <item name="android:colorAccent">@color/settings_accent</item>
+    </style>
 </resources>

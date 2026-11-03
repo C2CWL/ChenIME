@@ -15,6 +15,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
         <item name="android:textColorPrimary">@color/settings_text</item>
         <item name="android:textColorSecondary">@color/settings_text_secondary</item>
         <item name="android:windowBackground">@color/settings_background</item>
+        <item name="android:colorBackground">@color/settings_background</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.SettingsDialog</item>
+        <item name="android:alertDialogTheme">@style/ThemeOverlay.SettingsPlatformDialog</item>
     </style>
 
     <style name="Theme.DialogTheme" parent="@android:style/Theme.DeviceDefault.Dialog" />

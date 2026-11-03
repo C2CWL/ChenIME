@@ -17,6 +17,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
+import com.c2cwl.chenime.BuildConfig
 import com.c2cwl.chenime.R
 import com.c2cwl.chenime.databinding.ActivityLogBinding
 import com.osfans.trime.TrimeApplication
@@ -94,7 +95,7 @@ class LogActivity : AppCompatActivity() {
                     setTitle(R.string.real_time_logs)
                 }
                 copyButton.visibility = View.GONE
-                logView.setLogcat(Logcat())
+                logView.setLogcat(Logcat(inputLatencyOnly = BuildConfig.DEBUG))
             }
             clearButton.setOnClickListener {
                 logView.clear()

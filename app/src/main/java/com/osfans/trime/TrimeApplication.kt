@@ -137,7 +137,7 @@ class TrimeApplication : Application() {
             if (BuildConfig.DEBUG) {
                 Timber.plant(
                     object : Timber.DebugTree() {
-                        override fun createStackElementTag(element: StackTraceElement): String = "${super.createStackElementTag(element)}|${element.fileName}:${element.lineNumber}"
+                        override fun isLoggable(tag: String?, priority: Int): Boolean = tag == "InputLatency"
 
                         override fun log(
                             priority: Int,
@@ -145,12 +145,7 @@ class TrimeApplication : Application() {
                             message: String,
                             t: Throwable?,
                         ) {
-                            super.log(
-                                priority,
-                                "[${Thread.currentThread().name}] ${tag?.substringBefore('|')}",
-                                "${tag?.substringAfter('|')}] $message",
-                                t,
-                            )
+                            super.log(priority, "InputLatency", message, t)
                         }
                     },
                 )

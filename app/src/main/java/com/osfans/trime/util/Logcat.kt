@@ -21,9 +21,13 @@ import kotlinx.coroutines.launch
  */
 class Logcat(
     val pid: Int? = Process.myPid(),
+    private val inputLatencyOnly: Boolean = false,
 ) : CoroutineScope by CoroutineScope(Dispatchers.IO) {
     private var process: java.lang.Process? = null
     private var emittingJob: Job? = null
+
+    private val filters: Array<String>
+        get() = if (inputLatencyOnly) arrayOf("InputLatency:D", "*:S") else emptyArray()
 
     private val flow: MutableSharedFlow<String> = MutableSharedFlow()
 
@@ -38,7 +42,7 @@ class Logcat(
      */
     fun getLogAsync(): Deferred<Result<List<String>>> = async {
         runCatching {
-            subprocess("logcat", pid?.let { "--pid=$it" } ?: "", "-d").readLines()
+            subprocess("logcat", pid?.let { "--pid=$it" } ?: "", "-d", *filters).readLines()
         }
     }
 
@@ -57,7 +61,7 @@ class Logcat(
     } else {
         launch {
             runCatching {
-                subprocess("logcat", pid?.let { "--pid=$it" } ?: "", "-v", "time")
+                subprocess("logcat", pid?.let { "--pid=$it" } ?: "", "-v", "time", *filters)
                     .also { process = it }
                     .asFlow()
                     .collect { flow.emit(it) }

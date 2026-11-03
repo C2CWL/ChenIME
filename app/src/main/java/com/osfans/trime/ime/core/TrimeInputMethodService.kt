@@ -59,6 +59,7 @@ import com.osfans.trime.util.monitorCursorAnchor
 import com.osfans.trime.util.styledFloat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
@@ -171,7 +172,8 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         scope: CoroutineScope,
         block: suspend () -> Unit,
     ): Job {
-        val job = scope.launch(start = CoroutineStart.LAZY) { block() }
+        // Keep the Rime lifecycle parent, but avoid a Default-pool hop per operation.
+        val job = scope.launch(Dispatchers.Main.immediate, start = CoroutineStart.LAZY) { block() }
         jobs.trySend(job)
         return job
     }

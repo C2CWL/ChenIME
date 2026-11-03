@@ -4,6 +4,7 @@
 
 package com.osfans.trime.core
 
+import android.os.Process
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
@@ -68,7 +69,13 @@ class RimeDispatcher(
     private val internalDispatcher =
         Executors
             .newSingleThreadExecutor {
-                Thread(it, "rime-main")
+                Thread(
+                    {
+                        Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY)
+                        it.run()
+                    },
+                    "rime-main",
+                )
             }.asCoroutineDispatcher()
 
     private val internalScope = CoroutineScope(internalDispatcher)

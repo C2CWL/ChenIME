@@ -27,7 +27,7 @@ abstract class PaddingPreferenceFragment : PreferenceFragmentCompat() {
         setDivider(null)
         listView.apply {
             setPadding(dp(16), dp(8), dp(16), 0)
-            addItemDecoration(PreferenceCardDecoration())
+            addItemDecoration(PreferenceCardDecoration { preferenceScreen })
             applyNavBarInsetsBottomPadding()
         }
     }

@@ -13,13 +13,16 @@ import android.graphics.RectF
 import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceCategory
-import androidx.preference.PreferenceGroupAdapter
+import androidx.preference.PreferenceGroup
+import androidx.preference.PreferenceScreen
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R
 import splitties.dimensions.dp
 
 /** Draw group surfaces behind rows without replacing preference widgets or their click targets. */
-class PreferenceCardDecoration : RecyclerView.ItemDecoration() {
+class PreferenceCardDecoration(
+    private val screen: () -> PreferenceScreen?,
+) : RecyclerView.ItemDecoration() {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val bounds = RectF()
     private val path = Path()
@@ -30,34 +33,35 @@ class PreferenceCardDecoration : RecyclerView.ItemDecoration() {
         parent: RecyclerView,
         state: RecyclerView.State,
     ) {
-        val adapter = parent.adapter as? PreferenceGroupAdapter ?: return
+        val adapter = parent.adapter ?: return
+        val categories = categoryPositions(parent) ?: return
         val position = parent.getChildAdapterPosition(view)
         if (position == RecyclerView.NO_POSITION) return
-        val item = adapter.getItem(position) ?: return
         outRect.set(0, 0, 0, 0)
-        if (item is PreferenceCategory) {
+        if (position in categories) {
             outRect.top = parent.context.dp(12)
             return
         }
-        if (position == 0 || adapter.getItem(position - 1) is PreferenceCategory) {
+        if (position == 0 || position - 1 in categories) {
             outRect.top = parent.context.dp(4)
         }
-        if (position == adapter.itemCount - 1 || adapter.getItem(position + 1) is PreferenceCategory) {
+        if (position == adapter.itemCount - 1 || position + 1 in categories) {
             outRect.bottom = parent.context.dp(12)
         }
     }
 
     override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
-        val adapter = parent.adapter as? PreferenceGroupAdapter ?: return
+        val adapter = parent.adapter ?: return
+        val categories = categoryPositions(parent) ?: return
         val radius = parent.context.dp(20).toFloat()
         val surface = ContextCompat.getColor(parent.context, R.color.settings_surface)
         val divider = ContextCompat.getColor(parent.context, R.color.settings_divider)
         for (index in 0 until parent.childCount) {
             val child = parent.getChildAt(index)
             val position = parent.getChildAdapterPosition(child)
-            if (position == RecyclerView.NO_POSITION || adapter.getItem(position) is PreferenceCategory) continue
-            val first = position == 0 || adapter.getItem(position - 1) is PreferenceCategory
-            val last = position == adapter.itemCount - 1 || adapter.getItem(position + 1) is PreferenceCategory
+            if (position == RecyclerView.NO_POSITION || position in categories) continue
+            val first = position == 0 || position - 1 in categories
+            val last = position == adapter.itemCount - 1 || position + 1 in categories
             val top = if (first) radius else 0f
             val bottom = if (last) radius else 0f
             bounds.set(
@@ -76,5 +80,27 @@ class PreferenceCardDecoration : RecyclerView.ItemDecoration() {
                 c.drawLine(bounds.left + parent.context.dp(20), bounds.bottom, bounds.right - parent.context.dp(20), bounds.bottom, paint)
             }
         }
+    }
+
+    private fun categoryPositions(parent: RecyclerView): Set<Int>? {
+        val callback = parent.adapter as? PreferenceGroup.PreferencePositionCallback ?: return null
+        val root = screen() ?: return null
+        val categories = mutableSetOf<Int>()
+        val groups = ArrayDeque<PreferenceGroup>()
+        groups.add(root)
+        while (groups.isNotEmpty()) {
+            val group = groups.removeFirst()
+            for (index in 0 until group.preferenceCount) {
+                val preference = group.getPreference(index)
+                if (preference is PreferenceCategory) {
+                    val position = callback.getPreferenceAdapterPosition(preference)
+                    if (position != RecyclerView.NO_POSITION) categories.add(position)
+                }
+                if (preference is PreferenceGroup && preference !is PreferenceScreen) {
+                    groups.add(preference)
+                }
+            }
+        }
+        return categories
     }
 }

@@ -12,8 +12,8 @@ import android.view.MotionEvent
 import android.widget.FrameLayout
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import com.c2cwl.chenime.BuildConfig
 import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.util.InputLatency
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -97,8 +97,8 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                 startY = y
                 lastX = startX
                 startTime = SystemClock.elapsedRealtime()
-                if (BuildConfig.DEBUG) {
-                    Timber.tag("InputLatency").d("touch_down dispatch_age_ms=%d", SystemClock.uptimeMillis() - event.eventTime)
+                if (InputLatency.enabled) {
+                    InputLatency.log("touch_down dispatch_age_ms=%d", SystemClock.uptimeMillis() - event.eventTime)
                 }
 
                 isLongPressed = false
@@ -172,8 +172,8 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
             }
 
             MotionEvent.ACTION_UP -> {
-                if (BuildConfig.DEBUG) {
-                    Timber.tag("InputLatency").d(
+                if (InputLatency.enabled) {
+                    InputLatency.log(
                         "touch_up hold_ms=%d dispatch_age_ms=%d",
                         SystemClock.elapsedRealtime() - startTime,
                         SystemClock.uptimeMillis() - event.eventTime,

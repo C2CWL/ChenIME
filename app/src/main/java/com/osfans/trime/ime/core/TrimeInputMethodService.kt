@@ -52,6 +52,7 @@ import com.osfans.trime.ime.keyboard.InputFeedbackManager
 import com.osfans.trime.ime.keyboard.UndoRedoShortcut
 import com.osfans.trime.ime.keyboard.undoRedoShortcut
 import com.osfans.trime.receiver.RimeIntentReceiver
+import com.osfans.trime.util.InputLatency
 import com.osfans.trime.util.any
 import com.osfans.trime.util.findSectionFrom
 import com.osfans.trime.util.forceShowSelf
@@ -654,6 +655,10 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         restarting: Boolean,
     ) {
         Timber.d("onStartInputView: restarting=$restarting")
+        val viewStartAt = if (InputLatency.enabled) System.nanoTime() else 0L
+        if (viewStartAt != 0L) {
+            InputLatency.log("input_view_start_ns=%d restarting=%b", viewStartAt, restarting)
+        }
         InputFeedbackManager.startInput()
         postRimeJob {
             updateRimeOption(this)
@@ -672,6 +677,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
                 // support monitoring CursorAnchorInfo
                 candidatesView?.updateCursorAnchor(contentSize)
             }
+        }
+        if (viewStartAt != 0L) {
+            InputLatency.log("input_view_setup_us=%d", (System.nanoTime() - viewStartAt) / 1_000)
         }
     }
 

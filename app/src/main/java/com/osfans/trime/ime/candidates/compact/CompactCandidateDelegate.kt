@@ -11,7 +11,6 @@ import android.graphics.drawable.shapes.RectShape
 import android.view.ContextThemeWrapper
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
-import com.c2cwl.chenime.BuildConfig
 import com.c2cwl.chenime.R
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.core.Candidates
@@ -25,6 +24,7 @@ import com.osfans.trime.ime.bar.UnrollButtonStateMachine
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.candidates.unrolled.decoration.FlexboxVerticalDecoration
 import com.osfans.trime.ime.core.InputView
+import com.osfans.trime.util.InputLatency
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -33,7 +33,6 @@ import org.kodein.di.DIAware
 import org.kodein.di.instance
 import splitties.dimensions.dp
 import splitties.views.dsl.recyclerview.recyclerView
-import timber.log.Timber
 import kotlin.math.max
 
 class CompactCandidateDelegate(override val di: DI) :
@@ -141,8 +140,8 @@ class CompactCandidateDelegate(override val di: DI) :
                     }
                 }
                 refreshUnrolled(cnt)
-                if (BuildConfig.DEBUG && candidateUpdateAt != 0L) {
-                    Timber.tag("InputLatency").d("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
+                if (candidateUpdateAt != 0L) {
+                    InputLatency.log("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
                     candidateUpdateAt = 0L
                 }
             }
@@ -209,10 +208,10 @@ class CompactCandidateDelegate(override val di: DI) :
             }
         }
 
-        if (BuildConfig.DEBUG && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
+        if (InputLatency.enabled && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
             candidateUpdateAt = System.nanoTime()
         }
-        if (candidates.isEmpty()) candidateUpdateAt = 0L
+        if (!InputLatency.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
         adapter.updateCandidates(candidates, total, highlighted)
 

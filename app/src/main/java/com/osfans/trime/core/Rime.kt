@@ -5,7 +5,6 @@
 
 package com.osfans.trime.core
 
-import android.os.Trace
 import com.c2cwl.chenime.BuildConfig
 import com.osfans.trime.core.data.DataManager
 import com.osfans.trime.core.data.UserDataManager
@@ -13,6 +12,7 @@ import com.osfans.trime.data.opencc.OpenCCDictManager
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.ime.core.InlinePreeditMode
+import com.osfans.trime.util.InputLatency
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -370,12 +370,18 @@ class Rime :
         )
     }
 
+    private var lastKeyFinishedAt = 0L
+
     private fun processKeyInner(value: Int, modifiers: Int, isVirtual: Boolean): Boolean {
-        val startedAt = if (BuildConfig.DEBUG) System.nanoTime() else 0L
-        if (BuildConfig.DEBUG) Trace.beginSection("ChenIME.processKey")
+        val startedAt = if (InputLatency.enabled) System.nanoTime() else 0L
+        val recording = startedAt != 0L
+        var statusAt = startedAt
+        var engineAt = startedAt
         try {
             lastAsciiTipsText = asciiTipsText(getRimeStatus())
+            if (recording) statusAt = System.nanoTime()
             val handled = processRimeKey(value, modifiers)
+            if (recording) engineAt = System.nanoTime()
             emitResponse()
             if (!handled) {
                 handleRimeMessage(
@@ -385,9 +391,20 @@ class Rime :
             }
             return handled
         } finally {
-            if (BuildConfig.DEBUG) {
-                Trace.endSection()
-                Timber.tag("InputLatency").d("process_and_response_us=%d", (System.nanoTime() - startedAt) / 1_000)
+            if (recording) {
+                val finishedAt = System.nanoTime()
+                InputLatency.log(
+                    "key_start_ns=%d idle_gap_us=%d status_us=%d engine_us=%d response_us=%d total_us=%d",
+                    startedAt,
+                    if (lastKeyFinishedAt == 0L) -1L else (startedAt - lastKeyFinishedAt) / 1_000,
+                    (statusAt - startedAt) / 1_000,
+                    (engineAt - statusAt) / 1_000,
+                    (finishedAt - engineAt) / 1_000,
+                    (finishedAt - startedAt) / 1_000,
+                )
+                lastKeyFinishedAt = finishedAt
+            } else {
+                lastKeyFinishedAt = 0L
             }
         }
     }
@@ -402,7 +419,9 @@ class Rime :
     }
 
     private fun emitResponse(commit: CommitProto? = null) {
+        val startedAt = if (InputLatency.enabled) System.nanoTime() else 0L
         val response = getRimeResponse(pagingMode)
+        val packedAt = if (startedAt != 0L) System.nanoTime() else 0L
         handleRimeMessage(4, arrayOf(commit ?: response.commit))
         handlePreedit(response.composition)
         if (response.composition.length <= 0 && lastAsciiTipsText != asciiTipsText(response.status)) {
@@ -413,6 +432,14 @@ class Rime :
             is Candidates.Bulk -> handleRimeMessage(9, arrayOf(candidates))
         }
         handleRimeMessage(8, arrayOf(response.status))
+        if (startedAt != 0L) {
+            InputLatency.log(
+                "response_start_ns=%d pack_us=%d dispatch_us=%d",
+                startedAt,
+                (packedAt - startedAt) / 1_000,
+                (System.nanoTime() - packedAt) / 1_000,
+            )
+        }
     }
 
     private fun handlePreedit(composition: CompositionProto) {

@@ -17,12 +17,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
-import com.c2cwl.chenime.BuildConfig
 import com.c2cwl.chenime.R
 import com.c2cwl.chenime.databinding.ActivityLogBinding
 import com.osfans.trime.TrimeApplication
 import com.osfans.trime.ui.main.log.LogView
 import com.osfans.trime.util.DeviceInfo
+import com.osfans.trime.util.InputLatency
 import com.osfans.trime.util.Logcat
 import com.osfans.trime.util.iso8601UTCDateTime
 import com.osfans.trime.util.toast
@@ -95,7 +95,7 @@ class LogActivity : AppCompatActivity() {
                     setTitle(R.string.real_time_logs)
                 }
                 copyButton.visibility = View.GONE
-                logView.setLogcat(Logcat(inputLatencyOnly = BuildConfig.DEBUG))
+                logView.setLogcat(Logcat(inputLatencyOnly = InputLatency.enabled))
             }
             clearButton.setOnClickListener {
                 logView.clear()

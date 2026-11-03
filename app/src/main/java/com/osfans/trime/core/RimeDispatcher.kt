@@ -5,7 +5,7 @@
 package com.osfans.trime.core
 
 import android.os.Process
-import com.c2cwl.chenime.BuildConfig
+import com.osfans.trime.util.InputLatency
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
@@ -52,8 +52,8 @@ class RimeDispatcher(
             if (delta > JOB_WAITING_LIMIT) {
                 Timber.w("${toString()} has waited $delta ms to get run since created!")
             }
-            if (BuildConfig.DEBUG) {
-                Timber.tag("InputLatency").d("rime_queue_ms=%d", delta)
+            if (InputLatency.enabled) {
+                InputLatency.log("rime_queue_ms=%d", delta)
             }
             started = true
             runnable.run()

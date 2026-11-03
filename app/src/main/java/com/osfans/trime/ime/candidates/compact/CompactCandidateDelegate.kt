@@ -11,6 +11,7 @@ import android.graphics.drawable.shapes.RectShape
 import android.view.ContextThemeWrapper
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
+import com.c2cwl.chenime.BuildConfig
 import com.c2cwl.chenime.R
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.core.Candidates
@@ -32,6 +33,7 @@ import org.kodein.di.DIAware
 import org.kodein.di.instance
 import splitties.dimensions.dp
 import splitties.views.dsl.recyclerview.recyclerView
+import timber.log.Timber
 import kotlin.math.max
 
 class CompactCandidateDelegate(override val di: DI) :
@@ -69,6 +71,9 @@ class CompactCandidateDelegate(override val di: DI) :
      */
     private var secondLayoutPassNeeded = false
     private var secondLayoutPassDone = false
+
+    // This is a batched layout delay, not a per-key or screen-presentation timestamp.
+    private var candidateUpdateAt = 0L
 
     private val _unrolledCandidateOffset =
         MutableSharedFlow<Int>(
@@ -136,6 +141,10 @@ class CompactCandidateDelegate(override val di: DI) :
                     }
                 }
                 refreshUnrolled(cnt)
+                if (BuildConfig.DEBUG && candidateUpdateAt != 0L) {
+                    Timber.tag("InputLatency").d("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
+                    candidateUpdateAt = 0L
+                }
             }
         }
     }
@@ -200,6 +209,10 @@ class CompactCandidateDelegate(override val di: DI) :
             }
         }
 
+        if (BuildConfig.DEBUG && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
+            candidateUpdateAt = System.nanoTime()
+        }
+        if (candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
         adapter.updateCandidates(candidates, total, highlighted)
 

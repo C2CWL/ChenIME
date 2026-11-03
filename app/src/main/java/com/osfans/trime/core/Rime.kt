@@ -5,6 +5,7 @@
 
 package com.osfans.trime.core
 
+import android.os.Trace
 import com.c2cwl.chenime.BuildConfig
 import com.osfans.trime.core.data.DataManager
 import com.osfans.trime.core.data.UserDataManager
@@ -370,16 +371,25 @@ class Rime :
     }
 
     private fun processKeyInner(value: Int, modifiers: Int, isVirtual: Boolean): Boolean {
-        lastAsciiTipsText = asciiTipsText(getRimeStatus())
-        val handled = processRimeKey(value, modifiers)
-        emitResponse()
-        if (!handled) {
-            handleRimeMessage(
-                10, // RimeMessage.MessageType.Key,
-                arrayOf(value, modifiers, isVirtual),
-            )
+        val startedAt = if (BuildConfig.DEBUG) System.nanoTime() else 0L
+        if (BuildConfig.DEBUG) Trace.beginSection("ChenIME.processKey")
+        try {
+            lastAsciiTipsText = asciiTipsText(getRimeStatus())
+            val handled = processRimeKey(value, modifiers)
+            emitResponse()
+            if (!handled) {
+                handleRimeMessage(
+                    10, // RimeMessage.MessageType.Key,
+                    arrayOf(value, modifiers, isVirtual),
+                )
+            }
+            return handled
+        } finally {
+            if (BuildConfig.DEBUG) {
+                Trace.endSection()
+                Timber.tag("InputLatency").d("process_and_response_us=%d", (System.nanoTime() - startedAt) / 1_000)
+            }
         }
-        return handled
     }
 
     private fun asciiTipsText(status: StatusProto): String = when {

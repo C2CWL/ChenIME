@@ -42,7 +42,7 @@ class ClipboardBeanUi(
             maxLines = 4
             textSize = 14f
             typeface = theme.fonts.key
-            setPaddingDp(8, 4, 8, 4)
+            setPaddingDp(14, 12, 24, 12)
             ellipsize = TextUtils.TruncateAt.END
             setTextColor(scope.colors.keyTextColor)
         }
@@ -52,7 +52,7 @@ class ClipboardBeanUi(
             imageDrawable =
                 drawable(R.drawable.ic_baseline_push_pin_24)!!.apply {
                     setTint(scope.colors.keySymbolColor)
-                    setAlpha(0.3f)
+                    setAlpha(0.65f)
                 }
         }
 
@@ -66,9 +66,9 @@ class ClipboardBeanUi(
             )
             add(
                 pin,
-                lParams(dp(12), dp(12)) {
-                    bottomOfParent(dp(2))
-                    endOfParent(dp(2))
+                lParams(dp(14), dp(14)) {
+                    bottomOfParent(dp(8))
+                    endOfParent(dp(8))
                 },
             )
         }
@@ -76,7 +76,7 @@ class ClipboardBeanUi(
     override val root =
         GestureFrame(ctx).apply {
             isClickable = true
-            minimumHeight = dp(30)
+            minimumHeight = dp(56)
             background =
                 scope.decorDrawable(
                     "key_back_color",

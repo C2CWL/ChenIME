@@ -48,7 +48,7 @@ class LiquidItemUi(
         background = null
         textSize = theme.style.keyTextSize
         typeface = theme.fonts.key
-        setPaddingDp(8, 4, 8, 4)
+        setPaddingDp(10, 6, 10, 6)
         setTextColor(scope.colors.keyTextColor)
     }
 

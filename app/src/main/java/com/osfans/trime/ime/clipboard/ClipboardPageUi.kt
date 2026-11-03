@@ -18,7 +18,9 @@ import splitties.views.dsl.recyclerview.recyclerView
 
 class ClipboardPageUi(override val ctx: Context) : Ui {
     val recyclerView = recyclerView {
-        addItemDecoration(SpacesItemDecoration(dp(4)))
+        addItemDecoration(SpacesItemDecoration(dp(5)))
+        setPadding(dp(5), dp(5), dp(5), dp(5))
+        clipToPadding = false
     }
 
     override val root = view(::FrameLayout) {

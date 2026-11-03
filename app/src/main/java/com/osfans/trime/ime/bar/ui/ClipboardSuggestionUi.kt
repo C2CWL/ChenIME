@@ -7,9 +7,10 @@ package com.osfans.trime.ime.bar.ui
 import android.content.Context
 import android.text.TextUtils
 import com.c2cwl.chenime.R
+import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.keyboard.GestureFrame
-import com.osfans.trime.util.rippleDrawable
+import com.osfans.trime.util.roundedRippleDrawable
 import splitties.dimensions.dp
 import splitties.resources.drawable
 import splitties.views.dsl.constraintlayout.after
@@ -60,7 +61,7 @@ class ClipboardSuggestionUi(
 
     private val layout =
         constraintLayout {
-            val spacing = dp(4)
+            val spacing = dp(8)
             add(
                 icon,
                 lParams(dp(20), dp(20)) {
@@ -90,7 +91,11 @@ class ClipboardSuggestionUi(
 
     val suggestionView = GestureFrame(ctx).apply {
         add(layout, lParams(matchParent, matchParent))
-        background = rippleDrawable(scope.colors.hilitedCandidateBackColor)
+        background = roundedRippleDrawable(
+            scope.colors.hilitedCandidateBackColor,
+            ctx.dp(CornerRadiusOverrides.current().bar(scope.theme.style.candidateCornerRadius)),
+            scope.colors.keyBackColor,
+        )
     }
 
     override val root =
@@ -113,6 +118,10 @@ class ClipboardSuggestionUi(
         text.setTextColor(scope.colors.candidateTextColor)
         dismiss.imageDrawable?.setTint(scope.colors.candidateTextColor)
         suggestionView.background =
-            rippleDrawable(scope.colors.hilitedCandidateBackColor)
+            roundedRippleDrawable(
+                scope.colors.hilitedCandidateBackColor,
+                ctx.dp(CornerRadiusOverrides.current().bar(scope.theme.style.candidateCornerRadius)),
+                scope.colors.keyBackColor,
+            )
     }
 }

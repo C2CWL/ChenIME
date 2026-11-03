@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.preference.PreferenceFragmentCompat
 import com.osfans.trime.util.applyNavBarInsetsBottomPadding
+import splitties.dimensions.dp
 
 /**
  * A fragment template that apply navigation bar window insets bottom padding
@@ -23,6 +24,11 @@ abstract class PaddingPreferenceFragment : PreferenceFragmentCompat() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ) = super.onCreateView(inflater, container, savedInstanceState).apply {
-        listView.applyNavBarInsetsBottomPadding()
+        setDivider(null)
+        listView.apply {
+            setPadding(dp(16), dp(8), dp(16), 0)
+            addItemDecoration(PreferenceCardDecoration())
+            applyNavBarInsetsBottomPadding()
+        }
     }
 }

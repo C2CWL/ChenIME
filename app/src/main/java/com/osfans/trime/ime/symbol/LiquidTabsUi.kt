@@ -28,6 +28,7 @@ import splitties.views.dsl.recyclerview.recyclerView
 import splitties.views.gravityCenter
 import splitties.views.horizontalPadding
 import splitties.views.recyclerview.horizontalLayoutManager
+import splitties.views.setPaddingDp
 
 class LiquidTabsUi(
     override val ctx: Context,
@@ -48,7 +49,7 @@ class LiquidTabsUi(
 
         override val root =
             view(::GestureFrame) {
-                minimumWidth = dp(40)
+                minimumWidth = dp(48)
                 add(
                     text,
                     lParams {
@@ -128,6 +129,9 @@ class LiquidTabsUi(
 
     override val root =
         recyclerView {
+            setPaddingDp(4, 4, 4, 4)
+            clipToPadding = false
+            addItemDecoration(SpacesItemDecoration(dp(2)))
             setHasFixedSize(true)
             itemAnimator = null
             layoutManager = horizontalLayoutManager()

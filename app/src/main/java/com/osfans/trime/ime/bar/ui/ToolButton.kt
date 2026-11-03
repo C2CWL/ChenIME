@@ -27,6 +27,7 @@ import com.osfans.trime.ime.core.AutoScaleTextView
 import com.osfans.trime.ime.keyboard.GestureFrame
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.util.parseThemeLabel
+import com.osfans.trime.util.roundedRippleDrawable
 import splitties.dimensions.dp
 import splitties.views.dsl.core.add
 import splitties.views.dsl.core.imageView
@@ -118,6 +119,10 @@ class ToolButton(context: Context, private val scope: ThemeScope) : GestureFrame
     private fun applyIconTint() {
         image.imageTintList =
             ColorStateList.valueOf(scope.colors.candidateTextColor)
+        background = roundedRippleDrawable(
+            scope.colors.hilitedCandidateBackColor,
+            dp(CornerRadiusOverrides.current().bar(scope.theme.style.candidateCornerRadius)),
+        )
     }
 
     /** Applies scheme-dependent colors; re-run on scheme switches. */

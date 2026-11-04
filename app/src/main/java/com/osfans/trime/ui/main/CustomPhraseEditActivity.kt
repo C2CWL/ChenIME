@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.c2cwl.chenime.R
 import com.osfans.trime.daemon.RimeDaemon
 import com.osfans.trime.data.phrase.CustomPhraseDocument
@@ -51,7 +52,7 @@ class CustomPhraseEditActivity : Activity() {
         layout.addView(
             TextView(this).apply {
                 setText(R.string.custom_phrase_format)
-                setTextColor(getColor(R.color.settings_text_secondary))
+                setTextColor(ContextCompat.getColor(context, R.color.settings_text_secondary))
                 textSize = 14f
             },
         )

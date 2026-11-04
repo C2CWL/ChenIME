@@ -32,11 +32,16 @@ import splitties.views.textAppearance
 class SchemaListEntryUi(
     override val ctx: Context,
 ) : Ui {
-    val checkBox = checkBox()
+    val checkBox = checkBox {
+        // The row handles the gesture so a tap anywhere on the card toggles once.
+        isClickable = false
+    }
     val nameText =
         textView {
             setPaddingDp(0, 16, 0, 16)
             textAppearance = ctx.resolveThemeAttribute(android.R.attr.textAppearanceListItem)
+            setTextColor(color(R.color.settings_text))
+            isClickable = false
         }
 
     override val root: View =
@@ -71,5 +76,9 @@ class SchemaListEntryUi(
                     after(checkBox, paddingStart)
                 },
             )
+        }.also { row ->
+            row.setOnClickListener {
+                checkBox.toggle()
+            }
         }
 }

@@ -97,7 +97,7 @@ class SchemaListUi(
                 val items = source.map { it.name }.toTypedArray()
                 val checked = BooleanArray(items.size) { false }
                 AlertDialog
-                    .Builder(ctx)
+                    .Builder(ctx, R.style.ThemeOverlay_SettingsPlatformDialog)
                     .setTitle(R.string.enable_schemata)
                     .setMultiChoiceItems(items, checked) { _, which, isChecked ->
                         checked[which] = isChecked

@@ -66,12 +66,11 @@ open class SchemaListAdapter(
         with(holder) {
             nameText.text = item.name
             checkBox.isVisible = multiselect
-            checkBox.isChecked = selected.map(SchemaItem::id).contains(item.id)
+            // Rebinding while a listener is attached treats the restored state as a user tap.
+            checkBox.setOnCheckedChangeListener(null)
+            checkBox.isChecked = selected.any { it.id == item.id }
             checkBox.setOnCheckedChangeListener { _, isChecked ->
                 select(item, isChecked)
-            }
-            nameText.setOnClickListener {
-                checkBox.toggle()
             }
         }
     }
@@ -81,9 +80,9 @@ open class SchemaListAdapter(
         shouldSelect: Boolean,
     ) {
         if (shouldSelect) {
-            if (selected.indexOf(item) == -1) selected.add(item)
+            if (selected.none { it.id == item.id }) selected.add(item)
         } else {
-            selected.remove(item)
+            selected.removeAll { it.id == item.id }
         }
     }
 
@@ -114,8 +113,10 @@ open class SchemaListAdapter(
         if (!multiselect || selected.isEmpty()) {
             return
         }
-        selected.forEach { remove(it) }
-        listener?.onItemRemovedBatch(selected)
+        val removing = selected.toList()
+        removing.forEach { remove(it) }
+        listener?.onItemRemovedBatch(removing)
+        selected.clear()
     }
 
     @SuppressLint("NotifyDataSetChanged")

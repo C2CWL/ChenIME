@@ -30,6 +30,8 @@
         <item name="android:colorBackground">@color/settings_surface</item>
         <item name="android:textColorPrimary">@color/settings_text</item>
         <item name="android:textColorSecondary">@color/settings_text_secondary</item>
+        <item name="textColorAlertDialogListItem">@color/settings_text</item>
+        <item name="android:textColorAlertDialogListItem">@color/settings_text</item>
         <item name="colorAccent">@color/settings_accent</item>
         <item name="android:colorAccent">@color/settings_accent</item>
     </style>
@@ -39,6 +41,7 @@
         <item name="android:colorBackground">@color/settings_surface</item>
         <item name="android:textColorPrimary">@color/settings_text</item>
         <item name="android:textColorSecondary">@color/settings_text_secondary</item>
+        <item name="android:textColorAlertDialogListItem">@color/settings_text</item>
         <item name="android:colorAccent">@color/settings_accent</item>
     </style>
     <style name="Widget.SettingsPopupMenu" parent="Widget.AppCompat.PopupMenu">

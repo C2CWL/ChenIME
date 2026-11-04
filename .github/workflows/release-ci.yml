@@ -63,7 +63,7 @@ jobs:
             umask 077
             printf 'keyBase64=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
               "$SIGNING_KEY" "$KEY_STORE_PASSWORD" "$ALIAS" "$KEY_PASSWORD" > keystore.properties
-            echo 'notice=APK 已由仓库签名密钥签名 / APKs signed with the repository signing key.' >> "$GITHUB_OUTPUT"
+            echo 'notice=' >> "$GITHUB_OUTPUT"
           else
             echo '::warning::Signing secrets are missing; release APKs will be unsigned.'
             echo 'notice=未配置完整的 CI 签名 secrets：APK 未签名，需要签名后才能安装。 / CI signing secrets are incomplete: APKs are unsigned and must be signed before installation.' >> "$GITHUB_OUTPUT"
@@ -76,27 +76,26 @@ jobs:
         if: ${{ !steps.jni-cache.outputs.cache-hit }}
         run: cp -R app/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib app/prebuilt
 
-      - name: Build changelog
-        id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v6
-        with:
-          commitMode: true
-          configurationJson: |
-            {
-              "template": "Change log from #{{FROM_TAG}} to #{{TO_TAG}}: #{{RELEASE_DIFF}}\n#{{UNCATEGORIZED}}",
-              "pr_template": "- [#{{MERGE_SHA}}] - #{{TITLE}}"
-            }
+      - name: Resolve release notes
+        id: notes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTICE: ${{ steps.signing.outputs.notice }}
+        run: |
+          NOTES=".github/release-notes/${GITHUB_REF_NAME}.md"
+          : > release-body.md
+          if [ -n "$NOTICE" ]; then printf '%s\n\n' "$NOTICE" >> release-body.md; fi
+          if [ -s "$NOTES" ]; then
+            cat "$NOTES" >> release-body.md
+          else
+            echo "::warning::No release notes at $NOTES; the release body will only carry the signing notice (if any)."
+          fi
+          cat release-body.md
 
       - name: Create Stable release
         uses: softprops/action-gh-release@v3
         with:
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
-          body: |
-            ${{ steps.signing.outputs.notice }}
-
-            ${{ steps.build_changelog.outputs.changelog }}
+          body_path: ${{ github.workspace }}/release-body.md
           working_directory: "app/build/outputs/apk/release/"
           fail_on_unmatched_files: true
           files: |

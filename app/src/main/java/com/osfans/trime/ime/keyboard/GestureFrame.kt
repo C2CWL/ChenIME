@@ -13,9 +13,11 @@ import android.widget.FrameLayout
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.util.InputLatency
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import kotlin.math.abs
 import kotlin.math.floor
 
@@ -95,6 +97,9 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                 startY = y
                 lastX = startX
                 startTime = SystemClock.elapsedRealtime()
+                if (InputLatency.enabled) {
+                    InputLatency.log("touch_down dispatch_age_ms=%d", SystemClock.uptimeMillis() - event.eventTime)
+                }
 
                 isLongPressed = false
                 slideActivated = false
@@ -167,6 +172,13 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
             }
 
             MotionEvent.ACTION_UP -> {
+                if (InputLatency.enabled) {
+                    InputLatency.log(
+                        "touch_up hold_ms=%d dispatch_age_ms=%d",
+                        SystemClock.elapsedRealtime() - startTime,
+                        SystemClock.uptimeMillis() - event.eventTime,
+                    )
+                }
                 val dx = x - startX
                 val dy = y - startY
 

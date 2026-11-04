@@ -5,6 +5,7 @@
 package com.osfans.trime.core
 
 import android.os.Process
+import com.osfans.trime.util.InputLatency
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
@@ -40,16 +41,19 @@ class RimeDispatcher(
         private val runnable: Runnable,
         private val name: String? = null,
     ) : Runnable by runnable {
-        private val time = System.currentTimeMillis()
+        private val time = System.nanoTime()
         var started = false
             private set
 
         private val delta
-            get() = System.currentTimeMillis() - time
+            get() = (System.nanoTime() - time) / 1_000_000
 
         override fun run() {
             if (delta > JOB_WAITING_LIMIT) {
                 Timber.w("${toString()} has waited $delta ms to get run since created!")
+            }
+            if (InputLatency.enabled) {
+                InputLatency.log("rime_queue_ms=%d", delta)
             }
             started = true
             runnable.run()

@@ -24,6 +24,7 @@ import com.osfans.trime.ime.bar.UnrollButtonStateMachine
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.candidates.unrolled.decoration.FlexboxVerticalDecoration
 import com.osfans.trime.ime.core.InputView
+import com.osfans.trime.util.InputLatency
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -69,6 +70,9 @@ class CompactCandidateDelegate(override val di: DI) :
      */
     private var secondLayoutPassNeeded = false
     private var secondLayoutPassDone = false
+
+    // This is a batched layout delay, not a per-key or screen-presentation timestamp.
+    private var candidateUpdateAt = 0L
 
     private val _unrolledCandidateOffset =
         MutableSharedFlow<Int>(
@@ -136,6 +140,10 @@ class CompactCandidateDelegate(override val di: DI) :
                     }
                 }
                 refreshUnrolled(cnt)
+                if (candidateUpdateAt != 0L) {
+                    InputLatency.log("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
+                    candidateUpdateAt = 0L
+                }
             }
         }
     }
@@ -200,6 +208,10 @@ class CompactCandidateDelegate(override val di: DI) :
             }
         }
 
+        if (InputLatency.enabled && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
+            candidateUpdateAt = System.nanoTime()
+        }
+        if (!InputLatency.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
         adapter.updateCandidates(candidates, total, highlighted)
 

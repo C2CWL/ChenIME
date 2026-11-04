@@ -23,6 +23,7 @@ import com.c2cwl.chenime.databinding.ActivityLogBinding
 import com.osfans.trime.TrimeApplication
 import com.osfans.trime.ui.main.log.LogView
 import com.osfans.trime.util.DeviceInfo
+import com.osfans.trime.util.InputLatency
 import com.osfans.trime.util.Logcat
 import com.osfans.trime.util.iso8601UTCDateTime
 import com.osfans.trime.util.toast
@@ -96,7 +97,7 @@ class LogActivity : AppCompatActivity() {
                     setTitle(R.string.real_time_logs)
                 }
                 copyButton.visibility = View.GONE
-                logView.setLogcat(Logcat())
+                logView.setLogcat(Logcat(inputLatencyOnly = InputLatency.enabled))
             }
             clearButton.setOnClickListener {
                 logView.clear()

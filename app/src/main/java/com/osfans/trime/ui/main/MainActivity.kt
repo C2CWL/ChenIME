@@ -170,11 +170,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupToolbarMenu(menu: Menu) {
+        val toolbarIconColor = ContextCompat.getColor(this, R.color.settings_text)
         val optionMenuItems = listOf(
-            menu.item(R.string.deploy, R.drawable.ic_baseline_refresh_reversed_24, showAsAction = true) {
+            menu.item(R.string.deploy, R.drawable.ic_baseline_refresh_reversed_24, toolbarIconColor, showAsAction = true) {
                 viewModel.rime.launchOnReady { it.deploy() }
             },
-            menu.item(R.string.test_input, R.drawable.ic_baseline_keyboard_24, showAsAction = true) {
+            menu.item(R.string.test_input, R.drawable.ic_baseline_keyboard_24, toolbarIconColor, showAsAction = true) {
                 testInputPanel?.show(window)
             },
             menu.item(R.string.developer) {
@@ -189,14 +190,14 @@ class MainActivity : AppCompatActivity() {
                 item.isVisible = enabled
             }
         }
-        menu.item(R.string.edit, R.drawable.ic_baseline_edit_24, showAsAction = true) {
+        menu.item(R.string.edit, R.drawable.ic_baseline_edit_24, toolbarIconColor, showAsAction = true) {
             viewModel.toolbarEditButtonOnClickListener.value?.invoke()
         }.apply {
             viewModel.toolbarEditButtonVisible.observe(this@MainActivity) {
                 isVisible = it
             }
         }
-        menu.item(R.string.delete, R.drawable.ic_baseline_delete_24, showAsAction = true) {
+        menu.item(R.string.delete, R.drawable.ic_baseline_delete_24, toolbarIconColor, showAsAction = true) {
             viewModel.toolbarDeleteButtonOnClickListener.value?.invoke()
         }.apply {
             viewModel.toolbarDeleteButtonOnClickListener.observe(this@MainActivity) {

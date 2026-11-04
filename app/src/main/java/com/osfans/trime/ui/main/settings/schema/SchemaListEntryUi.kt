@@ -7,7 +7,6 @@ package com.osfans.trime.ui.main.settings.schema
 
 import android.content.Context
 import android.view.View
-import android.widget.CheckBox
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R
 import com.osfans.trime.util.roundedRippleDrawable

@@ -6,6 +6,7 @@
 package com.osfans.trime.ui.main
 
 import android.content.ClipData
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -65,7 +66,8 @@ class LogActivity : AppCompatActivity() {
         }
         WindowCompat
             .getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = false
+            .isAppearanceLightStatusBars =
+            resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
 
         setContentView(binding.root)
         with(binding) {

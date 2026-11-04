@@ -22,7 +22,7 @@ object ColorPickerDialog {
         val currentScheme = ColorManager.activeColorScheme
         val currentIndex = presetSchemes.indexOfFirst { it.value == currentScheme }
         return AlertDialog
-            .Builder(context)
+            .Builder(context, R.style.ThemeOverlay_SettingsPlatformDialog)
             .apply {
                 setTitle(R.string.normal_mode_color)
                 if (presetSchemes.isEmpty()) {

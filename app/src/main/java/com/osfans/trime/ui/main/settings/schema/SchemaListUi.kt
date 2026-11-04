@@ -25,6 +25,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.osfans.trime.core.SchemaItem
 import com.osfans.trime.ui.common.OnItemChangedListener
 import splitties.dimensions.dp
+import splitties.resources.color
 import splitties.resources.drawable
 import splitties.resources.styledColor
 import splitties.views.backgroundColor
@@ -40,6 +41,7 @@ import splitties.views.dsl.recyclerview.recyclerView
 import splitties.views.gravityEndBottom
 import splitties.views.imageDrawable
 import splitties.views.recyclerview.verticalLayoutManager
+import splitties.views.setPaddingDp
 import kotlin.math.min
 
 class SchemaListUi(
@@ -175,6 +177,7 @@ class SchemaListUi(
         recyclerView {
             layoutManager = verticalLayoutManager()
             adapter = this@SchemaListUi.adapter
+            setPaddingDp(16, 8, 16, 88)
             clipToPadding = false
         }
 
@@ -184,12 +187,12 @@ class SchemaListUi(
         fab.updateLayoutParams<ViewGroup.MarginLayoutParams> {
             bottomMargin = navBars.bottom + ctx.dp(16)
         }
-        list.bottomPadding = navBars.bottom
+        list.bottomPadding = navBars.bottom + ctx.dp(88)
     }
 
     override val root =
         coordinatorLayout {
-            backgroundColor = styledColor(android.R.attr.colorBackground)
+            backgroundColor = color(R.color.settings_background)
             add(
                 list,
                 defaultLParams {

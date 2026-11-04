@@ -7,12 +7,13 @@ package com.osfans.trime.ui.main.settings.schema
 
 import android.content.Context
 import android.view.View
-import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
+import com.c2cwl.chenime.R
+import com.osfans.trime.util.roundedRippleDrawable
 import splitties.dimensions.dp
+import splitties.resources.color
 import splitties.resources.resolveThemeAttribute
-import splitties.resources.styledColor
 import splitties.resources.styledDimenPxSize
-import splitties.views.backgroundColor
 import splitties.views.dsl.constraintlayout.after
 import splitties.views.dsl.constraintlayout.centerVertically
 import splitties.views.dsl.constraintlayout.constraintLayout
@@ -40,8 +41,14 @@ class SchemaListEntryUi(
 
     override val root: View =
         constraintLayout {
-            layoutParams = ViewGroup.LayoutParams(matchParent, wrapContent)
-            backgroundColor = styledColor(android.R.attr.colorBackground)
+            layoutParams = RecyclerView.LayoutParams(matchParent, wrapContent).apply {
+                bottomMargin = dp(8)
+            }
+            background = roundedRippleDrawable(
+                color(R.color.settings_divider),
+                dp(20).toFloat(),
+                color(R.color.settings_surface),
+            )
             minHeight = styledDimenPxSize(android.R.attr.listPreferredItemHeightSmall)
 
             val paddingStart = styledDimenPxSize(android.R.attr.listPreferredItemPaddingStart)

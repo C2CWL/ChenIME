@@ -11,7 +11,11 @@ import android.graphics.Typeface
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
+import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.ThemeDiagnostics
+import com.osfans.trime.util.roundedRippleDrawable
+import splitties.dimensions.dp
+import splitties.resources.color
 import splitties.resources.resolveThemeAttribute
 import splitties.resources.styledColor
 import splitties.views.dsl.core.Ui
@@ -54,8 +58,11 @@ class ThemeDiagnosticListAdapter(
 
         override val root =
             verticalLayout {
-                layoutParams = ViewGroup.LayoutParams(matchParent, wrapContent)
-                setPaddingDp(16, 8, 16, 8)
+                layoutParams = RecyclerView.LayoutParams(matchParent, wrapContent).apply {
+                    bottomMargin = dp(8)
+                }
+                background = roundedRippleDrawable(color(R.color.settings_divider), dp(20).toFloat(), color(R.color.settings_surface))
+                setPaddingDp(16, 16, 16, 16)
                 add(message, lParams(matchParent, wrapContent))
                 add(path, lParams(matchParent, wrapContent))
             }

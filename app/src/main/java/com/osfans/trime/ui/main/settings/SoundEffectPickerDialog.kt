@@ -20,7 +20,7 @@ object SoundEffectPickerDialog {
         val current = SoundEffectManager.activeSoundEffect?.name ?: ""
         val currentIndex = all.indexOfFirst { it == current }
         return AlertDialog
-            .Builder(context)
+            .Builder(context, R.style.ThemeOverlay_SettingsPlatformDialog)
             .apply {
                 setTitle(R.string.custom_sound_effect_name)
                 if (all.isEmpty()) {

@@ -26,6 +26,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:paddingTop="8dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         android:paddingBottom="8dp"
         app:layout_constraintBottom_toTopOf="@id/diagnosticsButtons"
         app:layout_constraintEnd_toEndOf="parent"

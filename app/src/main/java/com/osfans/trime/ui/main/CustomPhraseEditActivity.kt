@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.c2cwl.chenime.R
 import com.osfans.trime.daemon.RimeDaemon
 import com.osfans.trime.data.phrase.CustomPhraseDocument
@@ -48,12 +49,24 @@ class CustomPhraseEditActivity : Activity() {
             val padding = (16 * resources.displayMetrics.density).toInt()
             setPadding(padding, padding, padding, padding)
         }
-        layout.addView(TextView(this).apply { setText(R.string.custom_phrase_format) })
+        layout.addView(
+            TextView(this).apply {
+                setText(R.string.custom_phrase_format)
+                setTextColor(ContextCompat.getColor(context, R.color.settings_text_secondary))
+                textSize = 14f
+            },
+        )
         fun field(id: Int, hint: Int, value: String) = EditText(this).apply {
             this.id = id
             setHint(hint)
             setText(value)
-            layout.addView(this)
+            layout.addView(
+                this,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = (12 * resources.displayMetrics.density).toInt() },
+            )
         }
         phrase = field(android.R.id.text1, R.string.custom_phrase_text, text)
         code = field(android.R.id.text2, R.string.custom_phrase_code, input)

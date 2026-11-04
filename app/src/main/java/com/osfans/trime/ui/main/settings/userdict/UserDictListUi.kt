@@ -23,6 +23,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import splitties.dimensions.dp
+import splitties.resources.color
 import splitties.resources.drawable
 import splitties.resources.styledColor
 import splitties.views.backgroundColor
@@ -38,6 +39,7 @@ import splitties.views.dsl.recyclerview.recyclerView
 import splitties.views.gravityEndBottom
 import splitties.views.imageDrawable
 import splitties.views.recyclerview.verticalLayoutManager
+import splitties.views.setPaddingDp
 import kotlin.math.min
 
 class UserDictListUi(
@@ -74,6 +76,7 @@ class UserDictListUi(
     private val list = recyclerView {
         layoutManager = verticalLayoutManager()
         adapter = this@UserDictListUi.adapter
+        setPaddingDp(16, 8, 16, 88)
         clipToPadding = false
     }
 
@@ -83,11 +86,11 @@ class UserDictListUi(
         fab.updateLayoutParams<ViewGroup.MarginLayoutParams> {
             bottomMargin = navBars.bottom + ctx.dp(16)
         }
-        list.bottomPadding = navBars.bottom
+        list.bottomPadding = navBars.bottom + ctx.dp(88)
     }
 
     override val root = coordinatorLayout {
-        backgroundColor = styledColor(android.R.attr.colorBackground)
+        backgroundColor = color(R.color.settings_background)
         add(
             list,
             defaultLParams {

@@ -26,7 +26,7 @@ private class FakeEditor(
         deleteLength: Int,
         insert: String,
     ) {
-        // One batch edit: the editor reports once at the end.
+        // One editor operation reports one selection update for the net cursor move.
         val old = selStart
         text = text.substring(0, selStart - deleteLength) + insert + text.substring(selEnd)
         selStart = old - deleteLength + insert.length
@@ -234,6 +234,18 @@ class ImeEditHistoryTest :
             h.expectComposingChange()
             h.onSelectionUpdate(2, 4, 4) shouldBe true
             h.canUndo shouldBe true
+        }
+
+        "undo of a deletion restores the character in one replacement" {
+            val h = ImeEditHistory()
+            val e = FakeEditor(h)
+            e.imeCommit("抖音")
+            e.imeBackspace()
+            e.text shouldBe "抖"
+            h.undo(e) shouldBe true
+            e.text shouldBe "抖音"
+            h.redo(e) shouldBe true
+            e.text shouldBe "抖"
         }
 
         "history is capped" {

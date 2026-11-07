@@ -28,6 +28,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InlineSuggestionsRequest
 import android.view.inputmethod.InlineSuggestionsResponse
+import android.view.inputmethod.InputConnection
 import android.widget.FrameLayout
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
@@ -1072,14 +1073,53 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
                     deleteLength: Int,
                     insert: String,
                 ) {
+                    // Replace the span in one composing commit. A delete followed by a
+                    // commit reports two selection updates and drops the history, so the
+                    // step is then replayed as a plain insert and the text duplicates.
                     ic.beginBatchEdit()
-                    if (deleteLength > 0) ic.deleteSurroundingText(deleteLength, 0)
-                    if (insert.isNotEmpty()) ic.commitText(insert, 1)
+                    val replaced = deleteLength > 0 && selectBeforeCursor(ic, deleteLength)
+                    if (deleteLength <= 0) {
+                        if (insert.isNotEmpty()) ic.commitText(insert, 1)
+                    } else if (replaced) {
+                        ic.setComposingText(insert, 1)
+                        ic.finishComposingText()
+                    } else if (insert.isEmpty()) {
+                        ic.deleteSurroundingText(deleteLength, 0)
+                    } else {
+                        Timber.w(
+                            "undo replace skipped: editor gave no selection for %d -> %d",
+                            deleteLength,
+                            insert.length,
+                        )
+                    }
                     ic.endBatchEdit()
                 }
             }
         val applied = if (redo) editHistory.redo(editor) else editHistory.undo(editor)
         Timber.d("undoRedoImeEdit: redo=$redo applied=$applied")
+    }
+
+    /**
+     * Selects [length] characters before the cursor so one composing commit replaces
+     * them. Returns false when the editor does not report an extracted selection.
+     */
+    private fun selectBeforeCursor(
+        ic: InputConnection,
+        length: Int,
+    ): Boolean {
+        if (length <= 0) return false
+        val extracted =
+            ic.getExtractedText(ExtractedTextRequest().apply { token = 0 }, 0) ?: return false
+        if (extracted.selectionStart != extracted.selectionEnd) return false
+        // A partial extract only contains text around the cursor, so its selection
+        // is not an absolute index and cannot be used to place the span.
+        if (extracted.partialStartOffset >= 0) return false
+        val cursor = extracted.startOffset + extracted.selectionStart
+        if (cursor < length) return false
+        val before = ic.getTextBeforeCursor(length, 0) ?: return false
+        if (before.length < length) return false
+        ic.setSelection(cursor - length, cursor)
+        return true
     }
 
     fun clearTextSelection() {

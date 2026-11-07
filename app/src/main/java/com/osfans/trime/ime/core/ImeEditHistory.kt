@@ -125,7 +125,12 @@ internal class ImeEditHistory(
 
         fun textBeforeCursor(length: Int): CharSequence?
 
-        /** Deletes [deleteLength] UTF-16 units before the cursor, then inserts [insert] there. */
+        /**
+         * Replaces [deleteLength] UTF-16 units before the cursor with [insert] in one
+         * editor operation. Two operations (delete, then commit) report two selection
+         * updates; some editors also keep the deleted text, so undoing one step
+         * duplicates it.
+         */
         fun replaceBeforeCursor(
             deleteLength: Int,
             insert: String,
@@ -145,10 +150,10 @@ internal class ImeEditHistory(
             return false
         }
         // Update state before touching the editor so its selection update finds the move queued.
+        // One replacement moves the cursor once, by the net of the two lengths.
         undoStack.removeLast()
         redoStack.addLast(edit)
-        expectMove(-edit.inserted.length)
-        expectMove(edit.removed.length)
+        expectMove(edit.removed.length - edit.inserted.length)
         editor.replaceBeforeCursor(edit.inserted.length, edit.removed)
         return true
     }
@@ -163,8 +168,7 @@ internal class ImeEditHistory(
         }
         redoStack.removeLast()
         undoStack.addLast(edit)
-        expectMove(-edit.removed.length)
-        expectMove(edit.inserted.length)
+        expectMove(edit.inserted.length - edit.removed.length)
         editor.replaceBeforeCursor(edit.removed.length, edit.inserted)
         return true
     }

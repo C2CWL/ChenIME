@@ -26,9 +26,9 @@ import android.view.WindowManager
 import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.ExtractedTextRequest
-import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InlineSuggestionsRequest
 import android.view.inputmethod.InlineSuggestionsResponse
+import android.view.inputmethod.InputConnection
 import android.widget.FrameLayout
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi

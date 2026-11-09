@@ -151,6 +151,7 @@
     <string name="simple_key_unpin">Unpin</string>
     <string name="simple_key_pin">Pin</string>
     <string name="delete_all">Delete all</string>
+    <string name="clipboard_scroll_to_top">Scroll to top</string>
     <string name="disable">Disable</string>
     <string name="a_regular_expression_per_line">A regular expression per line</string>
     <string name="custom_sound_effect_enabled">Use custom key sound</string>

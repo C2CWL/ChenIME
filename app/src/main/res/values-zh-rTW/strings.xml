@@ -151,6 +151,7 @@
     <string name="simple_key_unpin">取消置頂</string>
     <string name="simple_key_pin">置頂</string>
     <string name="delete_all">刪除全部</string>
+    <string name="clipboard_scroll_to_top">回頂部</string>
     <string name="disable">停用</string>
     <string name="a_regular_expression_per_line">一行一條正則表示式</string>
     <string name="custom_sound_effect_enabled">使用自訂按鍵音</string>

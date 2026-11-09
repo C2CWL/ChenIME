@@ -27,6 +27,10 @@ class ClipboardTitleUi(override val ctx: Context, private val scope: ThemeScope)
 
     val tabLayout = InputTabLayout(ctx)
 
+    val scrollToTopButton = ToolButton(ctx, R.drawable.ic_baseline_expand_less_24, scope).apply {
+        contentDescription = ctx.getString(R.string.clipboard_scroll_to_top)
+    }
+
     val deleteAllButton = ToolButton(ctx, R.drawable.ic_baseline_delete_sweep_24, scope)
 
     private val size = theme.style.run { candidateViewHeight + commentHeight }
@@ -35,8 +39,15 @@ class ClipboardTitleUi(override val ctx: Context, private val scope: ThemeScope)
         add(
             tabLayout,
             lParams(matchConstraints, dp(size)) {
-                before(deleteAllButton)
+                before(scrollToTopButton)
                 startOfParent()
+                centerVertically()
+            },
+        )
+        add(
+            scrollToTopButton,
+            lParams(dp(size), dp(size)) {
+                before(deleteAllButton)
                 centerVertically()
             },
         )

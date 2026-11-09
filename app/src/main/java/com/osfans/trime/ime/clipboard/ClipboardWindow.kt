@@ -206,6 +206,9 @@ class ClipboardWindow(di: DI) :
             tabLayout.onConfigureTab(viewPager) { tabUi, position ->
                 configureTab(tabUi, position)
             }
+            scrollToTopButton.setOnClickListener {
+                scrollCurrentPageToTop()
+            }
             deleteAllButton.setOnClickListener {
                 val currentItem = viewPager.currentItem
                 when (currentItem) {
@@ -219,6 +222,15 @@ class ClipboardWindow(di: DI) :
                 }
             }
         }
+    }
+
+    private fun scrollCurrentPageToTop() {
+        if (!::clipboardLayout.isInitialized) return
+        val page = when (clipboardLayout.viewPager.currentItem) {
+            0 -> clipboardPage
+            else -> collectionPage
+        }
+        page.recyclerView.scrollToPosition(0)
     }
 
     private fun launchTextSharing(text: String) {
@@ -291,6 +303,7 @@ class ClipboardWindow(di: DI) :
     override fun refreshColors() {
         if (!::clipboardLayout.isInitialized || colorRevision == scope.colorRevision) return
         colorRevision = scope.colorRevision
+        clipboardLayout.titleUi.scrollToTopButton.refreshColors()
         clipboardLayout.titleUi.deleteAllButton.refreshColors()
         clipboardLayout.titleUi.tabLayout.reconfigureTabs { tabUi, position ->
             configureTab(tabUi, position)

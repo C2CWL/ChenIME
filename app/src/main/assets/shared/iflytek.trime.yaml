@@ -9,6 +9,10 @@ name: New布局
 author: Trime community; based on tongwenfeng
 style:
   __include: tongwenfeng.trime:/style
+  # Pill-chip candidates (方案 B): padding + gap + round corners; separator color matches bar bg.
+  candidate_padding: 14
+  candidate_spacing: 8.0
+  candidate_corner_radius: 10
   enter_labels:
     go: 前往
     done: 完成
@@ -404,62 +408,62 @@ preset_keyboards:
     ascii_mode: 1
     keys:
     - click: plus
-      width: 18
+      width: 20
       key_back_color: off_key_back_color
     - click: '1'
-      width: 23.5
+      width: 20
     - click: '2'
-      width: 23.5
+      width: 20
     - click: '3'
-      width: 23.5
+      width: 20
     - click: BackSpace
       swipe_up: Ifly_clear_all
       swipe_down: restore_cleared
-      width: 11.5
+      width: 20
       key_back_color: off_key_back_color
       label: ic@backspace_outline
     - click: minus
-      width: 18
+      width: 20
       key_back_color: off_key_back_color
     - click: '4'
-      width: 23.5
+      width: 20
     - click: '5'
-      width: 23.5
+      width: 20
     - click: '6'
-      width: 23.5
+      width: 20
     - click: Ifly_space
       long_click: Mode_switch
       swipe_left: Left
       swipe_right: Right
-      width: 11.5
+      width: 20
       key_back_color: off_key_back_color
     - click: slash
-      width: 18
+      width: 20
       key_back_color: off_key_back_color
     - click: '7'
-      width: 23.5
+      width: 20
     - click: '8'
-      width: 23.5
+      width: 20
     - click: '9'
-      width: 23.5
+      width: 20
     - click: Return
       label: ic@keyboard_return
       key_text_color: on_key_text_color
-      width: 11.5
+      width: 20
       key_back_color: accent
     - click: Ifly_back
-      width: 18
+      width: 20
       key_back_color: accent
     - click: Ifly_symbols
       label_symbol: 简洁
       long_click: "{hide_key_symbol}{hide_key_hint}"
-      width: 23.5
+      width: 20
     - click: '0'
-      width: 23.5
+      width: 20
     - click: period
-      width: 23.5
+      width: 20
     - click: at
-      width: 11.5
+      width: 20
       key_back_color: off_key_back_color
   editor:
     height: 39.5

@@ -29,6 +29,8 @@ import com.osfans.trime.ime.window.BoardWindowManager
 import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.ClipEditActivity
 import com.osfans.trime.util.AppUtils
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -75,11 +77,40 @@ class ClipboardWindow(di: DI) :
     }
     override fun onDestroyed() {
         onDetached()
+        clipboardBeansSubmitJob?.cancel()
+        collectionBeansSubmitJob?.cancel()
+        dataStarted = false
         dataScope.cancel()
     }
 
     private var clipboardBeansSubmitJob: Job? = null
     private var collectionBeansSubmitJob: Job? = null
+    private var dataStarted = false
+
+    private data class ScrollPos(val index: Int, val offset: Int)
+
+    private var clipboardScroll: ScrollPos? = null
+    private var collectionScroll: ScrollPos? = null
+
+    private fun captureScroll(page: ClipboardPageUi): ScrollPos? {
+        val lm = page.recyclerView.layoutManager as? LinearLayoutManager ?: return null
+        val index = lm.findFirstVisibleItemPosition()
+        if (index == RecyclerView.NO_POSITION) return null
+        val child = lm.findViewByPosition(index)
+        val offset = if (child != null) child.top - page.recyclerView.paddingTop else 0
+        return ScrollPos(index, offset)
+    }
+
+    private fun restoreScroll(page: ClipboardPageUi, saved: ScrollPos?) {
+        if (saved == null) return
+        val lm = page.recyclerView.layoutManager as? LinearLayoutManager ?: return
+        page.recyclerView.post {
+            val count = page.recyclerView.adapter?.itemCount ?: 0
+            if (count <= 0) return@post
+            val index = saved.index.coerceIn(0, count - 1)
+            lm.scrollToPositionWithOffset(index, saved.offset)
+        }
+    }
 
     private val clipboardBeansAdapter by lazy {
         object : ClipboardAdapter(scope) {
@@ -265,16 +296,20 @@ class ClipboardWindow(di: DI) :
     override fun onAttached() {
         clipboardLayout.viewPager.setCurrentItem(selectedTab, false)
         refreshColors()
-        startData()
+        ensureData()
+        // Re-apply after layout: ViewPager2 / detach can drop RV offset even when paging stays warm.
+        restoreScroll(clipboardPage, clipboardScroll)
+        restoreScroll(collectionPage, collectionScroll)
     }
 
-    private fun startData() {
-        clipboardBeansSubmitJob?.cancel()
-        collectionBeansSubmitJob?.cancel()
-        clipboardBeansSubmitJob = service.lifecycleScope.launch {
+    private fun ensureData() {
+        // Keep paging collectors alive across hide/show. Re-submitData on every reopen jumps to top.
+        if (dataStarted) return
+        dataStarted = true
+        clipboardBeansSubmitJob = dataScope.launch {
             clipboardBeansPager.collectLatest { clipboardBeansAdapter.submitData(it) }
         }
-        collectionBeansSubmitJob = service.lifecycleScope.launch {
+        collectionBeansSubmitJob = dataScope.launch {
             collectionBeansPager.collectLatest { collectionBeansAdapter.submitData(it) }
         }
     }
@@ -282,8 +317,10 @@ class ClipboardWindow(di: DI) :
     override fun onDetached() {
         clipboardBeansAdapter.dismissPopupMenu()
         collectionBeansAdapter.dismissPopupMenu()
-        clipboardBeansSubmitJob?.cancel()
-        collectionBeansSubmitJob?.cancel()
+        if (::clipboardLayout.isInitialized) {
+            clipboardScroll = captureScroll(clipboardPage)
+            collectionScroll = captureScroll(collectionPage)
+        }
     }
 
     private var colorRevision = -1L

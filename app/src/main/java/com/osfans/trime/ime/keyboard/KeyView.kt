@@ -16,6 +16,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.KeyEvent
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.utils.sizeDp
+import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.popup.PopupAction
@@ -46,6 +47,25 @@ class KeyView(
 
     private var keyPressed = false
     override fun isPressed(): Boolean = keyPressed
+
+    /** True after a CLICK was committed on ACTION_DOWN (input-on-press). */
+    private var committedOnPress = false
+
+    private val inputOnPress: Boolean
+        get() = AppPrefs.defaultInstance().keyboard.inputOnPress.getValue()
+
+    private fun canCommitOnPress(): Boolean {
+        if (!inputOnPress) return false
+        // Double-tap and slide gestures need the full down→up sequence.
+        if (hasDouble || hasLazyDouble || isSlideCursor || isSlideDelete) return false
+        return key.getAction(KeyBehavior.CLICK) != null
+    }
+
+    private fun undoCommitOnPress() {
+        if (!committedOnPress) return
+        committedOnPress = false
+        keyboardActionListener.onKey(KeyEvent.KEYCODE_DEL, 0)
+    }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -84,16 +104,25 @@ class KeyView(
 
         onPress = {
             deleteGesture = DeleteGesture()
+            committedOnPress = false
             if (keyboard.firstPressedKeyIndex == -1) keyboard.firstPressedKeyIndex = id
             setPressedState(true)
             key.getCode(KeyBehavior.CLICK).let { keyboardActionListener.onPress(it) }
             showPopupPreview()
+            if (canCommitOnPress()) {
+                key.getAction(KeyBehavior.CLICK)?.let {
+                    processKeyAction(it, KeyBehavior.CLICK)
+                    committedOnPress = true
+                }
+            }
         }
 
         onRelease = { behavior, isFromLongPress ->
             Timber.d("KeyView release: label=${key.getLabel()}, behavior=$behavior, fromLongPress=$isFromLongPress")
             if (isFromLongPress) {
                 if (hasPopup) {
+                    // Popup replaces the early letter (if any).
+                    undoCommitOnPress()
                     val triggerAction = PopupAction.TriggerAction(id)
                     popup.listener.onPopupAction(triggerAction)
                     triggerAction.outAction?.let { action ->
@@ -102,22 +131,35 @@ class KeyView(
                     }
                     setPressedState(false)
                 } else if (isRepeatable) {
-                    key.getAction(KeyBehavior.CLICK)?.let { processKeyAction(it, KeyBehavior.CLICK) }
+                    // Hold-to-repeat already fired while pressed; avoid an extra release tap
+                    // unless nothing was committed on press (legacy input-on-release).
+                    if (!committedOnPress) {
+                        key.getAction(KeyBehavior.CLICK)?.let { processKeyAction(it, KeyBehavior.CLICK) }
+                    }
+                    committedOnPress = false
+                } else {
+                    committedOnPress = false
                 }
             } else {
                 when (behavior) {
                     KeyBehavior.CLICK -> {
-                        val pressedIdx = keyboard.firstPressedKeyIndex
-                        val actionBehavior = if (pressedIdx != -1 && pressedIdx != id) KeyBehavior.COMBO else behavior
-                        key.getAction(actionBehavior)?.let { processKeyAction(it, actionBehavior) }
+                        if (!committedOnPress) {
+                            val pressedIdx = keyboard.firstPressedKeyIndex
+                            val actionBehavior = if (pressedIdx != -1 && pressedIdx != id) KeyBehavior.COMBO else behavior
+                            key.getAction(actionBehavior)?.let { processKeyAction(it, actionBehavior) }
+                        }
+                        committedOnPress = false
                     }
 
                     KeyBehavior.DOUBLE_CLICK, KeyBehavior.LAZY_DOUBLE_CLICK,
                     KeyBehavior.SWIPE_UP, KeyBehavior.SWIPE_DOWN, KeyBehavior.SWIPE_LEFT, KeyBehavior.SWIPE_RIGHT,
-                    ->
+                    -> {
+                        // Swipe/double may already have undone in onSwipe; process the gesture.
+                        if (committedOnPress) undoCommitOnPress()
                         key.getAction(behavior)?.let { processKeyAction(it, behavior) }
+                    }
 
-                    else -> {}
+                    else -> committedOnPress = false
                 }
 
                 setPressedState(false)
@@ -130,7 +172,13 @@ class KeyView(
 
         onSwipe = { direction ->
             setPressedState(true)
-            if (direction == KeyBehavior.CLICK) dismissPopupPreview() else showPopupPreview(direction)
+            if (direction == KeyBehavior.CLICK) {
+                dismissPopupPreview()
+            } else {
+                // Finger left the tap zone: retract the early commit so swipe can replace it.
+                undoCommitOnPress()
+                showPopupPreview(direction)
+            }
         }
 
         onSlide = { delta, _, _ ->
@@ -170,6 +218,8 @@ class KeyView(
         }
 
         onLongClick = {
+            // Long-press replaces the early tap (popup picker or alternate action).
+            undoCommitOnPress()
             if (key.popup.isNotEmpty()) {
                 dismissPopupPreview()
                 showPopupKeyboard()
@@ -189,6 +239,7 @@ class KeyView(
         }
 
         onCancel = {
+            undoCommitOnPress()
             service.postRimeJob { deletedTextBuffer.clear() }
             setPressedState(false)
             dismissPopupPreview()

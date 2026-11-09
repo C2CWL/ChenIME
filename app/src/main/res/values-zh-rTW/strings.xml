@@ -37,6 +37,8 @@
     <string name="key_long_press_timeout">長按按鍵的延遲時間</string>
     <string name="key_repeat_interval">重複按鍵的重複間隔</string>
     <string name="popup_on_key_press">按鍵時彈出顯示字符</string>
+    <string name="key_input_on_press">按下即輸入</string>
+    <string name="key_input_on_press_summary">手指按下立刻上屏，反應更快。若接著長按或滑動，會先撤銷該鍵再執行手勢。關掉則恢復為鬆手才輸入。</string>
     <string name="expand_keypress_area_to_edge">將按鍵範圍擴展至邊緣</string>
     <string name="use_soft_cursor">預編輯區使用插入符號（^）</string>
     <string name="deploy">部署</string>

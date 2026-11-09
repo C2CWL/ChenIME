@@ -19,5 +19,7 @@ class SwitchOptionEntry(
         Keyboard,
         ThemeList,
         InputMethodPicker,
+        ConciseMode,
+        Emoji,
     }
 }

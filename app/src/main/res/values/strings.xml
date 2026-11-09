@@ -210,6 +210,10 @@
     <string name="hide_input_bar">Hide input bar</string>
     <string name="hide_key_symbol">Hide key symbol</string>
     <string name="hide_key_hint">Hide key hint</string>
+    <string name="concise_mode">Concise mode</string>
+    <string name="concise_mode_on">Concise mode on</string>
+    <string name="concise_mode_off">Concise mode off</string>
+    <string name="emoji_panel">Emoji</string>
     <string name="navbar_bkg_none">No background</string>
     <string name="navbar_bkg_color_only">Follow keyboard color</string>
     <string name="navbar_bkg_full">Keyboard background image</string>

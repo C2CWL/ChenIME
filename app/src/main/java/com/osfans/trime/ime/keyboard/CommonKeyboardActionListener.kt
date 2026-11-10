@@ -233,13 +233,19 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
                         clearComposition()
                     } else {
                         val connection = service.currentInputConnection ?: return@postRimeJob
-                        val deleted = ClearTextStrategy.clear(object : ClearTextStrategy.Editor {
+                        val outcome = ClearTextStrategy.clearDetailed(object : ClearTextStrategy.Editor {
                             override fun selected() = connection.getSelectedText(0)?.toString()
                             override fun replace() = connection.commitText("", 1)
                             override fun before(length: Int) = connection.getTextBeforeCursor(length, 0)?.toString()
+                            override fun after(length: Int) = connection.getTextAfterCursor(length, 0)?.toString()
                             override fun delete(before: Int) = connection.deleteSurroundingText(before, 0)
+                            override fun deleteAfter(length: Int) = connection.deleteSurroundingText(0, length)
                         })
-                        clearedText.save(deleted, false)
+                        clearedText.saveCleared(
+                            outcome.text,
+                            composing = false,
+                            combineWithPrevious = outcome.mode == ClearTextStrategy.Mode.AFTER,
+                        )
                     }
                 }
             }

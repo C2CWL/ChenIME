@@ -45,11 +45,61 @@ class ClearTextStrategyTest :
             ClearTextStrategy.clear(editor) shouldBe "😀"
             editor.text shouldBe "ab"
         }
-        "a cursor at the start leaves the field untouched" {
+        "when nothing is before the cursor, the first swipe clears the remaining text" {
             val editor = ClearEditor("after", 0)
+            ClearTextStrategy.clear(editor) shouldBe "after"
+            editor.text shouldBe ""
+            editor.start shouldBe 0
+        }
+        "an empty field is left untouched" {
+            val editor = ClearEditor("", 0)
+            ClearTextStrategy.clear(editor) shouldBe ""
+            editor.text shouldBe ""
+            editor.calls shouldBe 0
+        }
+        "first swipe clears before the cursor and the next swipe clears the rest" {
+            val editor = ClearEditor("before after", 7)
+            ClearTextStrategy.clearDetailed(editor) shouldBe ClearTextStrategy.Outcome("before ", ClearTextStrategy.Mode.BEFORE)
+            editor.text shouldBe "after"
+            editor.start shouldBe 0
+            ClearTextStrategy.clearDetailed(editor) shouldBe ClearTextStrategy.Outcome("after", ClearTextStrategy.Mode.AFTER)
+            editor.text shouldBe ""
+            editor.start shouldBe 0
+        }
+        "a third swipe on an empty field does nothing" {
+            val editor = ClearEditor("before after", 7)
+            ClearTextStrategy.clear(editor)
+            ClearTextStrategy.clear(editor)
+            editor.calls = 0
+            ClearTextStrategy.clearDetailed(editor) shouldBe ClearTextStrategy.Outcome("", ClearTextStrategy.Mode.NONE)
+            editor.text shouldBe ""
+            editor.calls shouldBe 0
+        }
+        "after-cursor text longer than a chunk is saved in its original order" {
+            val after = "abcdef".repeat(5000)
+            val editor = ClearEditor("keep" + after, 0)
+            // cursor at 0, "keep" is after the cursor in this constructor? start=0 means all text is after.
+            ClearTextStrategy.clear(editor) shouldBe "keep" + after
+            editor.text shouldBe ""
+        }
+        "identical full chunks after the cursor are not mistaken for a non-deleting editor" {
+            val after = " ".repeat(10000)
+            val editor = ClearEditor(after + "tail", 0)
+            ClearTextStrategy.clear(editor) shouldBe after + "tail"
+            editor.text shouldBe ""
+        }
+        "surrogate pairs at after-chunk boundaries are deleted together" {
+            val after = "x".repeat(4095) + "😀tail"
+            val editor = ClearEditor(after, 0)
+            ClearTextStrategy.clear(editor) shouldBe after
+            editor.text shouldBe ""
+            editor.splitSurrogate shouldBe false
+        }
+        "failed deletion after the cursor does not save text" {
+            val editor = ClearEditor("after", 0)
+            editor.rejectDelete = true
             ClearTextStrategy.clear(editor) shouldBe ""
             editor.text shouldBe "after"
-            editor.calls shouldBe 0
         }
         "a non-deleting editor does not save an unverified chunk" {
             val editor = ClearEditor("text")
@@ -129,6 +179,8 @@ private class ClearEditor(var text: String, var start: Int = text.length, var en
 
     override fun before(length: Int) = text.substring(0, start).takeLast(length)
 
+    override fun after(length: Int) = text.substring(end).take(length)
+
     override fun delete(before: Int): Boolean {
         calls++
         if (rejectDelete) return false
@@ -140,6 +192,19 @@ private class ClearEditor(var text: String, var start: Int = text.length, var en
             text = text.removeRange(boundary, start)
             start = boundary
             end = start
+        }
+        return true
+    }
+
+    override fun deleteAfter(length: Int): Boolean {
+        calls++
+        if (rejectDelete) return false
+        if (!stuck) {
+            val boundary = (end + length).coerceAtMost(text.length)
+            if (boundary < text.length && text[boundary - 1].isHighSurrogate() && text[boundary].isLowSurrogate()) {
+                splitSurrogate = true
+            }
+            text = text.removeRange(end, boundary)
         }
         return true
     }

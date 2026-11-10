@@ -136,8 +136,7 @@ class Keyboard(
                     0f
                 }
 
-            fun widthWeight(textKey: TextKeyboard.TextKey): Float =
-                if (textKey.width == 0f && textKey.click.orAbsent != null) keyboardKeyWidth else textKey.width
+            fun widthWeight(textKey: TextKeyboard.TextKey): Float = if (textKey.width == 0f && textKey.click.orAbsent != null) keyboardKeyWidth else textKey.width
 
             val specs =
                 keys.mapIndexed { index, textKey ->
@@ -257,7 +256,6 @@ class Keyboard(
                     key.edgeFlags = key.edgeFlags or EDGE_RIGHT
                 }
             }
-
         }
     }
 

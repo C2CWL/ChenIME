@@ -19,7 +19,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 ## Privacy Policy
 
 **TRIME** is an open source project for Android input method.
-It won't collect or upload any user's privacy to any external service or server especially the user's input history.
+It won't collect or upload any user's privacy to any external service or server especially the user's input history. Handwriting recognition runs entirely on the device with a bundled model; ink and recognized characters are not sent to a server.
 
 Permissions application needs:
 

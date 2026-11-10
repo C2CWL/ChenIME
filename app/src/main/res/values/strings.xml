@@ -214,6 +214,16 @@
     <string name="concise_mode_on">Concise mode on</string>
     <string name="concise_mode_off">Concise mode off</string>
     <string name="emoji_panel">Emoji</string>
+    <string name="handwriting">Handwriting</string>
+    <string name="handwriting_find_char">Handwriting lookup</string>
+    <string name="handwriting_canvas">Handwriting canvas</string>
+    <string name="handwriting_back">Back</string>
+    <string name="handwriting_clear">Clear</string>
+    <string name="handwriting_space">Space</string>
+    <string name="handwriting_backspace">Backspace</string>
+    <string name="handwriting_confirm">Confirm</string>
+    <string name="handwriting_enter">Enter</string>
+    <string name="handwriting_load_failed">Could not load the on-device handwriting model</string>
     <string name="navbar_bkg_none">No background</string>
     <string name="navbar_bkg_color_only">Follow keyboard color</string>
     <string name="navbar_bkg_full">Keyboard background image</string>

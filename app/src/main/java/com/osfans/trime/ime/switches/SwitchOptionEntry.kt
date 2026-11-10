@@ -21,5 +21,6 @@ class SwitchOptionEntry(
         InputMethodPicker,
         ConciseMode,
         Emoji,
+        Handwriting,
     }
 }

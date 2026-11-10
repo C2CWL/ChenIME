@@ -209,5 +209,4 @@ class LiquidKeyboardTest :
                 keyboard.fixedKeyBar.keys shouldBe listOf("space1", "BackSpace", "Return2", "liquid_keyboard_exit")
             }
         }
-
     })

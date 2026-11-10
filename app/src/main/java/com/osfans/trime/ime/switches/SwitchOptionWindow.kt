@@ -12,16 +12,18 @@ import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
 import com.osfans.trime.core.RimeApi
 import com.osfans.trime.daemon.RimeSession
-import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.daemon.launchOnReady
+import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.bar.ui.ToolButton
-import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.dialog.EnabledSchemaPickerDialog
+import com.osfans.trime.ime.handwriting.HandwritingMode
+import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
 import com.osfans.trime.ime.window.BoardWindow
+import com.osfans.trime.ime.window.BoardWindowManager
 import com.osfans.trime.ime.window.ResidentWindow
 import com.osfans.trime.ui.main.settings.ThemePickerDialog
 import com.osfans.trime.util.AppUtils
@@ -51,6 +53,7 @@ class SwitchOptionWindow(di: DI) :
     private val theme: Theme get() = scope.theme
     private val commonKeyboardActionListener: CommonKeyboardActionListener by instance()
     private val prefs = AppPrefs.defaultInstance()
+    private val windowManager: BoardWindowManager by instance()
 
     private val staticEntries by lazy {
         arrayOf(
@@ -88,6 +91,11 @@ class SwitchOptionWindow(di: DI) :
                 context.getString(R.string.emoji_panel),
                 R.drawable.ic_baseline_emoji_emotions_24,
                 SwitchOptionEntry.Type.Emoji,
+            ),
+            SwitchOptionEntry(
+                context.getString(R.string.handwriting),
+                R.drawable.ic_baseline_edit_24,
+                SwitchOptionEntry.Type.Handwriting,
             ),
         )
     }
@@ -164,6 +172,8 @@ class SwitchOptionWindow(di: DI) :
                             theme.resolveAction("liquid_keyboard_emoji"),
                         )
                     }
+
+                    SwitchOptionEntry.Type.Handwriting -> windowManager.showHandwriting(HandwritingMode.Full)
                 }
             }
         }

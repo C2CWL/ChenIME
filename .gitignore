@@ -481,3 +481,6 @@ app/src/main/jni/boost/
 # kotlin
 .kotlin
 
+
+# Prebuilt ncnn Android package downloaded at build time
+/third_party/ncnn-android/

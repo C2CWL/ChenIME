@@ -1,0 +1,11 @@
+{
+    "uniqueId": "Tencent/ncnn",
+    "artifactVersion": "20261020",
+    "description": "High-performance neural network inference framework for mobile.",
+    "name": "ncnn",
+    "website": "https://github.com/Tencent/ncnn",
+    "tag": "native",
+    "licenses": [
+        "BSD-3-Clause"
+    ]
+}

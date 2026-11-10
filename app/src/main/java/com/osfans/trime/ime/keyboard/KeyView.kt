@@ -14,8 +14,8 @@ import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import androidx.core.content.ContextCompat
 import android.view.KeyEvent
+import androidx.core.content.ContextCompat
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.utils.sizeDp
 import com.osfans.trime.data.prefs.AppPrefs

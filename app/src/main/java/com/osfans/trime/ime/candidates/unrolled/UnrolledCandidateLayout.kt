@@ -4,7 +4,9 @@ package com.osfans.trime.ime.candidates.unrolled
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.Gravity
+import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -24,8 +26,10 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         gravity = Gravity.CENTER
     }
     private val single = button("单字", "单字") { onSingleCharacterToggle?.invoke() }
+    private val handwriting = handwritingButton()
     private val actions = mutableListOf<TextView>()
     var onSingleCharacterToggle: (() -> Unit)? = null
+    var onHandwritingClick: (() -> Unit)? = null
     var onSyllableToggle: ((Int, List<String>) -> Unit)? = null
     var activeSyllable: Int? = null
         set(value) {
@@ -44,6 +48,7 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         orientation = HORIZONTAL
         clipToOutline = true
         left.addView(ScrollView(context).apply { addView(syllables) }, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+        left.addView(handwriting, LayoutParams(LayoutParams.MATCH_PARENT, dp(56)))
         left.addView(single, LayoutParams(LayoutParams.MATCH_PARENT, dp(48)))
         addView(left, LayoutParams(0, LayoutParams.MATCH_PARENT, .15f))
         addView(recyclerView, LayoutParams(0, LayoutParams.MATCH_PARENT, .70f))
@@ -70,6 +75,28 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         }
         addView(right, LayoutParams(0, LayoutParams.MATCH_PARENT, .15f))
         refreshColors()
+    }
+
+    private fun handwritingButton() = LinearLayout(context).apply {
+        orientation = VERTICAL
+        gravity = Gravity.CENTER
+        contentDescription = context.getString(R.string.handwriting_find_char)
+        isClickable = true
+        isFocusable = true
+        val icon = ImageView(context).apply {
+            setImageResource(R.drawable.ic_baseline_edit_24)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        val label = TextView(context).apply {
+            text = context.getString(R.string.handwriting)
+            textSize = 14f
+            gravity = Gravity.CENTER
+            tag = "handwriting_label"
+        }
+        addView(icon, LayoutParams(dp(22), dp(22)))
+        addView(label, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+        setOnClickListener { onHandwritingClick?.invoke() }
     }
 
     private fun button(label: String, description: String, action: () -> Unit) = TextView(context).apply {
@@ -112,6 +139,14 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         }
         single.setTextColor(if (singleCharacter) colors.hilitedCandidateTextColor else colors.candidateTextColor)
         single.background = roundedRippleDrawable(colors.hilitedCandidateBackColor, dp(8f), if (singleCharacter) colors.hilitedCandidateBackColor else colors.candidateBackground)
+        handwriting.background = roundedRippleDrawable(colors.hilitedCandidateBackColor, dp(8f), colors.candidateBackground)
+        val hwColor = colors.candidateTextColor
+        for (i in 0 until handwriting.childCount) {
+            when (val child = handwriting.getChildAt(i)) {
+                is TextView -> child.setTextColor(hwColor)
+                is ImageView -> child.setColorFilter(hwColor)
+            }
+        }
         actions.forEachIndexed { index, view ->
             view.setTextColor(if (index == 3) colors.hilitedKeyTextColor else colors.keyTextColor)
             view.background = roundedRippleDrawable(colors.hilitedKeyBackColor, dp(100f), if (index == 3) colors.hilitedKeyBackColor else colors.keyBackColor)

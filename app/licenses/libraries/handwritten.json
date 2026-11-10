@@ -1,0 +1,11 @@
+{
+    "uniqueId": "Ismantic/Handwritten",
+    "artifactVersion": "0.1.1",
+    "description": "On-device Chinese handwriting recognizer (NCNN INT8, GB2312 Level-1, 3755 characters).",
+    "name": "Ismantic/Handwritten",
+    "website": "https://github.com/Ismantic/Handwritten",
+    "tag": "native",
+    "licenses": [
+        "Apache-2.0"
+    ]
+}

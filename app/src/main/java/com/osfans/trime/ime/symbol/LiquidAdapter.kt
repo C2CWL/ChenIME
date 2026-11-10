@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.LiquidKeyboard
+import com.osfans.trime.data.theme.model.LiquidKeyboard.KeyBar
 import splitties.dimensions.dp
 import splitties.views.gravityCenter
 
@@ -27,10 +28,18 @@ class LiquidAdapter(
 ) {
     private var recycler: RecyclerView? = null
 
+    private val fillsEvenGrid: Boolean
+        get() {
+            val bar = scope.theme.liquidKeyboard.fixedKeyBar
+            return "liquid_keyboard_lock" in bar.keys ||
+                bar.position == KeyBar.Position.LEFT ||
+                bar.position == KeyBar.Position.RIGHT
+        }
+
     override fun onCurrentListChanged(previousList: MutableList<LiquidKeyboard.KeyItem>, currentList: MutableList<LiquidKeyboard.KeyItem>) {
         super.onCurrentListChanged(previousList, currentList)
-        // The locked grid's row height depends on the total list size.
-        if (previousList.size != currentList.size && "liquid_keyboard_lock" in scope.theme.liquidKeyboard.fixedKeyBar.keys) {
+        // The even grid's cell size depends on the total list size and the panel size.
+        if (previousList.size != currentList.size && fillsEvenGrid) {
             notifyItemRangeChanged(0, itemCount, Unit)
         }
     }
@@ -72,14 +81,29 @@ class LiquidAdapter(
     ) {
         val item = getItem(position)
         val parent = recycler
-        if (parent != null && "liquid_keyboard_lock" in scope.theme.liquidKeyboard.fixedKeyBar.keys) {
+        if (parent != null && fillsEvenGrid) {
+            val bar = scope.theme.liquidKeyboard.fixedKeyBar
             val spacing = parent.context.dp(scope.theme.liquidKeyboard.marginX.toInt())
             val available = (parent.width - parent.paddingLeft - parent.paddingRight).coerceAtLeast(1)
-            val minimum = parent.context.dp(scope.theme.liquidKeyboard.singleWidth) + spacing * 2
-            val columns = (available / minimum.coerceAtLeast(1)).coerceAtLeast(1)
-            val rows = ((itemCount + columns - 1) / columns).coerceIn(1, 4)
-            val width = (available / columns - spacing * 2).coerceAtLeast(1)
-            val height = ((parent.height - parent.paddingTop - parent.paddingBottom) / rows - spacing * 2).coerceAtLeast(1)
+            val availableHeight = (parent.height - parent.paddingTop - parent.paddingBottom).coerceAtLeast(1)
+            val sideBar = bar.position == KeyBar.Position.LEFT || bar.position == KeyBar.Position.RIGHT
+            val minCell = if (sideBar) {
+                parent.context.dp(36) + spacing * 2
+            } else {
+                parent.context.dp(scope.theme.liquidKeyboard.singleWidth) + spacing * 2
+            }
+            val columns = if (sideBar) {
+                LiquidGridGeometry.columnCount(available, minCell)
+            } else {
+                (available / minCell.coerceAtLeast(1)).coerceAtLeast(1)
+            }
+            val rows = if (sideBar && bar.keys.isNotEmpty()) {
+                bar.keys.size.coerceAtLeast(1)
+            } else {
+                ((itemCount + columns - 1) / columns).coerceIn(1, 4)
+            }
+            val width = LiquidGridGeometry.cellSize(available, columns, spacing)
+            val height = LiquidGridGeometry.cellSize(availableHeight, rows, spacing)
             val params = holder.ui.root.layoutParams
             if (params?.width != width || params.height != height) {
                 holder.ui.root.layoutParams = FlexboxLayoutManager.LayoutParams(width, height).apply { flexGrow = 1f }

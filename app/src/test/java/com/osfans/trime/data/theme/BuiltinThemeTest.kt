@@ -200,23 +200,24 @@ class BuiltinThemeTest :
                     widths.sum() shouldBe 100.0
                 }
                 val numberKeys = layouts.getValue("number").keys
-                val numberWidths = if (id == "iflytek.trime") {
-                    listOf(18.0, 23.5, 23.5, 23.5, 11.5)
-                } else {
-                    listOf(18.0, 11.5, 19.5, 19.5, 19.5, 12.0)
-                }
-                numberKeys.size shouldBe numberWidths.size * 4
-                numberKeys.chunked(numberWidths.size).forEach { row ->
-                    row.map { it.width.toDouble() } shouldBe numberWidths
-                    row.sumOf { it.width.toDouble() } shouldBe 100.0
-                }
-                val movedSymbols = numberKeys.single { it.click == symbolAction }
-                movedSymbols.labelSymbol shouldBe "简洁"
-                movedSymbols.longClick shouldBe KeyActionToken.Plain("{hide_key_symbol}{hide_key_hint}")
                 if (id == "iflytek.trime") {
+                    numberKeys.size shouldBe 19
+                    numberKeys.all { it.width == 20f } shouldBe true
+                    numberKeys[10].click shouldBe KeyActionToken.Plain("Ifly_back")
+                    numberKeys[10].rowSpan shouldBe 2
+                    numberKeys[15].click shouldBe KeyActionToken.Plain("slash")
+                    numberKeys.none { it.click == symbolAction } shouldBe true
                     numberKeys.any { it.click == KeyActionToken.Plain("comma") } shouldBe false
-                    movedSymbols.keyBackColor shouldBe ""
                 } else {
+                    val numberWidths = listOf(18.0, 11.5, 19.5, 19.5, 19.5, 12.0)
+                    numberKeys.size shouldBe numberWidths.size * 4
+                    numberKeys.chunked(numberWidths.size).forEach { row ->
+                        row.map { it.width.toDouble() } shouldBe numberWidths
+                        row.sumOf { it.width.toDouble() } shouldBe 100.0
+                    }
+                    val movedSymbols = numberKeys.single { it.click == symbolAction }
+                    movedSymbols.labelSymbol shouldBe "简洁"
+                    movedSymbols.longClick shouldBe KeyActionToken.Plain("{hide_key_symbol}{hide_key_hint}")
                     movedSymbols.swipeUp shouldBe KeyActionToken.Plain("Color_switch")
                     movedSymbols.swipeDown shouldBe KeyActionToken.Plain("Color_switch")
                     movedSymbols.keyBackColor shouldBe "bgn"
@@ -292,18 +293,21 @@ class BuiltinThemeTest :
                 val emoji = theme.presetKeys.getValue("liquid_keyboard_emoji")
                 emoji.command shouldBe "liquid_keyboard"
                 emoji.option shouldBe "emoji"
-                theme.toolBar.buttons.any { it.action == "liquid_keyboard_emoji" } shouldBe true
                 theme.liquidKeyboard.keyboards.first { it.id == emoji.option }.keys.isNotEmpty() shouldBe true
                 if (id == "iflytek.trime") {
+                    theme.toolBar.buttons.any { it.action == "Ifly_symbols" } shouldBe true
+                    theme.toolBar.buttons.any { it.action == "liquid_keyboard_emoji" } shouldBe false
                     theme.toolBar.buttons.map { it.action } shouldBe listOf(
                         "Hide",
                         "VOICE_ASSIST",
-                        "liquid_keyboard_emoji",
+                        "Ifly_symbols",
                         "clipboard_window",
                         "Keyboard_editor",
                         "redo",
                         "undo",
                     )
+                } else {
+                    theme.toolBar.buttons.any { it.action == "liquid_keyboard_emoji" } shouldBe true
                 }
                 for (layout in letterLayouts) {
                     val keys = theme.presetKeyboards.getValue(layout).keys
@@ -380,7 +384,10 @@ class BuiltinThemeTest :
                     theme.style.keyboardPaddingBottom shouldBe 0
                     theme.style.keyboardPaddingLandBottom shouldBe 0
                     theme.presetKeyboards.getValue("default").labelTransform shouldBe TextKeyboard.LabelTransform.NONE
-                    toolbarActions.containsAll(listOf("Hide", "liquid_keyboard_emoji", "Keyboard_editor")) shouldBe true
+                    toolbarActions.containsAll(listOf("Hide", "Ifly_symbols", "Keyboard_editor")) shouldBe true
+                    val symbolsButton = theme.toolBar.buttons.first { it.action == "Ifly_symbols" }
+                    symbolsButton.foreground.style shouldBe "符"
+                    symbolsButton.longPressAction shouldBe "{hide_key_symbol}{hide_key_hint}"
                     for (scheme in listOf("default", "light")) {
                         val colors = theme.presetColorSchemes.getValue(scheme)
                         colors["key_symbol_color"] shouldBe colors["off_key_symbol_color"]
@@ -391,17 +398,17 @@ class BuiltinThemeTest :
                     theme.toolBar.primaryButton?.foreground shouldBe standard.toolBar.primaryButton?.foreground
                     theme.toolBar.buttonSpacing shouldBe standard.toolBar.buttonSpacing
                     theme.toolBar.buttons.forEach { it.foreground.padding shouldBe standard.toolBar.buttons.first().foreground.padding }
-                    val symbols = theme.presetKeyboards.getValue("number").keys
-                        .first { it.click == KeyActionToken.Plain("Ifly_symbols") }
-                    symbols.labelSymbol shouldBe "简洁"
+                    theme.presetKeyboards.getValue("number").keys
+                        .none { it.click == KeyActionToken.Plain("Ifly_symbols") } shouldBe true
                     val mainKeys = theme.presetKeyboards.getValue("default").keys
                     mainKeys.any { it.click == KeyActionToken.Plain("Keyboard_number") } shouldBe true
                     mainKeys.any { it.click == KeyActionToken.Plain("Return") } shouldBe true
                     mainKeys.first { it.click == KeyActionToken.Plain("Ifly_space") }
                         .longClick shouldBe KeyActionToken.Plain("Mode_switch")
-                    theme.liquidKeyboard.fixedKeyBar.keys shouldBe listOf("liquid_keyboard_exit", "space1", "BackSpace", "Return2")
+                    theme.liquidKeyboard.fixedKeyBar.position shouldBe LiquidKeyboard.KeyBar.Position.LEFT
+                    theme.liquidKeyboard.fixedKeyBar.width shouldBe 18f
+                    theme.liquidKeyboard.fixedKeyBar.keys shouldBe listOf("space1", "BackSpace", "Return2", "liquid_keyboard_exit")
                     theme.liquidKeyboard.keyboards.first().keys.isNotEmpty() shouldBe true
-                    symbols.longClick shouldBe KeyActionToken.Plain("{hide_key_symbol}{hide_key_hint}")
                     ColorSchemeResolver.resolve(theme.presetColorSchemes, "default", true, false)["key_back_color"] shouldBe "0xffffffff"
                     ColorSchemeResolver.resolve(theme.presetColorSchemes, "light", true, true)["key_back_color"] shouldBe "0xff444444"
                     ColorSchemeResolver.resolve(theme.presetColorSchemes, "default", false, false)["key_back_color"] shouldBe "0xff444444"

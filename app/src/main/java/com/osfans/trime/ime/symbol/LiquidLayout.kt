@@ -150,28 +150,34 @@ class LiquidLayout(
                         return@Array ui.root
                     }
                 val marginX = theme.liquidKeyboard.marginX
-                when (theme.liquidKeyboard.fixedKeyBar.position) {
+                val space = dp(marginX).toInt()
+                val bar = theme.liquidKeyboard.fixedKeyBar
+                val fillSideBar = bar.width > 0f || lockKey != null
+                when (bar.position) {
                     LiquidKeyboard.KeyBar.Position.LEFT,
                     LiquidKeyboard.KeyBar.Position.RIGHT,
                     -> {
+                        // Same outer padding and per-key vertical margins as the
+                        // symbol recycler (padding + item decoration) so rows align.
+                        setPadding(space)
                         btns.forEachIndexed { i, btn ->
                             add(
                                 btn,
-                                lParams(if (lockKey != null) matchConstraints else wrapContent, matchConstraints) {
-                                    if (lockKey != null) {
+                                lParams(if (fillSideBar) matchConstraints else wrapContent, matchConstraints) {
+                                    if (fillSideBar) {
                                         startOfParent()
                                         endOfParent()
                                     }
+                                    topMargin = space
+                                    bottomMargin = space
                                     if (i == 0) {
                                         topOfParent()
                                     } else {
-                                        topMargin = dp(marginX).toInt()
                                         below(btns[i - 1])
                                     }
                                     if (i == btns.size - 1) {
                                         bottomOfParent()
                                     } else {
-                                        bottomMargin = dp(marginX).toInt()
                                         above(btns[i + 1])
                                     }
                                 },
@@ -263,43 +269,57 @@ class LiquidLayout(
             }
 
             LiquidKeyboard.KeyBar.Position.LEFT -> {
+                val barWeight = theme.liquidKeyboard.fixedKeyBar.width
+                val weighted = barWeight > 0f
                 add(
                     root,
-                    lParams {
+                    lParams(matchConstraints) {
                         centerVertically()
                         startToEndOf(fixedKeyBar)
                         endOfParent()
+                        if (weighted) horizontalWeight = (100f - barWeight).coerceAtLeast(1f)
                     },
                 )
                 add(
                     fixedKeyBar,
-                    lParams(if (lockKey != null) dp(52) else wrapContent, matchConstraints) {
+                    lParams(sideBarWidth(weighted), matchConstraints) {
                         centerVertically()
                         startOfParent()
                         endToStartOf(root)
+                        if (weighted) horizontalWeight = barWeight
                     },
                 )
             }
 
             LiquidKeyboard.KeyBar.Position.RIGHT -> {
+                val barWeight = theme.liquidKeyboard.fixedKeyBar.width
+                val weighted = barWeight > 0f
                 add(
                     root,
-                    lParams {
+                    lParams(matchConstraints) {
                         centerVertically()
                         startOfParent()
                         endToStartOf(fixedKeyBar)
+                        if (weighted) horizontalWeight = (100f - barWeight).coerceAtLeast(1f)
                     },
                 )
                 add(
                     fixedKeyBar,
-                    lParams(if (lockKey != null) dp(52) else wrapContent, matchConstraints) {
+                    lParams(sideBarWidth(weighted), matchConstraints) {
                         centerVertically()
                         startToEndOf(root)
                         endOfParent()
+                        if (weighted) horizontalWeight = barWeight
                     },
                 )
             }
         }
+    }
+
+    private fun sideBarWidth(weighted: Boolean): Int = when {
+        weighted -> matchConstraints
+        lockKey != null -> dp(52)
+        else -> wrapContent
     }
 
     fun refreshColors() {

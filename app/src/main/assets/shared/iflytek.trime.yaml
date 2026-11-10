@@ -511,12 +511,14 @@ liquid_keyboard:
   vertical_gap: 8
   margin_x: 5
   fixed_key_bar:
-    position: bottom
+    position: left
+    # Percent of the panel; about 1.2–1.5× a symbol key, 返回 fixed at the bottom.
+    width: 18
     keys:
-    - liquid_keyboard_exit
     - space1
     - BackSpace
     - Return2
+    - liquid_keyboard_exit
   keyboards:
   - emoji
   - common

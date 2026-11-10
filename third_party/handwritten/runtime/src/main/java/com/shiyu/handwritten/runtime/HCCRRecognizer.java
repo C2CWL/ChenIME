@@ -4,6 +4,7 @@ import android.content.res.AssetManager;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +57,13 @@ public final class HCCRRecognizer implements AutoCloseable {
 
     private static String[] loadCharset(AssetManager assets, String name) throws IOException {
         try (InputStream stream = assets.open(name)) {
-            JSONObject root = new JSONObject(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] data = new byte[4096];
+            int nRead;
+            while ((nRead = stream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            JSONObject root = new JSONObject(new String(buffer.toByteArray(), StandardCharsets.UTF_8));
             String[] chars = new String[root.getInt("num_classes")];
             JSONObject map = root.getJSONObject("char_to_idx");
             java.util.Iterator<String> it = map.keys();

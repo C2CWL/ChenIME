@@ -221,6 +221,7 @@
     <string name="handwriting_confirm">确认</string>
     <string name="handwriting_enter">回车</string>
     <string name="handwriting_load_failed">无法加载本地手写模型</string>
+    <string name="handwriting_no_match">目前拼音候选中没有符合的字，请重写或返回</string>
     <string name="navbar_bkg_none">无背景</string>
     <string name="navbar_bkg_color_only">跟随键盘背景色</string>
     <string name="navbar_bkg_full">键盘背景图片</string>

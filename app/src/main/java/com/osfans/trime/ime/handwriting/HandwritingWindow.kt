@@ -9,7 +9,9 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.c2cwl.chenime.R
+import com.osfans.trime.core.CompositionProto
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.theme.ThemeScope
@@ -20,6 +22,7 @@ import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
 import com.osfans.trime.ime.window.ResidentWindow
+import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.instance
 import java.util.concurrent.Executors
@@ -44,13 +47,15 @@ class HandwritingWindow(di: DI) :
     private val worker = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
     private var recognizeGeneration = 0
+    private var lookupInput: String? = null
+    private var lookupComposition: CompositionProto? = null
 
     private lateinit var layout: HandwritingLayout
     private lateinit var candidateBar: HandwritingCandidateBar
 
     override fun onCreateBarView(): View {
         if (!::candidateBar.isInitialized) {
-            candidateBar = HandwritingCandidateBar(context, scope) { commitCharacter(it.text, dismissAfter = mode == HandwritingMode.FindChar) }
+            candidateBar = HandwritingCandidateBar(context, scope, ::pickCandidate)
         }
         return candidateBar
     }
@@ -85,6 +90,16 @@ class HandwritingWindow(di: DI) :
         recognizeGeneration += 1
         layout.canvasView.clearInk()
         if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
+        lookupInput = null
+        lookupComposition = null
+    }
+
+    override fun onCompositionUpdate(data: CompositionProto) {
+        if (mode != HandwritingMode.FindChar || !windowManager.isAttached(this)) return
+        recognizeGeneration += 1
+        lookupInput = null
+        lookupComposition = null
+        if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
     }
 
     override fun refreshColors() {
@@ -103,14 +118,14 @@ class HandwritingWindow(di: DI) :
 
             HandwritingAction.Clear -> {
                 layout.canvasView.clearInk()
-                if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
+                recognizeCurrentInk()
             }
 
             HandwritingAction.Backspace -> {
                 if (layout.canvasView.ink.canUndo) {
                     layout.canvasView.undoStroke()
                     recognizeCurrentInk()
-                } else {
+                } else if (mode == HandwritingMode.Full) {
                     service.sendDownUpKeyEvent(KeyEvent.KEYCODE_DEL)
                 }
             }
@@ -118,14 +133,13 @@ class HandwritingWindow(di: DI) :
             HandwritingAction.Space -> service.commitText(" ")
 
             HandwritingAction.Confirm -> {
-                val text = if (::candidateBar.isInitialized) candidateBar.selectedCandidate?.text else null
-                if (!text.isNullOrEmpty()) commitCharacter(text, dismissAfter = true)
+                if (::candidateBar.isInitialized) candidateBar.selectedCandidate?.let(::pickCandidate)
             }
 
             HandwritingAction.Enter -> {
-                val text = if (::candidateBar.isInitialized) candidateBar.selectedCandidate?.text else null
-                if (!text.isNullOrEmpty()) {
-                    commitCharacter(text, dismissAfter = false)
+                val candidate = if (::candidateBar.isInitialized) candidateBar.selectedCandidate else null
+                if (candidate != null) {
+                    pickCandidate(candidate)
                 } else {
                     service.sendDownUpKeyEvent(KeyEvent.KEYCODE_ENTER)
                 }
@@ -135,35 +149,68 @@ class HandwritingWindow(di: DI) :
 
     private fun recognizeCurrentInk() {
         if (!::layout.isInitialized) return
-        if (layout.canvasView.ink.isEmpty) {
-            if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
-            return
-        }
+        val gen = ++recognizeGeneration
+        lookupInput = null
+        lookupComposition = null
+        if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
+        if (layout.canvasView.ink.isEmpty) return
         val raster = layout.canvasView.rasterize() ?: return
         val (gray, size) = raster
-        val gen = ++recognizeGeneration
+        val composition = rime.run { compositionCached }
         val assets = context.assets
         worker.execute {
             if (!recognizer.ensureLoaded(assets)) return@execute
             val results = recognizer.predict(gray, size.first, size.second)
             main.post {
                 if (gen != recognizeGeneration) return@post
-                if (::candidateBar.isInitialized) candidateBar.setCandidates(results)
+                if (mode == HandwritingMode.Full) {
+                    candidateBar.setCandidates(results.map { HandwritingCandidate(it.text) })
+                    return@post
+                }
+                service.lifecycleScope.launch {
+                    val (input, matches) = rime.runOnReady {
+                        getRawInput() to findHandwritingCandidates(results.map { it.text }) { start, count ->
+                            getCandidates(start, count).map { it.text }
+                        }
+                    }
+                    if (gen != recognizeGeneration || composition != rime.run { compositionCached }) return@launch
+                    lookupInput = input
+                    lookupComposition = composition
+                    candidateBar.setCandidates(matches, emptyMessage = context.getString(R.string.handwriting_no_match))
+                }
             }
         }
     }
 
-    private fun commitCharacter(text: String, dismissAfter: Boolean) {
+    private fun pickCandidate(candidate: HandwritingCandidate) {
+        if (mode == HandwritingMode.Full) {
+            commitCharacter(candidate.text)
+            return
+        }
+        val index = candidate.rimeIndex ?: return
+        val input = lookupInput ?: return
+        val composition = lookupComposition ?: return
+        val gen = recognizeGeneration
+        service.lifecycleScope.launch {
+            val selected = rime.runOnReady {
+                if (getRawInput() != input || compositionCached != composition) return@runOnReady false
+                if (getCandidates(index, 1).firstOrNull()?.text != candidate.text) return@runOnReady false
+                if (gen != recognizeGeneration || !windowManager.isAttached(this@HandwritingWindow)) return@runOnReady false
+                // Let Rime consume only this candidate's segment, never clear the whole input.
+                selectCandidate(index, global = true)
+            }
+            if (selected && windowManager.isAttached(this@HandwritingWindow)) dismiss()
+        }
+    }
+
+    private fun commitCharacter(text: String) {
         rime.launchOnReady {
             it.clearComposition()
             service.commitText(text)
-            if (dismissAfter) {
-                main.post { dismiss() }
-            } else {
-                main.post {
-                    layout.canvasView.clearInk()
-                    if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
-                }
+            main.post {
+                recognizeGeneration += 1
+                layout.canvasView.clearInk()
+                if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
             }
         }
     }

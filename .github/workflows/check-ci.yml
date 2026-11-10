@@ -19,6 +19,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Check simplified stroke data
+        run: python3 tools/test_generate_stroke_orders.py
+
       - name: Check Lua candidate filters
         run: |
           sudo apt-get update -qq

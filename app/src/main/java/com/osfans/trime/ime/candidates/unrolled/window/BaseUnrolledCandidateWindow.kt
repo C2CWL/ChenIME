@@ -28,12 +28,11 @@ import com.osfans.trime.ime.candidates.compact.CompactCandidateDelegate
 import com.osfans.trime.ime.candidates.unrolled.CandidatesPagingSource
 import com.osfans.trime.ime.candidates.unrolled.FilteringCandidatesPagingSource
 import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
+import com.osfans.trime.ime.candidates.unrolled.StrokeOrderIndex
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
 import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.ime.core.TrimeInputMethodService
-import com.osfans.trime.ime.handwriting.HandwritingMode
-import com.osfans.trime.ime.handwriting.HandwritingWindow
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
@@ -61,6 +60,11 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     private lateinit var lifecycleCoroutineScope: LifecycleCoroutineScope
     private lateinit var candidateLayout: UnrolledCandidateLayout
+
+    // Evaluated by Paging on IO, never while creating or laying out the panel.
+    private val strokeOrders by lazy {
+        context.assets.open("stroke/orders.tsv").reader(Charsets.UTF_8).use(StrokeOrderIndex::read)
+    }
 
     protected val separatorDrawable by lazy {
         ShapeDrawable(RectShape()).apply {
@@ -91,8 +95,10 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                     resetPosition()
                     adapter.refresh()
                 }
-                onHandwritingClick = {
-                    windowManager.showHandwriting(HandwritingMode.FindChar)
+                onStrokeChange = { prefix ->
+                    updateStrokePrefix(prefix)
+                    resetPosition()
+                    adapter.refresh()
                 }
                 onSyllableToggle = { index, syllables ->
                     filterJob?.cancel()
@@ -114,7 +120,11 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                     }
                 }
                 onCompositionKey = { key ->
-                    rime.launchOnReady { it.processKey(RimeKeyEvent.getKeycodeByName(key), 0u) }
+                    if (key == "BackSpace" && strokePrefix.isNotEmpty()) {
+                        onStrokeChange?.invoke(strokePrefix.dropLast(1))
+                    } else {
+                        rime.launchOnReady { it.processKey(RimeKeyEvent.getKeycodeByName(key), 0u) }
+                    }
                 }
                 recyclerView.apply {
                     // disable item cross-fade animation
@@ -134,8 +144,9 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     private fun clearSyllableFilter() {
         filterJob?.cancel()
-        if (filterEnd == null && candidateLayout.activeSyllable == null) return
+        if (filterEnd == null && candidateLayout.activeSyllable == null && candidateLayout.strokePrefix.isEmpty()) return
         filterEnd = null
+        candidateLayout.updateStrokePrefix("")
         candidateLayout.activeSyllable = null
         candidateLayout.resetPosition()
         adapter.refresh()
@@ -148,8 +159,15 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                 enablePlaceholders = false,
             ),
             pagingSourceFactory = {
-                if (filterEnd != null || candidateLayout.singleCharacter) {
-                    FilteringCandidatesPagingSource(rime, adapter.offset, filterEnd, candidateLayout.singleCharacter)
+                if (filterEnd != null || candidateLayout.singleCharacter || candidateLayout.strokePrefix.isNotEmpty()) {
+                    FilteringCandidatesPagingSource(
+                        rime,
+                        adapter.offset,
+                        filterEnd,
+                        candidateLayout.singleCharacter,
+                        candidateLayout.strokePrefix,
+                        { strokeOrders },
+                    )
                 } else {
                     CandidatesPagingSource(
                         rime,

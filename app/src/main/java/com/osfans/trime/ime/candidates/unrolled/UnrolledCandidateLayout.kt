@@ -4,9 +4,7 @@ package com.osfans.trime.ime.candidates.unrolled
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.Gravity
-import android.view.View
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -25,11 +23,16 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         orientation = VERTICAL
         gravity = Gravity.CENTER
     }
-    private val single = button("单字", "单字") { onSingleCharacterToggle?.invoke() }
-    private val handwriting = handwritingButton()
+    private val single = button("单字", "仅显示单字") { onSingleCharacterToggle?.invoke() }.apply { textSize = 16f }
+    private val strokeKeys = mutableListOf<TextView>()
+    private val strokeSummary = TextView(context)
+    private val strokeUndo = button("⌫", "撤回一笔") { onStrokeChange?.invoke(strokePrefix.dropLast(1)) }
+    private val strokeClear = button("清空", "清空笔画") { onStrokeChange?.invoke("") }
+    var onStrokeChange: ((String) -> Unit)? = null
+    var strokePrefix = ""
+        private set
     private val actions = mutableListOf<TextView>()
     var onSingleCharacterToggle: (() -> Unit)? = null
-    var onHandwritingClick: (() -> Unit)? = null
     var onSyllableToggle: ((Int, List<String>) -> Unit)? = null
     var activeSyllable: Int? = null
         set(value) {
@@ -48,17 +51,58 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         orientation = HORIZONTAL
         clipToOutline = true
         left.addView(ScrollView(context).apply { addView(syllables) }, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
-        left.addView(handwriting, LayoutParams(LayoutParams.MATCH_PARENT, dp(56)))
-        left.addView(single, LayoutParams(LayoutParams.MATCH_PARENT, dp(48)))
-        addView(left, LayoutParams(0, LayoutParams.MATCH_PARENT, .15f))
-        addView(recyclerView, LayoutParams(0, LayoutParams.MATCH_PARENT, .70f))
-        listOf("↑" to "上一页", "↓" to "下一页", "⌫" to "退格", "↵" to "回车").forEachIndexed { index, (label, description) ->
-            val view = button(label, description) {
-                when (index) {
-                    0 -> recyclerView.smoothScrollBy(0, -recyclerView.height)
-                    1 -> recyclerView.smoothScrollBy(0, recyclerView.height)
-                    2 -> onCompositionKey?.invoke("BackSpace")
-                    3 -> onCompositionKey?.invoke("Return")
+        addView(left, LayoutParams(0, LayoutParams.MATCH_PARENT, .14f))
+        val center = LinearLayout(context).apply { orientation = VERTICAL }
+        center.addView(recyclerView, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+        center.addView(
+            LinearLayout(context).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                strokeSummary.apply {
+                    textSize = 14f
+                    gravity = Gravity.CENTER_VERTICAL
+                    isSingleLine = true
+                    ellipsize = android.text.TextUtils.TruncateAt.START
+                    setPadding(dp(8), 0, dp(4), 0)
+                }
+                addView(strokeSummary, LayoutParams(0, LayoutParams.MATCH_PARENT, 1f))
+                strokeUndo.textSize = 18f
+                strokeClear.textSize = 14f
+                addView(strokeUndo, LayoutParams(dp(44), LayoutParams.MATCH_PARENT))
+                addView(strokeClear, LayoutParams(dp(44), LayoutParams.MATCH_PARENT))
+            },
+            LayoutParams(LayoutParams.MATCH_PARENT, dp(44)),
+        )
+        center.addView(
+            LinearLayout(context).apply {
+                setPadding(dp(2), dp(2), dp(2), dp(4))
+                listOf("一" to "横", "丨" to "竖", "丿" to "撇", "丶" to "点或捺", "折" to "折").forEachIndexed { index, (label, description) ->
+                    val key = button(label, description) {
+                        onStrokeChange?.invoke(strokePrefix + ('1' + index))
+                    }
+                    key.textSize = 24f
+                    strokeKeys.add(key)
+                    addView(
+                        key,
+                        LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply {
+                            marginStart = dp(2)
+                            marginEnd = dp(2)
+                        },
+                    )
+                }
+            },
+            LayoutParams(LayoutParams.MATCH_PARENT, dp(48)),
+        )
+        addView(center, LayoutParams(0, LayoutParams.MATCH_PARENT, .70f))
+        listOf("↑" to "上一页", "↓" to "下一页", "⌫" to "退格", "单字" to "单字").forEachIndexed { index, (label, description) ->
+            val view = if (index == 3) {
+                single
+            } else {
+                button(label, description) {
+                    when (index) {
+                        0 -> recyclerView.smoothScrollBy(0, -recyclerView.height)
+                        1 -> recyclerView.smoothScrollBy(0, recyclerView.height)
+                        2 -> onCompositionKey?.invoke("BackSpace")
+                    }
                 }
             }
             actions.add(view)
@@ -73,30 +117,19 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
             }
             right.addView(slot, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
         }
-        addView(right, LayoutParams(0, LayoutParams.MATCH_PARENT, .15f))
-        refreshColors()
+        addView(right, LayoutParams(0, LayoutParams.MATCH_PARENT, .16f))
+        updateStrokePrefix("")
     }
 
-    private fun handwritingButton() = LinearLayout(context).apply {
-        orientation = VERTICAL
-        gravity = Gravity.CENTER
-        contentDescription = context.getString(R.string.handwriting_find_char)
-        isClickable = true
-        isFocusable = true
-        val icon = ImageView(context).apply {
-            setImageResource(R.drawable.ic_baseline_edit_24)
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        }
-        val label = TextView(context).apply {
-            text = context.getString(R.string.handwriting)
-            textSize = 14f
-            gravity = Gravity.CENTER
-            tag = "handwriting_label"
-        }
-        addView(icon, LayoutParams(dp(22), dp(22)))
-        addView(label, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        setOnClickListener { onHandwritingClick?.invoke() }
+    fun updateStrokePrefix(prefix: String) {
+        strokePrefix = prefix
+        strokeSummary.text = if (prefix.isEmpty()) "笔画筛选" else prefix.map { "一丨丿丶折"[it - '1'] }.joinToString(" ")
+        strokeSummary.contentDescription = "已选笔画：${strokeSummary.text}"
+        strokeUndo.isEnabled = prefix.isNotEmpty()
+        strokeClear.isEnabled = prefix.isNotEmpty()
+        strokeUndo.alpha = if (prefix.isEmpty()) .35f else 1f
+        strokeClear.alpha = strokeUndo.alpha
+        refreshColors()
     }
 
     private fun button(label: String, description: String, action: () -> Unit) = TextView(context).apply {
@@ -139,17 +172,14 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         }
         single.setTextColor(if (singleCharacter) colors.hilitedCandidateTextColor else colors.candidateTextColor)
         single.background = roundedRippleDrawable(colors.hilitedCandidateBackColor, dp(8f), if (singleCharacter) colors.hilitedCandidateBackColor else colors.candidateBackground)
-        handwriting.background = roundedRippleDrawable(colors.hilitedCandidateBackColor, dp(8f), colors.candidateBackground)
-        val hwColor = colors.candidateTextColor
-        for (i in 0 until handwriting.childCount) {
-            when (val child = handwriting.getChildAt(i)) {
-                is TextView -> child.setTextColor(hwColor)
-                is ImageView -> child.setColorFilter(hwColor)
-            }
+        strokeSummary.setTextColor(colors.candidateTextColor)
+        (strokeKeys + strokeUndo + strokeClear).forEach { view ->
+            view.setTextColor(colors.keyTextColor)
+            view.background = roundedRippleDrawable(colors.hilitedKeyBackColor, dp(8f), colors.keyBackColor)
         }
-        actions.forEachIndexed { index, view ->
-            view.setTextColor(if (index == 3) colors.hilitedKeyTextColor else colors.keyTextColor)
-            view.background = roundedRippleDrawable(colors.hilitedKeyBackColor, dp(100f), if (index == 3) colors.hilitedKeyBackColor else colors.keyBackColor)
+        actions.filter { it !== single }.forEach { view ->
+            view.setTextColor(colors.keyTextColor)
+            view.background = roundedRippleDrawable(colors.hilitedKeyBackColor, dp(100f), colors.keyBackColor)
         }
         recyclerView.invalidateItemDecorations()
     }

@@ -29,3 +29,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Official Ismantic/Handwritten JNI runtime
+-keep class com.shiyu.handwritten.runtime.** { *; }

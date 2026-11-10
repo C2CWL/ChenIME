@@ -12,6 +12,8 @@ import com.c2cwl.chenime.R
 import com.osfans.trime.ime.broadcast.InputBroadcaster
 import com.osfans.trime.ime.clipboard.ClipboardWindow
 import com.osfans.trime.ime.core.TrimeInputMethodService
+import com.osfans.trime.ime.handwriting.HandwritingMode
+import com.osfans.trime.ime.handwriting.HandwritingWindow
 import com.osfans.trime.ime.switches.SwitchOptionWindow
 import org.kodein.di.DI
 import org.kodein.di.DIAware
@@ -32,12 +34,18 @@ class BoardWindowManager(override val di: DI) : DIAware {
 
     private val switchOptionWindow by lazy { SwitchOptionWindow(di).also { cacheResidentWindow(it) } }
     private val clipboardWindow by lazy { ClipboardWindow(di).also { cacheResidentWindow(it) } }
+    private val handwritingWindow by lazy { HandwritingWindow(di).also { cacheResidentWindow(it) } }
 
     fun showMore() = attachWindow(switchOptionWindow)
 
     fun showClipboard(tab: Int = 0) {
         clipboardWindow.selectTab(tab)
         attachWindow(clipboardWindow)
+    }
+
+    fun showHandwriting(mode: HandwritingMode) {
+        handwritingWindow.mode = mode
+        attachWindow(handwritingWindow)
     }
 
     fun destroy() {

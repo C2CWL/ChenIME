@@ -1,0 +1,10 @@
+Handwritten
+https://github.com/Ismantic/Handwritten
+Licensed under the Apache License, Version 2.0.
+
+This directory vendors the official Android HCCR runtime
+(HCCRRecognizer, hccr_jni.cc) and the shared preprocess.c implementation.
+The published NCNN INT8 model and charset (GB2312 Level-1, 3755 characters)
+are bundled separately under app/src/main/assets/handwritten/.
+
+CASIA HWDB1.1 raw training data is not redistributed.

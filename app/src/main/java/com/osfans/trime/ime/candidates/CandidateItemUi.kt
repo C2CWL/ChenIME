@@ -171,7 +171,12 @@ class CandidateItemUi(
         val tColor = if (highlighted) hlTextColor else textColor
         val cColor = if (highlighted) hlCommentColor else commentColor
         val cornerRadius = ctx.dp(CornerRadiusOverrides.current().bar(theme.style.candidateCornerRadius))
-        val contentColor = if (highlighted) hlBackColor else Color.TRANSPARENT
+        // Spacing > 0 opts into pill chips: unselected rows use key back color as chip fill.
+        val contentColor = when {
+            highlighted -> hlBackColor
+            theme.style.candidateSpacing > 0f -> scope.colors.keyBackColor
+            else -> Color.TRANSPARENT
+        }
 
         val rippleColor = hlBackColor
         if (backgroundColor != rippleColor ||

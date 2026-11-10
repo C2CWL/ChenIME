@@ -21,6 +21,8 @@ data class LiquidKeyboard(
     data class KeyBar(
         val keys: List<String> = emptyList(),
         val position: Position = Position.BOTTOM,
+        /** Width of a left/right bar as a percent of the panel; 0 keeps the legacy wrap/lock width. */
+        val width: Float = 0f,
     ) {
         enum class Position {
             TOP,

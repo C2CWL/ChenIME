@@ -9,6 +9,10 @@ name: New布局
 author: Trime community; based on tongwenfeng
 style:
   __include: tongwenfeng.trime:/style
+  # Pill-chip candidates (方案 B): padding + gap + round corners; separator color matches bar bg.
+  candidate_padding: 14
+  candidate_spacing: 8.0
+  candidate_corner_radius: 10
   enter_labels:
     go: 前往
     done: 完成
@@ -120,9 +124,11 @@ tool_bar:
     action: VOICE_ASSIST
   - size: [40, 40]
     foreground:
-      style: "ic@emoticon"
+      style: "符"
       normal: candidate_text_color
-    action: liquid_keyboard_emoji
+      font_size: 18
+    action: Ifly_symbols
+    long_press_action: "{hide_key_symbol}{hide_key_hint}"
   - size: [40, 40]
     foreground:
       style: "ic@clipboard"
@@ -404,96 +410,98 @@ preset_keyboards:
     ascii_mode: 1
     keys:
     - click: plus
-      width: 18
+      width: 20
       key_back_color: off_key_back_color
     - click: '1'
-      width: 23.5
+      width: 20
     - click: '2'
-      width: 23.5
+      width: 20
     - click: '3'
-      width: 23.5
+      width: 20
     - click: BackSpace
       swipe_up: Ifly_clear_all
       swipe_down: restore_cleared
-      width: 11.5
+      width: 20
       key_back_color: off_key_back_color
       label: ic@backspace_outline
     - click: minus
-      width: 18
+      width: 20
       key_back_color: off_key_back_color
     - click: '4'
-      width: 23.5
+      width: 20
     - click: '5'
-      width: 23.5
+      width: 20
     - click: '6'
-      width: 23.5
+      width: 20
     - click: Ifly_space
       long_click: Mode_switch
       swipe_left: Left
       swipe_right: Right
-      width: 11.5
+      width: 20
       key_back_color: off_key_back_color
-    - click: slash
-      width: 18
-      key_back_color: off_key_back_color
+    - click: Ifly_back
+      width: 20
+      row_span: 2
+      key_back_color: accent
     - click: '7'
-      width: 23.5
+      width: 20
     - click: '8'
-      width: 23.5
+      width: 20
     - click: '9'
-      width: 23.5
+      width: 20
     - click: Return
       label: ic@keyboard_return
       key_text_color: on_key_text_color
-      width: 11.5
+      width: 20
       key_back_color: accent
-    - click: Ifly_back
-      width: 18
-      key_back_color: accent
-    - click: Ifly_symbols
-      label_symbol: 简洁
-      long_click: "{hide_key_symbol}{hide_key_hint}"
-      width: 23.5
+    - click: slash
+      width: 20
+      key_back_color: off_key_back_color
     - click: '0'
-      width: 23.5
+      width: 20
     - click: period
-      width: 23.5
+      width: 20
     - click: at
-      width: 11.5
+      width: 20
       key_back_color: off_key_back_color
   editor:
     height: 39.5
     name: 编辑
     ascii_mode: 1
-    width: 25
+    width: 21.5
+    left_key_width: 14
+    left_keys:
+    - click: Ifly_space
+      long_click: Mode_switch
+      swipe_left: Left
+      swipe_right: Right
+    - click: BackSpace
+      key_back_color: off_key_back_color
+      swipe_up: Ifly_clear_all
+      swipe_down: restore_cleared
+      label: ic@backspace_outline
+    - click: Return
+      key_back_color: accent
+      label: ic@keyboard_return
+      key_text_color: on_key_text_color
+    - click: Ifly_back
+      key_back_color: accent
     keys:
     - click: select_all
     - click: Home
     - click: Up
     - click: End
     - click: cut
+      icon: ic_baseline_content_cut_24
     - click: Left
     - click: Down
     - click: Right
     - click: copy
+      icon: ic_baseline_content_copy_24
     - click: undo
     - click: redo
     - click: paste
-    - click: Ifly_back
-      height: 26.5
-      key_back_color: off_key_back_color
-    - click: Ifly_space
-      long_click: Mode_switch
-      swipe_left: Left
-      swipe_right: Right
-    - click: BackSpace
-      key_back_color: off_key_back_color
-      swipe_up: Ifly_clear_all
-      swipe_down: restore_cleared
-    - click: Return
-      key_back_color: accent
-      label: ic@keyboard_return
-      key_text_color: on_key_text_color
+      icon: ic_clipboard_24
 liquid_keyboard:
   row: 6
   row_land: 5
@@ -503,12 +511,14 @@ liquid_keyboard:
   vertical_gap: 8
   margin_x: 5
   fixed_key_bar:
-    position: bottom
+    position: left
+    # Percent of the panel; about 1.2–1.5× a symbol key, 返回 fixed at the bottom.
+    width: 18
     keys:
-    - liquid_keyboard_exit
     - space1
     - BackSpace
     - Return2
+    - liquid_keyboard_exit
   keyboards:
   - emoji
   - common

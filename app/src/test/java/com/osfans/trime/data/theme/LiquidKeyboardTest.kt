@@ -185,4 +185,28 @@ class LiquidKeyboardTest :
                     .liquidKeyboard.keyboards.isNotEmpty() shouldBe true
             }
         }
+
+        Given("a fixed key bar on the left with a width percent") {
+            val keyboard = decode(
+                """
+            name: test
+            liquid_keyboard:
+              fixed_key_bar:
+                position: left
+                width: 18
+                keys: [space1, BackSpace, Return2, liquid_keyboard_exit]
+              keyboards: [common]
+              common:
+                type: SINGLE
+                name: 常用
+                keys: "，。"
+            """,
+            ).liquidKeyboard
+
+            Then("position, width and key order are preserved") {
+                keyboard.fixedKeyBar.position shouldBe LiquidKeyboard.KeyBar.Position.LEFT
+                keyboard.fixedKeyBar.width shouldBe 18f
+                keyboard.fixedKeyBar.keys shouldBe listOf("space1", "BackSpace", "Return2", "liquid_keyboard_exit")
+            }
+        }
     })

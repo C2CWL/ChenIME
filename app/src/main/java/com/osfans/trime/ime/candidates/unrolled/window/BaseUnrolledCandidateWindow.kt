@@ -32,6 +32,8 @@ import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
 import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.ime.core.TrimeInputMethodService
+import com.osfans.trime.ime.handwriting.HandwritingMode
+import com.osfans.trime.ime.handwriting.HandwritingWindow
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
@@ -88,6 +90,9 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                     singleCharacter = !singleCharacter
                     resetPosition()
                     adapter.refresh()
+                }
+                onHandwritingClick = {
+                    windowManager.showHandwriting(HandwritingMode.FindChar)
                 }
                 onSyllableToggle = { index, syllables ->
                     filterJob?.cancel()

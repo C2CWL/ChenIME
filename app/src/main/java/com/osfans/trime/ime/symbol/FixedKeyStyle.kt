@@ -17,17 +17,16 @@ internal data class FixedKeyStyle(
 )
 
 internal fun fixedKeyStyle(name: String, enter: TextKeyboard.TextKey? = null): FixedKeyStyle = when (name) {
-    "liquid_keyboard_exit", "BackSpace" -> FixedKeyStyle(
+    "BackSpace" -> FixedKeyStyle(
         background = "off_key_back_color",
         text = "off_key_text_color",
         border = "off_key_border_color",
         pressedBackground = "hilited_off_key_back_color",
         pressedText = "hilited_off_key_text_color",
         pressedBorder = "hilited_off_key_border_color",
-        bold = name == "liquid_keyboard_exit",
     )
 
-    "Return", "Return1", "Return2" -> FixedKeyStyle(
+    "liquid_keyboard_exit", "Return", "Return1", "Return2" -> FixedKeyStyle(
         background = enter?.keyBackColor?.takeIf { it.isNotBlank() } ?: "on_key_back_color",
         text = enter?.keyTextColor?.takeIf { it.isNotBlank() } ?: "on_key_text_color",
         bold = true,

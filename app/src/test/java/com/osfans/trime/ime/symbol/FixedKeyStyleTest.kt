@@ -10,16 +10,22 @@ import io.kotest.matchers.shouldBe
 class FixedKeyStyleTest :
     BehaviorSpec({
         Given("the liquid fixed function keys") {
-            When("styling return and backspace") {
-                Then("both use functional colors and only return is bold") {
-                    for (name in listOf("liquid_keyboard_exit", "BackSpace")) {
-                        val style = fixedKeyStyle(name)
-                        style.background shouldBe "off_key_back_color"
-                        style.text shouldBe "off_key_text_color"
-                        style.pressedBackground shouldBe "hilited_off_key_back_color"
-                        style.pressedText shouldBe "hilited_off_key_text_color"
-                        style.bold shouldBe (name == "liquid_keyboard_exit")
-                    }
+            When("styling backspace") {
+                Then("it uses functional off-key colors and is not bold") {
+                    val style = fixedKeyStyle("BackSpace")
+                    style.background shouldBe "off_key_back_color"
+                    style.text shouldBe "off_key_text_color"
+                    style.pressedBackground shouldBe "hilited_off_key_back_color"
+                    style.pressedText shouldBe "hilited_off_key_text_color"
+                    style.bold shouldBe false
+                }
+            }
+            When("styling the exit key") {
+                Then("it matches return accent colors and is bold") {
+                    // Approved symbol-page layout: 返回 at the bottom of the left
+                    // action column uses the same accent treatment as 回车.
+                    fixedKeyStyle("liquid_keyboard_exit") shouldBe fixedKeyStyle("Return")
+                    fixedKeyStyle("liquid_keyboard_exit").bold shouldBe true
                 }
             }
             When("styling space or an unrelated key") {
@@ -34,7 +40,7 @@ class FixedKeyStyleTest :
                 When("enter uses $background and $text") {
                     Then("all return variants reuse those keys with pressed feedback") {
                         val enter = TextKeyboard.TextKey(keyBackColor = background, keyTextColor = text)
-                        for (name in listOf("Return", "Return1", "Return2")) {
+                        for (name in listOf("liquid_keyboard_exit", "Return", "Return1", "Return2")) {
                             val style = fixedKeyStyle(name, enter)
                             style.background shouldBe background
                             style.text shouldBe text
@@ -48,8 +54,10 @@ class FixedKeyStyleTest :
             When("no enter override is configured") {
                 Then("theme accent fallbacks are used") {
                     for (enter in listOf(null, TextKeyboard.TextKey())) {
-                        fixedKeyStyle("Return", enter).background shouldBe "on_key_back_color"
-                        fixedKeyStyle("Return", enter).text shouldBe "on_key_text_color"
+                        for (name in listOf("liquid_keyboard_exit", "Return")) {
+                            fixedKeyStyle(name, enter).background shouldBe "on_key_back_color"
+                            fixedKeyStyle(name, enter).text shouldBe "on_key_text_color"
+                        }
                     }
                 }
             }

@@ -39,6 +39,10 @@ data class TextKeyboard(
     val keyPressOffsetY: Float = 0f,
     val importPreset: String = "",
     val keys: List<TextKey> = emptyList(),
+    /** Width weight (0–100) of an optional stacked left column; 0 means none. */
+    val leftKeyWidth: Float = 0f,
+    /** Keys stacked in the left column, filling the keyboard height equally. */
+    val leftKeys: List<TextKey> = emptyList(),
 ) {
     enum class LabelTransform {
         NONE,
@@ -49,6 +53,10 @@ data class TextKeyboard(
     data class TextKey(
         val width: Float = 0f,
         val height: Float = 0f,
+        /** Number of rows this key occupies; 1 is a normal key. */
+        val rowSpan: Int = 1,
+        /** Drawable name drawn above the label (not hidden by concise mode). */
+        val icon: String = "",
         val roundCorner: Float = -1f,
         val keyBorder: Int = -1,
         val label: String = "",

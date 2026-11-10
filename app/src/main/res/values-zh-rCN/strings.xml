@@ -34,6 +34,8 @@
     <string name="key_long_press_timeout">长按按键的延迟时间</string>
     <string name="key_repeat_interval">重复按键的重复间隔</string>
     <string name="popup_on_key_press">按键时弹出显示字符</string>
+    <string name="key_input_on_press">按下即输入</string>
+    <string name="key_input_on_press_summary">手指按下立刻上屏，反应更快。若接着长按或滑动，会先撤销该键再执行手势。关掉则恢复为抬手才输入。</string>
     <string name="expand_keypress_area_to_edge">将按键范围扩展至边缘</string>
     <string name="use_soft_cursor">预编辑区使用插入符号（^）</string>
     <string name="deploy">部署</string>
@@ -150,6 +152,7 @@
     <string name="simple_key_unpin">取消置顶</string>
     <string name="simple_key_pin">置顶</string>
     <string name="delete_all">删除全部</string>
+    <string name="clipboard_scroll_to_top">回顶部</string>
     <string name="disable">禁用</string>
     <string name="a_regular_expression_per_line">一行一条正则表达式</string>
     <string name="custom_sound_effect_enabled">使用自定义按键音效</string>
@@ -206,6 +209,20 @@
     <string name="hide_input_bar">隐藏输入工具栏</string>
     <string name="hide_key_symbol">隐藏按键符号</string>
     <string name="hide_key_hint">隐藏按键注解</string>
+    <string name="concise_mode">简洁模式</string>
+    <string name="concise_mode_on">已开启简洁模式</string>
+    <string name="concise_mode_off">已关闭简洁模式</string>
+    <string name="emoji_panel">表情</string>
+    <string name="handwriting">手写</string>
+    <string name="handwriting_find_char">手写找字</string>
+    <string name="handwriting_canvas">手写画板</string>
+    <string name="handwriting_back">返回</string>
+    <string name="handwriting_clear">清空</string>
+    <string name="handwriting_space">空格</string>
+    <string name="handwriting_backspace">退格</string>
+    <string name="handwriting_confirm">确认</string>
+    <string name="handwriting_enter">回车</string>
+    <string name="handwriting_load_failed">无法加载本地手写模型</string>
     <string name="navbar_bkg_none">无背景</string>
     <string name="navbar_bkg_color_only">跟随键盘背景色</string>
     <string name="navbar_bkg_full">键盘背景图片</string>

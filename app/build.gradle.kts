@@ -180,3 +180,43 @@ configurations {
         exclude(group = "androidx.profileinstaller", module = "profileinstaller")
     }
 }
+
+// Official Ismantic/Handwritten Java runtime + on-device NCNN model
+android {
+    sourceSets.getByName("main").java.srcDir(rootProject.file("third_party/handwritten/runtime/src/main/java"))
+    defaultConfig {
+        externalNativeBuild {
+            cmake {
+                val ncnnRoot = rootProject.file("third_party/ncnn-android/ncnn-20261020-android")
+                arguments("-DHCCR_NCNN_ROOT=${ncnnRoot.invariantSeparatorsPath}")
+            }
+        }
+    }
+}
+
+val handwrittenNcnnVersion = "20261020"
+val handwrittenNcnnRoot = rootProject.file("third_party/ncnn-android/ncnn-$handwrittenNcnnVersion-android")
+val downloadHandwrittenDeps =
+    tasks.register("downloadHandwrittenDeps") {
+        outputs.dir(handwrittenNcnnRoot)
+        onlyIf { !handwrittenNcnnRoot.resolve("arm64-v8a/lib/cmake/ncnn/ncnnConfig.cmake").exists() }
+        doLast {
+            val url =
+                "https://github.com/Tencent/ncnn/releases/download/$handwrittenNcnnVersion/ncnn-$handwrittenNcnnVersion-android.zip"
+            val dest = handwrittenNcnnRoot.parentFile
+            dest.mkdirs()
+            val zip = dest.resolve("ncnn-$handwrittenNcnnVersion-android.zip")
+            ant.invokeMethod(
+                "get",
+                mapOf("src" to url, "dest" to zip, "skipexisting" to true),
+            )
+            copy {
+                from(zipTree(zip))
+                into(dest)
+            }
+        }
+    }
+
+tasks.matching { it.name.startsWith("configureCMake") || it.name.startsWith("buildCMake") }.configureEach {
+    dependsOn(downloadHandwrittenDeps)
+}

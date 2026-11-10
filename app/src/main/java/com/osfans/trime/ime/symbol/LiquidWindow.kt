@@ -44,6 +44,14 @@ class LiquidWindow(di: DI) :
 
     private val supportsLock get() = "liquid_keyboard_lock" in scope.theme.liquidKeyboard.fixedKeyBar.keys
 
+    private val fillsEvenGrid: Boolean
+        get() {
+            val bar = scope.theme.liquidKeyboard.fixedKeyBar
+            return supportsLock ||
+                bar.position == LiquidKeyboard.KeyBar.Position.LEFT ||
+                bar.position == LiquidKeyboard.KeyBar.Position.RIGHT
+        }
+
     fun toggleLock() {
         isLocked = !isLocked
         liquidLayout.updateLockLabel(isLocked)
@@ -106,7 +114,7 @@ class LiquidWindow(di: DI) :
             setHasFixedSize(true)
             itemAnimator = null
             this.adapter = this@LiquidWindow.adapter
-            if (supportsLock) {
+            if (fillsEvenGrid) {
                 addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
                     if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
                         post { this@LiquidWindow.adapter.notifyItemRangeChanged(0, this@LiquidWindow.adapter.itemCount, Unit) }

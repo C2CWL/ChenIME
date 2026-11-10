@@ -61,3 +61,6 @@ include_directories("${X11Keysym}")
 include(Rime)
 
 add_subdirectory(librime_jni)
+
+# Offline handwriting recognizer (Ismantic/Handwritten + ncnn)
+add_subdirectory(handwritten)

@@ -75,7 +75,7 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         center.addView(
             LinearLayout(context).apply {
                 setPadding(dp(2), dp(2), dp(2), dp(4))
-                listOf("一" to "横", "丨" to "竖", "丿" to "撇", "丶" to "点或捺", "乙" to "折").forEachIndexed { index, (label, description) ->
+                listOf("一" to "横", "丨" to "竖", "丿" to "撇", "丶" to "点或捺", "折" to "折").forEachIndexed { index, (label, description) ->
                     val key = button(label, description) {
                         onStrokeChange?.invoke(strokePrefix + ('1' + index))
                     }
@@ -123,7 +123,7 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
 
     fun updateStrokePrefix(prefix: String) {
         strokePrefix = prefix
-        strokeSummary.text = if (prefix.isEmpty()) "笔画筛选" else prefix.map { "一丨丿丶乙"[it - '1'] }.joinToString(" ")
+        strokeSummary.text = if (prefix.isEmpty()) "笔画筛选" else prefix.map { "一丨丿丶折"[it - '1'] }.joinToString(" ")
         strokeSummary.contentDescription = "已选笔画：${strokeSummary.text}"
         strokeUndo.isEnabled = prefix.isNotEmpty()
         strokeClear.isEnabled = prefix.isNotEmpty()

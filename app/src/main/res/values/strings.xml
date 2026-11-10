@@ -224,6 +224,7 @@
     <string name="handwriting_confirm">Confirm</string>
     <string name="handwriting_enter">Enter</string>
     <string name="handwriting_load_failed">Could not load the on-device handwriting model</string>
+    <string name="handwriting_no_match">No matching character in the current pinyin candidates. Rewrite or go back.</string>
     <string name="navbar_bkg_none">No background</string>
     <string name="navbar_bkg_color_only">Follow keyboard color</string>
     <string name="navbar_bkg_full">Keyboard background image</string>

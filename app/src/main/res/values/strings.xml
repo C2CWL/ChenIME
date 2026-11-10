@@ -302,7 +302,7 @@
     <string name="swipe_clear">Clear</string>
     <string name="swipe_restore_clear">Undo clear</string>
     <string name="pinyin_correction">拼音纠错</string>
-    <string name="pinyin_correction_summary">仅在原拼写无法完整解析时尝试邻键纠错（雾凇拼音）</string>
+    <string name="pinyin_correction_summary">保守邻键纠错：保留正常拼音、简拼和未输完的拼音，不抢原候选首位（白霜拼音）</string>
     <string name="pinyin_correction_failed">拼音纠错设置部署失败，请重试</string>
     <string name="input_latency_logging">输入延迟诊断日志</string>
     <string name="input_latency_logging_summary">记录触摸、引擎处理和候选布局耗时，不记录输入内容。默认关闭，诊断完成后请关闭；开启期间普通日志页及其导出仅显示耗时日志。</string>

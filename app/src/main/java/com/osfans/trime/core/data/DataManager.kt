@@ -103,6 +103,7 @@ object DataManager {
             "lua/pin_cand_filter.lua",
             "lua/reduce_english_filter.lua",
             "lua/chen_custom_phrase_pos.lua",
+            "lua/chen_conservative_correction.lua",
         )
         val marker = File(dataDir, "custom-phrase-runtime.sha256")
         val digest = java.security.MessageDigest.getInstance("SHA-256")

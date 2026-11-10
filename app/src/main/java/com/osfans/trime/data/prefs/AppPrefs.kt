@@ -400,7 +400,7 @@ class AppPrefs(
 
         val dataStorageMode = enum(R.string.data_storage_mode, DATA_STORAGE_MODE, DataStorageMode.EXTERNAL_SYNC)
         val externalRimeTreeUri = string(EXTERNAL_RIME_TREE_URI, "")
-        val pinyinCorrection = bool(PINYIN_CORRECTION, false)
+        val pinyinCorrection = bool(PINYIN_CORRECTION, true)
         val periodicBackgroundSync = bool(PERIODIC_BACKGROUND_SYNC, false)
         val periodicBackgroundSyncInterval = int(PERIODIC_BACKGROUND_SYNC_INTERVAL, 30)
         val lastBackgroundSyncStatus = bool(LAST_BACKGROUND_SYNC_STATUS, false)

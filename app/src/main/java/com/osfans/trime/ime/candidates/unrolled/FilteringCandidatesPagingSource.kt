@@ -5,12 +5,13 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.osfans.trime.daemon.RimeSession
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 /** Scan raw menu indices so sparse matches never strand Paging on an empty page. */
 internal class FilteringCandidatesPagingSource(
     private val rime: RimeSession,
-    private val offset: Int,
     private val end: Int?,
     private val singleCharacter: Boolean,
     private val strokePrefix: String = "",
@@ -18,12 +19,12 @@ internal class FilteringCandidatesPagingSource(
 ) : PagingSource<Int, IndexedCandidate>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, IndexedCandidate> {
         val orders = if (strokePrefix.isNotEmpty()) withContext(Dispatchers.IO) { requireNotNull(strokeOrders).invoke() } else null
-        var rawIndex = params.key ?: if (end != null || orders != null) 0 else offset
+        var rawIndex = params.key ?: 0
         val matches = mutableListOf<IndexedCandidate>()
-        val scanLimit = 1500
         var exhausted = false
-        while (matches.size < params.loadSize && rawIndex < scanLimit) {
-            val count = minOf(48, scanLimit - rawIndex)
+        while (matches.size < params.loadSize) {
+            currentCoroutineContext().ensureActive()
+            val count = 48
             val (candidates, ends) = rime.runOnReady {
                 getCandidates(rawIndex, count) to if (end != null) getCandidateEnds(rawIndex, count) else intArrayOf()
             }
@@ -44,7 +45,7 @@ internal class FilteringCandidatesPagingSource(
                 break
             }
         }
-        return LoadResult.Page(matches, null, if (exhausted || rawIndex >= scanLimit) null else rawIndex)
+        return LoadResult.Page(matches, null, if (exhausted) null else rawIndex)
     }
 
     override fun getRefreshKey(state: PagingState<Int, IndexedCandidate>): Int? = null

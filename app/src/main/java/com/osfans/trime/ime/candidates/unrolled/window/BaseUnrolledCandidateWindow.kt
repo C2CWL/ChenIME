@@ -27,23 +27,29 @@ import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.ime.candidates.compact.CompactCandidateDelegate
 import com.osfans.trime.ime.candidates.unrolled.CandidatesPagingSource
 import com.osfans.trime.ime.candidates.unrolled.FilteringCandidatesPagingSource
+import com.osfans.trime.ime.candidates.unrolled.IndexedCandidate
 import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
 import com.osfans.trime.ime.candidates.unrolled.StrokeOrderIndex
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
 import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.ime.core.TrimeInputMethodService
+import com.osfans.trime.ime.handwriting.HandwritingMode
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.instance
 import splitties.dimensions.dp
 import kotlin.math.max
 
+@OptIn(ExperimentalCoroutinesApi::class)
 abstract class BaseUnrolledCandidateWindow(di: DI) :
     BoardWindow.NoBarBoardWindow(di),
     InputBroadcastReceiver {
@@ -90,15 +96,22 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     final override fun onCreateView(): View {
         candidateLayout =
             onCreateCandidateLayout().apply {
+                onHandwriting = { windowManager.showHandwriting(HandwritingMode.FindChar) }
+                onResetFilters = {
+                    singleCharacter = false
+                    clearSyllableFilter()
+                    setStrokeExpanded(false)
+                    reloadCandidates()
+                }
                 onSingleCharacterToggle = {
                     singleCharacter = !singleCharacter
                     resetPosition()
-                    adapter.refresh()
+                    reloadCandidates()
                 }
                 onStrokeChange = { prefix ->
                     updateStrokePrefix(prefix)
                     resetPosition()
-                    adapter.refresh()
+                    reloadCandidates()
                 }
                 onSyllableToggle = { index, syllables ->
                     filterJob?.cancel()
@@ -114,7 +127,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                                 filterEnd = target
                                 activeSyllable = index
                                 resetPosition()
-                                adapter.refresh()
+                                reloadCandidates()
                             }
                         }
                     }
@@ -149,30 +162,41 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         candidateLayout.updateStrokePrefix("")
         candidateLayout.activeSyllable = null
         candidateLayout.resetPosition()
-        adapter.refresh()
+        reloadCandidates()
     }
 
-    private val candidatesPager by lazy {
-        Pager(
+    private val candidateRevision = MutableStateFlow(0L)
+    private var composition: CompositionProto? = null
+
+    private fun reloadCandidates() {
+        candidateRevision.value += 1
+    }
+
+    private fun candidatesPager(): Pager<Int, IndexedCandidate> {
+        val end = filterEnd
+        val single = candidateLayout.singleCharacter
+        val prefix = candidateLayout.strokePrefix
+        val offset = adapter.offset
+        val total = compactCandidate.adapter.total
+        return Pager(
             config = PagingConfig(
                 pageSize = 48,
                 enablePlaceholders = false,
             ),
             pagingSourceFactory = {
-                if (filterEnd != null || candidateLayout.singleCharacter || candidateLayout.strokePrefix.isNotEmpty()) {
+                if (end != null || single || prefix.isNotEmpty()) {
                     FilteringCandidatesPagingSource(
                         rime,
-                        adapter.offset,
-                        filterEnd,
-                        candidateLayout.singleCharacter,
-                        candidateLayout.strokePrefix,
+                        end,
+                        single,
+                        prefix,
                         { strokeOrders },
                     )
                 } else {
                     CandidatesPagingSource(
                         rime,
-                        total = compactCandidate.adapter.total,
-                        offset = adapter.offset,
+                        total = total,
+                        offset = offset,
                     )
                 }
             },
@@ -186,7 +210,8 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         candidateLayout.alpha = 0f
         candidateLayout.animate().alpha(1f).setDuration(100L).withLayer().start()
         lifecycleCoroutineScope = candidateLayout.findViewTreeLifecycleOwner()!!.lifecycleScope
-        candidateLayout.updatePreedit(rime.run { compositionCached.preedit })
+        composition = rime.run { compositionCached }
+        candidateLayout.updatePreedit(composition?.preedit)
         bar.unrollButtonStateMachine.push(UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesAttached)
         offsetJob =
             lifecycleCoroutineScope.launch {
@@ -199,19 +224,21 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                             offset = it,
                             highlightedIndex = compactCandidate.adapter.highlightedIdx,
                         )
+                        reloadCandidates()
                     }
                 }
             }
         candidatesSubmitJob =
             lifecycleCoroutineScope.launch {
-                candidatesPager.flow.collectLatest {
+                candidateRevision.flatMapLatest { candidatesPager().flow }.collectLatest {
                     adapter.submitData(it)
                 }
             }
     }
 
     override fun onCompositionUpdate(data: CompositionProto) {
-        if (::candidateLayout.isInitialized) {
+        if (::candidateLayout.isInitialized && composition != data) {
+            composition = data
             clearSyllableFilter()
             candidateLayout.updatePreedit(data.preedit)
         }

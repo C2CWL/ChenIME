@@ -27,6 +27,7 @@ class HandwritingCanvasView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
 ) : View(context, attrs) {
     val ink = HandwritingInk()
+    var onStrokeStarted: (() -> Unit)? = null
     var onStrokeFinished: (() -> Unit)? = null
 
     var wellColor: Int = Color.rgb(36, 36, 36)
@@ -81,6 +82,7 @@ class HandwritingCanvasView @JvmOverloads constructor(
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 parent?.requestDisallowInterceptTouchEvent(true)
+                onStrokeStarted?.invoke()
                 ink.begin(event.x, event.y)
                 invalidate()
                 return true

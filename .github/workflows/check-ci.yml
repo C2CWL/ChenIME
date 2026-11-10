@@ -19,6 +19,12 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Check Lua candidate filters
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.4
+          for test in app/src/test/lua/*_test.lua; do lua5.4 "$test"; done
+
       - name: Setup Java
         uses: actions/setup-java@v6
         with:

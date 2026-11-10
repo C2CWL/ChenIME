@@ -439,9 +439,10 @@ preset_keyboards:
       swipe_right: Right
       width: 20
       key_back_color: off_key_back_color
-    - click: slash
+    - click: Ifly_back
       width: 20
-      key_back_color: off_key_back_color
+      row_span: 2
+      key_back_color: accent
     - click: '7'
       width: 20
     - click: '8'
@@ -453,13 +454,9 @@ preset_keyboards:
       key_text_color: on_key_text_color
       width: 20
       key_back_color: accent
-    - click: Ifly_back
+    - click: slash
       width: 20
-      key_back_color: accent
-    - click: Ifly_symbols
-      label_symbol: 简洁
-      long_click: "{hide_key_symbol}{hide_key_hint}"
-      width: 20
+      key_back_color: off_key_back_color
     - click: '0'
       width: 20
     - click: period
@@ -471,23 +468,9 @@ preset_keyboards:
     height: 39.5
     name: 编辑
     ascii_mode: 1
-    width: 25
-    keys:
-    - click: select_all
-    - click: Home
-    - click: Up
-    - click: End
-    - click: cut
-    - click: Left
-    - click: Down
-    - click: Right
-    - click: copy
-    - click: undo
-    - click: redo
-    - click: paste
-    - click: Ifly_back
-      height: 26.5
-      key_back_color: off_key_back_color
+    width: 21.5
+    left_key_width: 14
+    left_keys:
     - click: Ifly_space
       long_click: Mode_switch
       swipe_left: Left
@@ -496,10 +479,29 @@ preset_keyboards:
       key_back_color: off_key_back_color
       swipe_up: Ifly_clear_all
       swipe_down: restore_cleared
+      label: ic@backspace_outline
     - click: Return
       key_back_color: accent
       label: ic@keyboard_return
       key_text_color: on_key_text_color
+    - click: Ifly_back
+      key_back_color: accent
+    keys:
+    - click: select_all
+    - click: Home
+    - click: Up
+    - click: End
+    - click: cut
+      icon: ic_baseline_content_cut_24
+    - click: Left
+    - click: Down
+    - click: Right
+    - click: copy
+      icon: ic_baseline_content_copy_24
+    - click: undo
+    - click: redo
+    - click: paste
+      icon: ic_clipboard_24
 liquid_keyboard:
   row: 6
   row_land: 5

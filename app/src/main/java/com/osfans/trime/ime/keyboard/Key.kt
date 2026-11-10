@@ -68,6 +68,10 @@ class Key(
     var gap = 0
     var row = 0
     var column = 0
+    var rowSpan = 1
+
+    /** Drawable name shown above the label; empty means text-only. */
+    val icon: String = keyDef?.icon ?: ""
 
     var extraWidthLeft = 0
     var extraWidthRight = 0

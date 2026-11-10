@@ -133,4 +133,32 @@ class TextKeyboardTest :
                 key.hilitedKeySymbolColor shouldBe "0xff00ffff"
             }
         }
+
+        Given("a keyboard with a left column and a spanning key") {
+            val keyboard =
+                ThemeTestSupport.yaml.decodeFromYamlNode<TextKeyboard>(
+                    ThemeTestSupport.yaml.parseToYamlNode(
+                        """
+                        left_key_width: 14
+                        left_keys:
+                          - click: space
+                          - click: BackSpace
+                        keys:
+                          - click: '7'
+                            width: 20
+                          - click: Ifly_back
+                            width: 20
+                            row_span: 2
+                            icon: ic_baseline_content_cut_24
+                        """.trimIndent(),
+                    ),
+                )
+
+            Then("left_key_width, left_keys, row_span and icon decode from snake_case") {
+                keyboard.leftKeyWidth shouldBe 14f
+                keyboard.leftKeys.size shouldBe 2
+                keyboard.keys[1].rowSpan shouldBe 2
+                keyboard.keys[1].icon shouldBe "ic_baseline_content_cut_24"
+            }
+        }
     })

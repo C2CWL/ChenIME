@@ -12,7 +12,9 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import androidx.core.content.ContextCompat
 import android.view.KeyEvent
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.utils.sizeDp
@@ -359,7 +361,7 @@ class KeyView(
             }
         }
 
-        if (label.isNotEmpty()) {
+        if (label.isNotEmpty() || key.icon.isNotEmpty()) {
             drawLabel(canvas, label)
         }
 
@@ -409,7 +411,9 @@ class KeyView(
         val textColor = key.getTextColor()
         val textSize = sp(key.keyTextSize.takeIf { it > 0 } ?: if (label.length > 1 && !label.isIconFont) keyboardView.keyLongTextSize else keyboardView.keyTextSize)
 
-        if (label.isIconFont) {
+        if (key.icon.isNotEmpty() && !label.isIconFont) {
+            drawLabelWithIcon(canvas, label, key.icon, textSize, textColor)
+        } else if (label.isIconFont) {
             drawIcon(canvas, label, textSize.toInt(), textColor, key.keyTextOffsetX, labelOffsetY)
         } else {
             textPaint.apply {
@@ -432,6 +436,88 @@ class KeyView(
                 canvas.drawText(label, x, y, textPaint)
             }
         }
+    }
+
+    private var cachedLabelIconName: String? = null
+    private var cachedLabelIcon: Drawable? = null
+
+    private fun drawableByName(name: String): Drawable? {
+        if (name.isEmpty()) return null
+        if (cachedLabelIconName == name) return cachedLabelIcon
+        val resId = context.resources.getIdentifier(name, "drawable", context.packageName)
+        val drawable = if (resId != 0) ContextCompat.getDrawable(context, resId) else null
+        cachedLabelIconName = name
+        cachedLabelIcon = drawable
+        return drawable
+    }
+
+    /**
+     * Draw a resource icon stacked above the label, always visible (unlike
+     * key symbols, which concise mode hides). Used for 剪切 / 复制 / 粘贴.
+     */
+    private fun drawLabelWithIcon(
+        canvas: Canvas,
+        label: String,
+        iconName: String,
+        textSize: Float,
+        textColor: Int,
+    ) {
+        val icon = drawableByName(iconName)
+        val centerX = (width - paddingLeft - paddingRight) / 2f + paddingLeft + sp(key.keyTextOffsetX)
+        val centerY = (height - paddingTop - paddingBottom) / 2f + paddingTop + sp(labelOffsetY)
+        val contentWidth = (width - paddingLeft - paddingRight).coerceAtLeast(1)
+        val contentHeight = (height - paddingTop - paddingBottom).coerceAtLeast(1)
+
+        if (icon == null || label.isEmpty()) {
+            if (icon != null) {
+                val size = minOf(contentWidth, contentHeight, textSize.toInt() * 2).coerceAtLeast(1)
+                icon.colorFilter = PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_IN)
+                icon.setBounds(
+                    (centerX - size / 2f).toInt(),
+                    (centerY - size / 2f).toInt(),
+                    (centerX + size / 2f).toInt(),
+                    (centerY + size / 2f).toInt(),
+                )
+                icon.draw(canvas)
+            } else if (label.isNotEmpty()) {
+                textPaint.apply {
+                    color = textColor
+                    this.textSize = textSize
+                    typeface = theme.fonts.key
+                    clearShadowLayer()
+                }
+                val fontMetrics = textPaint.fontMetrics
+                val y = centerY - (fontMetrics.ascent + fontMetrics.descent) / 2f
+                canvas.drawText(label, centerX, y, textPaint)
+            }
+            return
+        }
+
+        textPaint.apply {
+            color = textColor
+            this.textSize = textSize * 0.85f
+            typeface = theme.fonts.key
+            clearShadowLayer()
+        }
+        val fontMetrics = textPaint.fontMetrics
+        val textHeight = fontMetrics.descent - fontMetrics.ascent
+        val gap = dp(3)
+        val maxIcon = (contentHeight * 0.42f).toInt().coerceAtLeast(1)
+        val iconSize = minOf(maxIcon, (contentWidth * 0.45f).toInt(), (textSize * 1.15f).toInt()).coerceAtLeast(1)
+        val total = iconSize + gap + textHeight
+        val top = centerY - total / 2f
+
+        icon.colorFilter = PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_IN)
+        icon.setBounds(
+            (centerX - iconSize / 2f).toInt(),
+            top.toInt(),
+            (centerX + iconSize / 2f).toInt(),
+            (top + iconSize).toInt(),
+        )
+        icon.draw(canvas)
+
+        val textY = top + iconSize + gap - fontMetrics.ascent
+        canvas.drawText(label, centerX, textY, textPaint)
     }
 
     private fun drawIcon(

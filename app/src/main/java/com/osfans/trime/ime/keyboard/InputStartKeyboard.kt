@@ -19,6 +19,21 @@ internal fun inputStartKeyboard(
     }
 }
 
+/** Session-scoped 中/英 choice; outlives InputView / KeyboardWindow recreation. */
+internal class EnglishLanguageSession {
+    var userChoseEnglish: Boolean = false
+        private set
+
+    /** Letter-keyboard ascii_mode, never taken from a temporary number/editor pad. */
+    var letterAsciiMode: Boolean = false
+        private set
+
+    fun setExplicitEnglish(chosen: Boolean, letterAscii: Boolean = false) {
+        userChoseEnglish = chosen
+        letterAsciiMode = if (chosen) letterAscii else false
+    }
+}
+
 /** A panel's forced ASCII mode must never replace the user's letter mode. */
 internal class KeyboardAsciiState {
     private var savedMode: Boolean? = null
@@ -26,6 +41,11 @@ internal class KeyboardAsciiState {
     /** An explicit language change starts a new non-ASCII letter mode. */
     fun reset() {
         savedMode = false
+    }
+
+    /** Re-seed after InputView recreation so a leaked pad ASCII cannot become the letter mode. */
+    fun seed(letterAsciiMode: Boolean) {
+        savedMode = letterAsciiMode
     }
 
     fun select(temporary: Boolean, currentMode: Boolean): Boolean = if (temporary) {

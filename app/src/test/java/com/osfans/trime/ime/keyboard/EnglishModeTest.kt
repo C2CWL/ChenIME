@@ -85,6 +85,16 @@ class EnglishModeTest :
             }
         }
 
+        given("a new letter-keyboard focus") {
+            then("Chinese is forced only when English was not chosen and nothing is being composed") {
+                EnglishMode.shouldForceChinese(false, "default", false, false) shouldBe true
+                EnglishMode.shouldForceChinese(false, "default", true, false) shouldBe false
+                EnglishMode.shouldForceChinese(true, "default", false, false) shouldBe false
+                EnglishMode.shouldForceChinese(false, "number", false, false) shouldBe false
+                EnglishMode.shouldForceChinese(false, "default", false, true) shouldBe false
+            }
+        }
+
         given("schema notifications") {
             then("only Chinese-English transitions keep the current keyboard") {
                 EnglishMode.keepsKeyboard("rime_frost", "chen_eng") shouldBe true

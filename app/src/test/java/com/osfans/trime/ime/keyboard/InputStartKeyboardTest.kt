@@ -57,4 +57,47 @@ class InputStartKeyboardTest :
                     if (inputClass in 2..4) "number" else "default"
             }
         }
+        "number pad then a recreated InputView does not stay English" {
+            val session = EnglishLanguageSession()
+            val previous = KeyboardAsciiState()
+            previous.select(false, false) shouldBe false
+            previous.select(true, false) shouldBe true
+            // The window is destroyed while the pad still has ASCII on.
+            val recreated = KeyboardAsciiState()
+            recreated.seed(session.letterAsciiMode)
+            recreated.select(false, true) shouldBe false
+            EnglishMode.shouldForceChinese(false, "default", session.userChoseEnglish, false) shouldBe true
+        }
+        "restarting a field does not reset language" {
+            val session = EnglishLanguageSession()
+            session.setExplicitEnglish(false)
+            EnglishMode.shouldForceChinese(true, "default", session.userChoseEnglish, false) shouldBe false
+            inputStartKeyboard(1, restarting = true, currentKeyboardId = "number") shouldBe "number"
+        }
+        "new focus without an explicit English choice returns to Chinese" {
+            val session = EnglishLanguageSession()
+            EnglishMode.shouldForceChinese(false, "default", session.userChoseEnglish, false) shouldBe true
+            EnglishMode.shouldForceChinese(false, "number", session.userChoseEnglish, false) shouldBe false
+        }
+        "explicit 中/英 choice is preserved across focus and window recreation" {
+            val session = EnglishLanguageSession()
+            session.setExplicitEnglish(true)
+            EnglishMode.shouldForceChinese(false, "default", session.userChoseEnglish, false) shouldBe false
+            val recreated = KeyboardAsciiState()
+            recreated.seed(session.letterAsciiMode)
+            // chen_eng letter mode keeps engine ASCII off; English is the schema.
+            recreated.select(false, false) shouldBe false
+            EnglishMode.isEnglish(EnglishMode.SCHEMA, false) shouldBe true
+        }
+        "explicit ASCII-fallback English is preserved after InputView recreation" {
+            val session = EnglishLanguageSession()
+            session.setExplicitEnglish(true, letterAscii = true)
+            val recreated = KeyboardAsciiState()
+            recreated.seed(session.letterAsciiMode)
+            recreated.select(false, true) shouldBe true
+            EnglishMode.shouldForceChinese(false, "default", session.userChoseEnglish, false) shouldBe false
+        }
+        "a new focus does not reset language mid-composition" {
+            EnglishMode.shouldForceChinese(false, "default", userChoseEnglish = false, isComposing = true) shouldBe false
+        }
     })

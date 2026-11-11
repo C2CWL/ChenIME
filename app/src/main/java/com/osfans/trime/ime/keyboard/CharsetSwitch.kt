@@ -32,11 +32,14 @@ internal fun TrimeInputMethodService.switchCharset(option: String, keyboardWindo
                 if (selectSchema(target)) {
                     keyboardWindow.resetLetterAsciiMode()
                     setKeyboardAsciiMode(forcedAscii)
+                    englishLanguageSession.setExplicitEnglish(target == EnglishMode.SCHEMA)
                     showLanguageTip(EnglishMode.languageTip(target))
                 } else {
                     Timber.w("Failed to select schema %s from %s", target, schema)
                     if (target == EnglishMode.SCHEMA) {
                         setRuntimeOption("ascii_mode", true)
+                        englishLanguageSession.setExplicitEnglish(true, letterAscii = true)
+                        keyboardWindow.seedLetterAsciiMode(true)
                         showLanguageTip("英文")
                     }
                 }
@@ -44,10 +47,19 @@ internal fun TrimeInputMethodService.switchCharset(option: String, keyboardWindo
                 commitComposition()
                 keyboardWindow.resetLetterAsciiMode()
                 setKeyboardAsciiMode(false)
+                englishLanguageSession.setExplicitEnglish(false)
                 showLanguageTip("中文")
             } else {
                 val composing = statusCached.isComposing
                 setRuntimeOption(option, !enabled)
+                if (option == "ascii_mode") {
+                    englishLanguageSession.setExplicitEnglish(!enabled, letterAscii = !enabled)
+                    if (!enabled) {
+                        keyboardWindow.resetLetterAsciiMode()
+                    } else {
+                        keyboardWindow.seedLetterAsciiMode(true)
+                    }
+                }
                 if (option == "ascii_mode" && composing) {
                     getRawInput().takeIf { it.isNotEmpty() }?.let {
                         commitText(it)

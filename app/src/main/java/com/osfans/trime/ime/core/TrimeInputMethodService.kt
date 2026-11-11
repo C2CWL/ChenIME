@@ -49,6 +49,7 @@ import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.composition.CandidatesView
+import com.osfans.trime.ime.keyboard.EnglishLanguageSession
 import com.osfans.trime.ime.keyboard.InputFeedbackManager
 import com.osfans.trime.ime.keyboard.UndoRedoShortcut
 import com.osfans.trime.ime.keyboard.undoRedoShortcut
@@ -101,6 +102,9 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
 
     /** IME-side undo/redo steps for the toolbar buttons, see [ImeEditHistory]. */
     private val editHistory = ImeEditHistory()
+
+    /** Survives InputView recreation; not written to disk, so it lasts only for this service session. */
+    internal val englishLanguageSession = EnglishLanguageSession()
 
     private var cursorUpdateIndex = 0
 

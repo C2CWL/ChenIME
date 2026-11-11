@@ -8,8 +8,7 @@ internal fun candidateSpan(width: Float, cellWidth: Float, columns: Int = 6): In
 /** A lone user-dict star is drawn as a badge and must not steal a grid column. */
 internal const val USER_DICTIONARY_MARK = "*"
 
-internal fun spanCommentWidth(comment: String, measuredCommentWidth: Float): Float =
-    if (comment.isEmpty() || comment == USER_DICTIONARY_MARK) 0f else measuredCommentWidth
+internal fun spanCommentWidth(comment: String, measuredCommentWidth: Float): Float = if (comment.isEmpty() || comment == USER_DICTIONARY_MARK) 0f else measuredCommentWidth
 
 internal fun candidateLayoutWidth(
     textWidth: Float,
@@ -21,8 +20,7 @@ internal fun candidateLayoutWidth(
     return if (commentOnRight) textWidth + commentWidth else maxOf(textWidth, commentWidth)
 }
 
-internal fun expandedRowHeightDp(candidateViewHeight: Int, commentHeight: Int): Int =
-    (candidateViewHeight + commentHeight).coerceAtLeast(44)
+internal fun expandedRowHeightDp(candidateViewHeight: Int, commentHeight: Int): Int = (candidateViewHeight + commentHeight).coerceAtLeast(44)
 
 internal fun isSingleCharacter(text: String): Boolean = text.codePointCount(0, text.length) == 1
 

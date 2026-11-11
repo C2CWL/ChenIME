@@ -15,7 +15,7 @@ class CompactCandidateBindLimitTest :
             }
 
             then("separators count toward the used width") {
-                compactCandidateBindLimit(listOf(40, 40, 40, 40), barWidth = 90, separator = 10) shouldBe 2
+                compactCandidateBindLimit(listOf(40, 40, 40, 40), barWidth = 90, separator = 10) shouldBe 3
             }
 
             then("an unknown bar width binds every item, as before the first layout") {

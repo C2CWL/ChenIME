@@ -176,7 +176,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         val end = filterEnd
         val single = candidateLayout.singleCharacter
         val prefix = candidateLayout.strokePrefix
-        val offset = adapter.offset
         val total = compactCandidate.adapter.total
         return Pager(
             config = PagingConfig(
@@ -193,10 +192,11 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                         { strokeOrders },
                     )
                 } else {
+                    // 词频 shows the full list, including words already in the compact bar.
                     CandidatesPagingSource(
                         rime,
                         total = total,
-                        offset = offset,
+                        offset = 0,
                     )
                 }
             },
@@ -263,6 +263,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         bar.unrollButtonStateMachine.push(
             UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesDetached,
             UnrollButtonStateMachine.BooleanKey.UnrolledCandidatesEmpty to
+                // adapter.offset is still the compact bar's visible count from refreshWith.
                 (compactCandidate.adapter.total == adapter.offset),
         )
         offsetJob?.cancel()

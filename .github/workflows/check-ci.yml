@@ -22,11 +22,32 @@ jobs:
       - name: Check simplified stroke data
         run: python3 tools/test_generate_stroke_orders.py
 
+      # Install Lua from lua.org instead of the Ubuntu mirrors, which can be
+      # unreachable from runners. Fall back to apt (with retries) if needed.
+      - name: Setup Lua
+        id: setup-lua
+        continue-on-error: true
+        uses: leafo/gh-actions-lua@v13
+        with:
+          luaVersion: "5.4"
+
+      - name: Setup Lua (apt fallback)
+        if: steps.setup-lua.outcome != 'success'
+        run: |
+          for i in 1 2 3; do
+            sudo apt-get update -qq -o Acquire::Retries=3 \
+              && sudo apt-get install -y -o Acquire::Retries=3 lua5.4 \
+              && sudo ln -sf "$(command -v lua5.4)" /usr/local/bin/lua \
+              && break
+            echo "apt attempt $i failed, retrying in 20s"
+            sleep 20
+          done
+          command -v lua
+
       - name: Check Lua candidate filters
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y lua5.4
-          for test in app/src/test/lua/*_test.lua; do lua5.4 "$test"; done
+          lua -v
+          for test in app/src/test/lua/*_test.lua; do lua "$test"; done
 
       - name: Setup Java
         uses: actions/setup-java@v6

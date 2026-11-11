@@ -62,6 +62,12 @@ class HandwritingWindow(di: DI) :
 
     override fun onCreateView(): View {
         layout = HandwritingLayout(context, scope, mode, ::onAction)
+        layout.canvasView.onStrokeStarted = {
+            recognizeGeneration += 1
+            lookupInput = null
+            lookupComposition = null
+            if (::candidateBar.isInitialized) candidateBar.setCandidates(emptyList())
+        }
         layout.canvasView.onStrokeFinished = { recognizeCurrentInk() }
         return layout
     }
@@ -96,6 +102,7 @@ class HandwritingWindow(di: DI) :
 
     override fun onCompositionUpdate(data: CompositionProto) {
         if (mode != HandwritingMode.FindChar || !windowManager.isAttached(this)) return
+        if (data == lookupComposition) return
         recognizeGeneration += 1
         lookupInput = null
         lookupComposition = null
@@ -160,7 +167,7 @@ class HandwritingWindow(di: DI) :
         val assets = context.assets
         worker.execute {
             if (!recognizer.ensureLoaded(assets)) return@execute
-            val results = recognizer.predict(gray, size.first, size.second)
+            val results = recognizer.predict(gray, size.first, size.second, if (mode == HandwritingMode.FindChar) 32 else HandwritingRecognizer.DEFAULT_K)
             main.post {
                 if (gen != recognizeGeneration) return@post
                 if (mode == HandwritingMode.Full) {
@@ -199,7 +206,14 @@ class HandwritingWindow(di: DI) :
                 // Let Rime consume only this candidate's segment, never clear the whole input.
                 selectCandidate(index, global = true)
             }
-            if (selected && windowManager.isAttached(this@HandwritingWindow)) dismiss()
+            if (selected && windowManager.isAttached(this@HandwritingWindow)) {
+                recognizeGeneration += 1
+                layout.canvasView.clearInk()
+                candidateBar.setCandidates(emptyList())
+                lookupInput = null
+                lookupComposition = null
+                dismiss()
+            }
         }
     }
 

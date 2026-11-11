@@ -6,7 +6,7 @@ package com.osfans.trime.ime.handwriting
 
 /**
  * Two placements share one pad:
- * [FindChar] is opened from the expanded candidates 「手写」 button (above 「单字」)
+ * [FindChar] is opened from the expanded candidates 「手写找字」 toolbar tab
  * and filters the current Rime menu. Picking a match selects its original
  * candidate, leaving any unconsumed pinyin in the composition.
  * [Full] is opened from 「更多」 and stays open for character-by-character input.

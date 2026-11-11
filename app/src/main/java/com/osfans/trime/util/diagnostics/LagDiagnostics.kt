@@ -312,11 +312,11 @@ object LagDiagnostics {
         frameMonitorRunning = false
         lastFrameTimeNs = 0L
         removeFirstDrawListener()
-        val removeFrame = {
+        val removeFrame = Runnable {
             runCatching { Choreographer.getInstance().removeFrameCallback(frameCallback) }
         }
         if (Looper.myLooper() == Looper.getMainLooper()) {
-            removeFrame()
+            removeFrame.run()
         } else {
             mainHandler.post(removeFrame)
         }
@@ -331,7 +331,7 @@ object LagDiagnostics {
         Choreographer.getInstance().postFrameCallback(frameCallback)
     }
 
-    private inner class FrameMonitorCallback : Choreographer.FrameCallback {
+    private class FrameMonitorCallback : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (!frameMonitorRunning || !enabled) return
             val period = refreshPeriodNs()

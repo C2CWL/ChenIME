@@ -268,6 +268,6 @@ class CompactCandidateDelegate(override val di: DI) :
                 (content + padding).toInt()
             }
         val limit = compactCandidateBindLimit(widths, barWidth, separator)
-        return if (limit >= candidates.size) candidates else candidates.copyOf(limit)
+        return if (limit >= candidates.size) candidates else candidates.sliceArray(0 until limit)
     }
 }

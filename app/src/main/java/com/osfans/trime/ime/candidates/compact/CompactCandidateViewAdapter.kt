@@ -38,9 +38,20 @@ open class CompactCandidateViewAdapter(
     var layoutFlexGrow: Float = 0f
         private set
 
+    var itemWidths: List<Int> = emptyList()
+        private set
+
+    var lastItemEllipsized: Boolean = false
+        private set
+
     fun updateLayoutParams(minWidth: Int, flexGrow: Float) {
         layoutMinWidth = minWidth
         layoutFlexGrow = flexGrow
+    }
+
+    fun updateItemWidths(widths: List<Int>, lastEllipsized: Boolean = false) {
+        itemWidths = widths
+        lastItemEllipsized = lastEllipsized
     }
 
     fun updateCandidates(
@@ -79,9 +90,19 @@ open class CompactCandidateViewAdapter(
         holder.idx = position // unused
         val root = holder.ui.root
         val params = root.layoutParams as FlexboxLayoutManager.LayoutParams
-        if (params.minWidth != layoutMinWidth || params.flexGrow != layoutFlexGrow) {
-            params.minWidth = layoutMinWidth
-            params.flexGrow = layoutFlexGrow
+        val displayWidth = itemWidths.getOrNull(position)
+        val ellipsized = lastItemEllipsized && position == itemWidths.lastIndex
+        val minWidth = (if (displayWidth != null) minOf(layoutMinWidth, displayWidth) else layoutMinWidth).coerceAtLeast(0)
+        val flexGrow = if (ellipsized) 0f else layoutFlexGrow
+        val maxWidth = displayWidth ?: Int.MAX_VALUE
+        val width = displayWidth ?: root.wrapContent
+        val minimum = if (displayWidth != null) minOf(root.dp(40), displayWidth) else root.dp(40)
+        if (root.minimumWidth != minimum) root.minimumWidth = minimum
+        if (params.minWidth != minWidth || params.flexGrow != flexGrow || params.maxWidth != maxWidth || params.width != width) {
+            params.minWidth = minWidth
+            params.flexGrow = flexGrow
+            params.maxWidth = maxWidth
+            params.width = width
             root.layoutParams = params
         }
     }

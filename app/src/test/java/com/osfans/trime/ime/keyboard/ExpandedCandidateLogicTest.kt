@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.osfans.trime.ime.keyboard
 
+import com.osfans.trime.ime.candidates.compact.layoutCompactCandidateBar
 import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
 import com.osfans.trime.ime.candidates.unrolled.candidateSpan
+import com.osfans.trime.ime.candidates.unrolled.expandedGridColumns
 import com.osfans.trime.ime.candidates.unrolled.expandedRowHeightDp
 import com.osfans.trime.ime.candidates.unrolled.isSingleCharacter
+import com.osfans.trime.ime.candidates.unrolled.layoutExpandedCandidateGrid
 import com.osfans.trime.ime.candidates.unrolled.preeditSyllables
 import com.osfans.trime.ime.candidates.unrolled.spanCommentWidth
 import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
@@ -65,5 +68,94 @@ class ExpandedCandidateLogicTest :
             syllableInputEnd("py", 0, listOf("pin", "yin"), 0, listOf(2, 1, 1, 0)) shouldBe 1
             syllableInputEnd("py", 0, listOf("pin", "yin"), 1, listOf(1, 1)) shouldBe 1
             syllableInputEnd("py", 0, listOf("pin"), 0, emptyList()) shouldBe null
+        }
+        "grid column count grows only while each cell stays at least the minimum width" {
+            expandedGridColumns(300f, 80f) shouldBe 3
+            expandedGridColumns(300f, 50f) shouldBe 6
+            expandedGridColumns(300f, 40f) shouldBe 6
+            expandedGridColumns(0f, 50f) shouldBe 6
+            expandedGridColumns(200f, 0f) shouldBe 6
+        }
+        "equal-width words share one cell size and even spacing, even on a short last row" {
+            // 哈哈 / 蛤蛤 / haha / 哈 / 蛤 / 铪 all fit one cell when the cell is wide enough
+            val cells = layoutExpandedCandidateGrid(List(8) { 40f }, gridWidth = 300f, columns = 6)
+            cells.map { it.width }.distinct() shouldBe listOf(50f)
+            cells.take(6).map { it.row } shouldBe listOf(0, 0, 0, 0, 0, 0)
+            cells.drop(6).map { it.row } shouldBe listOf(1, 1)
+            cells.drop(6).map { it.left } shouldBe listOf(0f, 50f)
+            cells.drop(6).map { it.width } shouldBe listOf(50f, 50f)
+            cells.zipWithNext().filter { it.first.row == it.second.row }.forEach { (a, b) ->
+                b.left shouldBe a.left + a.width
+                b.column shouldBe a.column + a.span
+            }
+        }
+        "a long word takes whole columns, leaves no hole, and is never dropped" {
+            // 隘谷, AGPL3.0, Google Antigravity, 昂贵 on a 3-column row
+            val cells = layoutExpandedCandidateGrid(
+                itemWidths = listOf(80f, 90f, 180f, 70f, 70f, 70f),
+                gridWidth = 300f,
+                columns = 3,
+            )
+            cells.map { it.index } shouldBe listOf(0, 1, 2, 3, 4, 5)
+            // 80 and 90 fit one column; 180 needs two and does not fit the leftover,
+            // so the previous cell expands to fill the hole and the long word starts the next row.
+            cells[0].span shouldBe 1
+            cells[1].span shouldBe 2
+            cells[1].row shouldBe 0
+            cells[1].column shouldBe 1
+            cells[1].width shouldBe 200f
+            cells[2].span shouldBe 2
+            cells[2].row shouldBe 1
+            cells[2].column shouldBe 0
+            cells[2].width shouldBe 200f
+            cells[3].row shouldBe 1
+            cells[3].column shouldBe 2
+            cells[3].span shouldBe 1
+            cells.groupBy { it.row }.values.forEach { row ->
+                val occupied = row.sumOf { it.span }
+                if (row.last().index != cells.last().index) occupied shouldBe 3 else (occupied in 1..3) shouldBe true
+                var column = 0
+                row.forEach { cell ->
+                    cell.column shouldBe column
+                    cell.left shouldBe column * 100f
+                    cell.width shouldBe cell.span * 100f
+                    column += cell.span
+                    (column <= 3) shouldBe true
+                }
+            }
+        }
+        "a word wider than the grid still occupies one full row" {
+            val cells = layoutExpandedCandidateGrid(listOf(999f, 40f), gridWidth = 240f, columns = 4)
+            cells[0].span shouldBe 4
+            cells[0].width shouldBe 240f
+            cells[0].row shouldBe 0
+            cells[1].row shouldBe 1
+            cells[1].span shouldBe 1
+            cells.map { it.index } shouldBe listOf(0, 1)
+        }
+        "compact bar shows an overlong candidate in the remaining space instead of skipping it" {
+            val items = layoutCompactCandidateBar(
+                desiredWidths = listOf(60f, 70f, 200f, 50f),
+                barWidth = 200f,
+                separatorWidth = 0f,
+            )
+            items.map { it.index } shouldBe listOf(0, 1, 2)
+            items[0].width shouldBe 60f
+            items[1].width shouldBe 70f
+            items[2].width shouldBe 70f
+            items[2].ellipsized shouldBe true
+            items.sumOf { it.width.toDouble() } shouldBe 200.0
+        }
+        "a compact-bar candidate wider than the bar is still shown" {
+            val items = layoutCompactCandidateBar(listOf(500f, 40f), barWidth = 180f)
+            items.map { it.index } shouldBe listOf(0)
+            items[0].width shouldBe 180f
+            items[0].ellipsized shouldBe true
+        }
+        "compact bar keeps later words when earlier ones fit" {
+            val items = layoutCompactCandidateBar(listOf(40f, 40f, 40f, 40f), barWidth = 150f, separatorWidth = 10f)
+            items.map { it.index } shouldBe listOf(0, 1, 2)
+            items.map { it.ellipsized } shouldBe listOf(false, false, false)
+            items.map { it.width } shouldBe listOf(40f, 40f, 40f)
         }
     })

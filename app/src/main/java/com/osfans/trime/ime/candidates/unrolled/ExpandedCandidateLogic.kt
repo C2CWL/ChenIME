@@ -3,7 +3,77 @@ package com.osfans.trime.ime.candidates.unrolled
 
 import kotlin.math.ceil
 
-internal fun candidateSpan(width: Float, cellWidth: Float, columns: Int = 6): Int = if (cellWidth <= 0f) 1 else ceil(width / cellWidth).toInt().coerceIn(1, columns)
+internal const val EXPANDED_GRID_MAX_COLUMNS = 6
+
+internal fun expandedGridColumns(
+    gridWidth: Float,
+    minCellWidth: Float,
+    maxColumns: Int = EXPANDED_GRID_MAX_COLUMNS,
+): Int {
+    val upper = maxColumns.coerceAtLeast(1)
+    if (gridWidth <= 0f || minCellWidth <= 0f) return upper
+    return (gridWidth / minCellWidth).toInt().coerceIn(1, upper)
+}
+
+internal fun candidateSpan(width: Float, cellWidth: Float, columns: Int = EXPANDED_GRID_MAX_COLUMNS): Int = if (cellWidth <= 0f) 1 else ceil(width / cellWidth).toInt().coerceIn(1, columns)
+
+internal data class ExpandedGridCell(
+    val index: Int,
+    val row: Int,
+    val column: Int,
+    val span: Int,
+    val left: Float,
+    val width: Float,
+)
+
+/**
+ * Place candidates on a uniform column grid.
+ * Long items take a whole number of columns. If the next item needs more
+ * columns than remain, the leftover is given to the previous item so the
+ * row has no hole, and the long item starts the next row. Nothing is dropped.
+ */
+internal fun layoutExpandedCandidateGrid(
+    itemWidths: List<Float>,
+    gridWidth: Float,
+    columns: Int = EXPANDED_GRID_MAX_COLUMNS,
+): List<ExpandedGridCell> {
+    require(columns > 0)
+    val cellWidth = if (gridWidth <= 0f) 0f else gridWidth / columns
+    val cells = ArrayList<ExpandedGridCell>(itemWidths.size)
+    var row = 0
+    var column = 0
+    itemWidths.forEachIndexed { index, itemWidth ->
+        var span = candidateSpan(itemWidth, cellWidth, columns)
+        val remaining = columns - column
+        if (span > remaining && column > 0) {
+            val prev = cells.last()
+            if (prev.row == row) {
+                val filledSpan = prev.span + remaining
+                cells[cells.lastIndex] = prev.copy(
+                    span = filledSpan,
+                    width = filledSpan * cellWidth,
+                )
+            }
+            row++
+            column = 0
+            span = candidateSpan(itemWidth, cellWidth, columns)
+        }
+        cells += ExpandedGridCell(
+            index = index,
+            row = row,
+            column = column,
+            span = span,
+            left = column * cellWidth,
+            width = span * cellWidth,
+        )
+        column += span
+        if (column >= columns) {
+            row++
+            column = 0
+        }
+    }
+    return cells
+}
 
 /** A lone user-dict star is drawn as a badge and must not steal a grid column. */
 internal const val USER_DICTIONARY_MARK = "*"

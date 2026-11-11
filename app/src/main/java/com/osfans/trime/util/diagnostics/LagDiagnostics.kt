@@ -69,7 +69,11 @@ object LagDiagnostics {
     private val touchToCandidates = DurationStats()
     private val frameStats = FrameStats()
     private val stallCount = AtomicInteger()
-    private val lastTouchDownUptime = AtomicLong(0)
+    private val touchToCandidatesClock = TouchToCandidatesClock()
+    private var lastFrameTimeNs = 0L
+    private var firstDrawListener: ViewTreeObserver.OnDrawListener? = null
+    private var firstDrawDecorView: View? = null
+    private val frameCallback = FrameMonitorCallback()
     private var sessionStartUptime = 0L
     private var sessionStartCpuMs = 0L
     private var hiddenAtCpuMs = -1L
@@ -186,16 +190,19 @@ object LagDiagnostics {
 
     fun touchDown(eventUptimeMs: Long) {
         if (!enabled) return
-        lastTouchDownUptime.compareAndSet(0, eventUptimeMs)
+        touchToCandidatesClock.onTouchDown(eventUptimeMs)
         val age = SystemClock.uptimeMillis() - eventUptimeMs
         if (age >= SLOW_MS) writeLine("touch_dispatch", LagLine.durationDetails(age, SLOW_MS, "note=touch_reached_keyboard_late"))
     }
 
+    fun candidatesUpdated(empty: Boolean) {
+        if (!enabled) return
+        touchToCandidatesClock.onCandidateUpdate(empty)
+    }
+
     fun candidatesLaidOut() {
         if (!enabled) return
-        val down = lastTouchDownUptime.getAndSet(0)
-        if (down == 0L) return
-        val ms = SystemClock.uptimeMillis() - down
+        val ms = touchToCandidatesClock.onCandidatesLaidOut(SystemClock.uptimeMillis()) ?: return
         touchToCandidates.add(ms)
         if (ms >= SLOW_TOUCH_TO_CANDIDATES_MS) writeLine("touch_to_candidates", LagLine.durationDetails(ms, SLOW_TOUCH_TO_CANDIDATES_MS))
     }
@@ -215,6 +222,7 @@ object LagDiagnostics {
 
     fun onWindowShown(decorView: View) {
         if (!enabled) return
+        touchToCandidatesClock.onWindowTransition()
         val now = SystemClock.uptimeMillis()
         val cpu = Process.getElapsedCpuTime()
         val first = !firstInputViewShown
@@ -237,6 +245,7 @@ object LagDiagnostics {
     }
 
     fun onWindowHidden() {
+        touchToCandidatesClock.onWindowTransition()
         if (!enabled) {
             stopMonitors()
             return
@@ -259,6 +268,7 @@ object LagDiagnostics {
     }
 
     private fun awaitFirstDraw(decorView: View, openedAt: Long, first: Boolean) {
+        removeFirstDrawListener()
         val observer = decorView.viewTreeObserver
         if (!observer.isAlive) return
         val listener = object : ViewTreeObserver.OnDrawListener {
@@ -270,11 +280,24 @@ object LagDiagnostics {
                 val ms = SystemClock.uptimeMillis() - openedAt
                 writeLine("open_to_first_draw", LagLine.durationDetails(ms, SLOW_MS * 2, "first=$first"))
                 // a draw listener cannot remove itself while drawing
-                mainHandler.post { if (decorView.viewTreeObserver.isAlive) decorView.viewTreeObserver.removeOnDrawListener(this) }
+                mainHandler.post { removeFirstDrawListener() }
             }
         }
+        firstDrawListener = listener
+        firstDrawDecorView = decorView
         observer.addOnDrawListener(listener)
         decorView.invalidate()
+    }
+
+    private fun removeFirstDrawListener() {
+        val listener = firstDrawListener ?: return
+        val view = firstDrawDecorView
+        firstDrawListener = null
+        firstDrawDecorView = null
+        val observer = view?.viewTreeObserver
+        if (observer != null && observer.isAlive) {
+            runCatching { observer.removeOnDrawListener(listener) }
+        }
     }
 
     // ---- monitors --------------------------------------------------------------------------
@@ -287,30 +310,43 @@ object LagDiagnostics {
     @Synchronized
     private fun stopMonitors() {
         frameMonitorRunning = false
+        lastFrameTimeNs = 0L
+        removeFirstDrawListener()
+        val removeFrame = {
+            runCatching { Choreographer.getInstance().removeFrameCallback(frameCallback) }
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            removeFrame()
+        } else {
+            mainHandler.post(removeFrame)
+        }
         watchdog?.interrupt()
         watchdog = null
     }
 
     private fun startFrameMonitor() {
-        if (frameMonitorRunning || Looper.myLooper() != Looper.getMainLooper()) return
+        if (!enabled || frameMonitorRunning || Looper.myLooper() != Looper.getMainLooper()) return
         frameMonitorRunning = true
-        val period = refreshPeriodNs()
-        val choreographer = Choreographer.getInstance()
-        choreographer.postFrameCallback(object : Choreographer.FrameCallback {
-            var last = 0L
+        lastFrameTimeNs = 0L
+        Choreographer.getInstance().postFrameCallback(frameCallback)
+    }
 
-            override fun doFrame(frameTimeNanos: Long) {
-                if (!frameMonitorRunning || !enabled) return
-                if (last != 0L) {
-                    val interval = frameTimeNanos - last
-                    if (frameStats.record(interval, period)) {
-                        writeLine("frame", LagLine.durationDetails(interval / 1_000_000, FrameStats.SEVERE_MS, "refresh_ms=${"%.1f".format(Locale.US, period / 1e6)}"))
-                    }
+    private inner class FrameMonitorCallback : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!frameMonitorRunning || !enabled) return
+            val period = refreshPeriodNs()
+            val last = lastFrameTimeNs
+            if (last != 0L) {
+                val interval = frameTimeNanos - last
+                if (frameStats.record(interval, period)) {
+                    writeLine("frame", LagLine.durationDetails(interval / 1_000_000, FrameStats.SEVERE_MS, "refresh_ms=${"%.1f".format(Locale.US, period / 1e6)}"))
                 }
-                last = frameTimeNanos
-                choreographer.postFrameCallback(this)
             }
-        })
+            lastFrameTimeNs = frameTimeNanos
+            if (frameMonitorRunning && enabled) {
+                Choreographer.getInstance().postFrameCallback(this)
+            }
+        }
     }
 
     @Synchronized

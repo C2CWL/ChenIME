@@ -6,22 +6,27 @@
 package com.osfans.trime.ime.candidates.compact
 
 import android.content.res.Configuration
+import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
+import android.text.TextPaint
 import android.view.ContextThemeWrapper
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R
 import com.google.android.flexbox.FlexboxLayoutManager
+import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.core.Candidates
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
+import com.osfans.trime.data.theme.model.GeneralStyle
 import com.osfans.trime.ime.bar.InputBarDelegate
 import com.osfans.trime.ime.bar.UnrollButtonStateMachine
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
+import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
 import com.osfans.trime.ime.candidates.unrolled.decoration.FlexboxVerticalDecoration
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.util.InputLatency
@@ -49,6 +54,20 @@ class CompactCandidateDelegate(override val di: DI) :
         get() = scope.theme
 
     private val fillStyle by AppPrefs.defaultInstance().keyboard.horizontalCandidateMode
+
+    // Same paints as PR #28's compact-bar packer, so width math stays compatible.
+    private val textPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = theme.style.candidateTextSize * context.resources.displayMetrics.scaledDensity
+            typeface = theme.fonts.candidate
+        }
+    }
+    private val commentPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = theme.style.commentTextSize * context.resources.displayMetrics.scaledDensity
+            typeface = theme.fonts.comment
+        }
+    }
 
     private val maxSpanCountPref by lazy {
         AppPrefs.defaultInstance().keyboard.run {
@@ -216,11 +235,39 @@ class CompactCandidateDelegate(override val di: DI) :
         }
         if (!InputLatency.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
-        adapter.updateCandidates(candidates, total, highlighted)
+        val shown = candidatesToBind(candidates)
+        adapter.updateCandidates(shown, total, highlighted)
 
         // not sure why empty candidates won't trigger `FlexboxLayoutManager#onLayoutCompleted()`
-        if (candidates.isEmpty()) {
+        if (shown.isEmpty()) {
             refreshUnrolled(0)
         }
+    }
+
+    /**
+     * Bind only what can sit on the compact row, plus the first overflowing
+     * item (clipped today; PR #28 shrinks it into the leftover space).
+     * Visible prefix is unchanged; Flexbox no longer measures the rest of the page.
+     */
+    private fun candidatesToBind(candidates: Array<CandidateProto>): Array<CandidateProto> {
+        if (candidates.isEmpty()) return candidates
+        val barWidth = view.width
+        if (barWidth <= 0) return candidates
+        val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
+        val padding = context.dp(theme.style.candidatePadding * 2)
+        val separator = separatorDrawable.intrinsicWidth
+        val widths =
+            candidates.map { candidate ->
+                val content =
+                    candidateLayoutWidth(
+                        textPaint.measureText(candidate.text),
+                        candidate.comment,
+                        commentPaint.measureText(candidate.comment),
+                        commentOnRight,
+                    )
+                (content + padding).toInt()
+            }
+        val limit = compactCandidateBindLimit(widths, barWidth, separator)
+        return if (limit >= candidates.size) candidates else candidates.copyOf(limit)
     }
 }

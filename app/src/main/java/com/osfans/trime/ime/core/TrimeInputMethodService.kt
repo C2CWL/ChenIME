@@ -55,6 +55,7 @@ import com.osfans.trime.ime.keyboard.undoRedoShortcut
 import com.osfans.trime.receiver.RimeIntentReceiver
 import com.osfans.trime.util.InputLatency
 import com.osfans.trime.util.any
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import com.osfans.trime.util.findSectionFrom
 import com.osfans.trime.util.forceShowSelf
 import com.osfans.trime.util.monitorCursorAnchor
@@ -131,8 +132,8 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
 
     @Keep
     private val recreateInputViewListener =
-        PreferenceDelegate.OnChangeListener<Any> { _, _ ->
-            themeScope?.let { replaceInputView(it) }
+        PreferenceDelegate.OnChangeListener<Any> { key, _ ->
+            themeScope?.let { replaceInputView(it, "pref:$key") }
         }
 
     @Keep
@@ -143,16 +144,16 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
 
     @Keep
     private val cornerRadiusListener =
-        PreferenceDelegate.OnChangeListener<Int> { _, _ ->
+        PreferenceDelegate.OnChangeListener<Int> { key, _ ->
             ContextCompat.getMainExecutor(this).execute {
-                themeScope?.let { replaceInputViews(it) }
+                themeScope?.let { replaceInputViews(it, "pref:$key") }
             }
         }
 
     @Keep
     private val onThemeChangeListener =
         ThemeManager.OnThemeChangeListener {
-            themeScope?.let { replaceInputViews(it) }
+            themeScope?.let { replaceInputViews(it, "theme_changed") }
         }
 
     @Keep
@@ -212,6 +213,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     }
 
     override fun onCreate() {
+        val createAt = LagDiagnostics.start()
         rime = RimeDaemon.createSession(javaClass.name)
         lifecycleScope.launch {
             jobs.consumeEach { it.join() }
@@ -234,7 +236,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         // ensure theme and color managers are initialized after rime is ready
         lifecycleScope.launch {
             rime.runOnReady {
-                ThemeManager.init(resources.configuration)
+                LagDiagnostics.measure("theme_init") { ThemeManager.init(resources.configuration) }
                 ThemeManager.addOnChangedListener(onThemeChangeListener)
                 ColorManager.addOnChangedListener(onColorChangeListener)
             }
@@ -246,6 +248,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         decorView = window.window!!.decorView
         contentView = decorView.findViewById(android.R.id.content)
         lastKnownConfig = Configuration(resources.configuration)
+        LagDiagnostics.duration("service_create", createAt)
     }
 
     private fun handleRimeMessage(it: RimeMessage<*>) {
@@ -337,12 +340,14 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         }
     }
 
-    private fun replaceInputView(scope: ThemeScope): InputView {
+    private fun replaceInputView(scope: ThemeScope, reason: String): InputView {
+        val buildAt = LagDiagnostics.start()
         inputView?.dispose()
         val newInputView = InputView(this, rime, scope)
         setInputView(newInputView)
         inputDeviceManager.setInputView(newInputView)
         inputView = newInputView
+        LagDiagnostics.inputViewBuilt(buildAt, reason)
         return newInputView
     }
 
@@ -360,10 +365,10 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         return newCandidatesView
     }
 
-    private fun replaceInputViews(scope: ThemeScope) {
+    private fun replaceInputViews(scope: ThemeScope, reason: String) {
         navBarManager.evaluate(window.window!!, inputDeviceManager.useVirtualKeyboard, scope.colors)
-        replaceInputView(scope)
-        replaceCandidateView(scope)
+        replaceInputView(scope, reason)
+        LagDiagnostics.measure("candidates_view_build") { replaceCandidateView(scope) }
         inputView?.updateEnterKeyLabel(currentInputEditorInfo)
     }
 
@@ -408,6 +413,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             ActivityInfo.CONFIG_UI_MODE
         val diff = lastKnownConfig.diff(newConfig)
         Timber.d("onConfigurationChanged diff=$diff")
+        LagDiagnostics.log("config_changed", "diff=0x${Integer.toHexString(diff)}")
         if (diff and keyboardUiModeMask != diff) {
             super.onConfigurationChanged(newConfig)
         }
@@ -554,7 +560,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             Timber.w("ThemeScope is not ready yet; deferring input view creation")
             return null
         }
-        replaceInputViews(scope)
+        replaceInputViews(scope, "create_input_view")
         // We will call `setInputView` by ourselves. This is fine.
         return null
     }
@@ -615,9 +621,11 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     override fun onWindowShown() {
         super.onWindowShown()
         updatePreferredRefreshRate(true)
+        LagDiagnostics.onWindowShown(decorView)
     }
 
     override fun onWindowHidden() {
+        LagDiagnostics.onWindowHidden()
         updatePreferredRefreshRate(false)
         super.onWindowHidden()
     }
@@ -657,6 +665,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     ) {
         Timber.d("onStartInputView: restarting=$restarting")
         val viewStartAt = if (InputLatency.enabled) System.nanoTime() else 0L
+        LagDiagnostics.startInputView()
         if (viewStartAt != 0L) {
             InputLatency.log("input_view_start_ns=%d restarting=%b", viewStartAt, restarting)
         }
@@ -682,6 +691,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         if (viewStartAt != 0L) {
             InputLatency.log("input_view_setup_us=%d", (System.nanoTime() - viewStartAt) / 1_000)
         }
+        LagDiagnostics.duration("start_input_view", viewStartAt, extra = "restarting=$restarting")
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {

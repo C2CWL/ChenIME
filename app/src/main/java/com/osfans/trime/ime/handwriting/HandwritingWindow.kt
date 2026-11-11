@@ -22,6 +22,7 @@ import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
 import com.osfans.trime.ime.window.ResidentWindow
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.instance
@@ -82,8 +83,9 @@ class HandwritingWindow(di: DI) :
             candidateBar.refreshColors()
         }
         val assets = context.assets
+        LagDiagnostics.log("handwriting_open", "model_ready=${recognizer.isReady}")
         worker.execute {
-            val ok = recognizer.ensureLoaded(assets)
+            val ok = if (recognizer.isReady) true else LagDiagnostics.measure("handwriting_model_load") { recognizer.ensureLoaded(assets) }
             if (!ok) {
                 main.post {
                     Toast.makeText(service, R.string.handwriting_load_failed, Toast.LENGTH_SHORT).show()
@@ -167,7 +169,9 @@ class HandwritingWindow(di: DI) :
         val assets = context.assets
         worker.execute {
             if (!recognizer.ensureLoaded(assets)) return@execute
-            val results = recognizer.predict(gray, size.first, size.second, if (mode == HandwritingMode.FindChar) 32 else HandwritingRecognizer.DEFAULT_K)
+            val results = LagDiagnostics.measure("handwriting_predict", minMs = 50) {
+                recognizer.predict(gray, size.first, size.second, if (mode == HandwritingMode.FindChar) 32 else HandwritingRecognizer.DEFAULT_K)
+            }
             main.post {
                 if (gen != recognizeGeneration) return@post
                 if (mode == HandwritingMode.Full) {

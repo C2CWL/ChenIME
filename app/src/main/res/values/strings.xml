@@ -304,6 +304,13 @@
     <string name="pinyin_correction">拼音纠错</string>
     <string name="pinyin_correction_summary">保守邻键纠错：保留正常拼音、简拼和未输完的拼音，不抢原候选首位（白霜拼音）</string>
     <string name="pinyin_correction_failed">拼音纠错设置部署失败，请重试</string>
-    <string name="input_latency_logging">输入延迟诊断日志</string>
-    <string name="input_latency_logging_summary">记录触摸、引擎处理和候选布局耗时，不记录输入内容。默认关闭，诊断完成后请关闭；开启期间普通日志页及其导出仅显示耗时日志。</string>
+    <string name="input_latency_logging">卡顿诊断</string>
+    <string name="input_latency_logging_summary">记录打开键盘、引擎、候选和绘制的耗时，以及主线程卡住时的调用栈和掉帧。不记录输入内容。默认关闭，复现卡顿后用下面的按钮导出 txt，诊断完成后请关闭。</string>
+    <string name="lag_diagnostics_export">导出卡顿诊断（txt）</string>
+    <string name="lag_diagnostics_export_summary">已记录 %1$s</string>
+    <string name="lag_diagnostics_clear">清空卡顿诊断</string>
+    <string name="lag_diagnostics_clear_confirm">清空所有卡顿诊断记录？</string>
+    <string name="lag_diagnostics_cleared">已清空</string>
+    <string name="lag_diagnostics_exported">已导出</string>
+    <string name="lag_diagnostics_empty">还没有记录。请先打开“卡顿诊断”并复现卡顿</string>
 </resources>

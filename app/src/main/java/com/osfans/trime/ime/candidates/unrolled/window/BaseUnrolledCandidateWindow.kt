@@ -38,6 +38,7 @@ import com.osfans.trime.ime.handwriting.HandwritingMode
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,7 +70,9 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     // Evaluated by Paging on IO, never while creating or laying out the panel.
     private val strokeOrders by lazy {
-        context.assets.open("stroke/orders.tsv").reader(Charsets.UTF_8).use(StrokeOrderIndex::read)
+        LagDiagnostics.measure("stroke_index_load") {
+            context.assets.open("stroke/orders.tsv").reader(Charsets.UTF_8).use(StrokeOrderIndex::read)
+        }
     }
 
     protected val separatorDrawable by lazy {
@@ -94,6 +97,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     abstract fun onCreateCandidateLayout(): UnrolledCandidateLayout
 
     final override fun onCreateView(): View {
+        val createAt = LagDiagnostics.start()
         candidateLayout =
             onCreateCandidateLayout().apply {
                 onHandwriting = { windowManager.showHandwriting(HandwritingMode.FindChar) }
@@ -145,6 +149,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                     setHasFixedSize(true)
                 }
             }
+        LagDiagnostics.duration("expanded_panel_create", createAt)
         return candidateLayout
     }
 
@@ -206,6 +211,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     private var candidatesSubmitJob: Job? = null
 
     override fun onAttached() {
+        LagDiagnostics.log("expanded_panel_open")
         // Only alpha changes during the fade; do not animate panel geometry or layout.
         candidateLayout.alpha = 0f
         candidateLayout.animate().alpha(1f).setDuration(100L).withLayer().start()

@@ -12,17 +12,21 @@ import androidx.transition.Slide
 import androidx.transition.Transition
 import com.osfans.trime.data.theme.model.GeneralStyle
 import com.osfans.trime.ime.candidates.CandidateViewHolder
+import com.osfans.trime.ime.candidates.unrolled.EXPANDED_GRID_MAX_COLUMNS
+import com.osfans.trime.ime.candidates.unrolled.ExpandedGridCell
 import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
 import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
-import com.osfans.trime.ime.candidates.unrolled.candidateSpan
+import com.osfans.trime.ime.candidates.unrolled.expandedGridColumns
 import com.osfans.trime.ime.candidates.unrolled.expandedRowHeightDp
+import com.osfans.trime.ime.candidates.unrolled.layoutExpandedCandidateGrid
 import com.osfans.trime.ime.window.BoardWindow
 import org.kodein.di.DI
 import splitties.dimensions.dp
 
 class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
     private var gridWidth = 0
+    private var placements: List<ExpandedGridCell> = emptyList()
     private val textPaint by lazy {
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = theme.style.candidateTextSize * context.resources.displayMetrics.scaledDensity
@@ -55,33 +59,62 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
     }
 
     override val layoutManager by lazy {
-        GridLayoutManager(context, 6).apply {
+        GridLayoutManager(context, EXPANDED_GRID_MAX_COLUMNS).apply {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(position: Int): Int {
-                    val candidate = adapter.peek(position)?.candidate ?: return 1
-                    val textWidth = textPaint.measureText(candidate.text)
-                    val commentWidth = commentPaint.measureText(candidate.comment)
-                    val width = candidateLayoutWidth(
-                        textWidth,
-                        candidate.comment,
-                        commentWidth,
-                        theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT,
-                    )
-                    return candidateSpan(width + context.dp(theme.style.candidatePadding * 2), gridWidth / 6f)
-                }
+                override fun getSpanSize(position: Int): Int = placements.getOrNull(position)?.span ?: 1
             }
         }
+    }
+
+    private fun recomputePlacements() {
+        val width = gridWidth
+        if (width <= 0) {
+            placements = emptyList()
+            return
+        }
+        val padding = context.dp(theme.style.candidatePadding * 2)
+        val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
+        val itemWidths = List(adapter.itemCount) { position ->
+            val candidate = adapter.peek(position)?.candidate ?: return@List 0f
+            candidateLayoutWidth(
+                textPaint.measureText(candidate.text),
+                candidate.comment,
+                commentPaint.measureText(candidate.comment),
+                commentOnRight,
+            ) + padding
+        }
+        val minCellWidth = textPaint.measureText("汉字") + padding
+        val columns = expandedGridColumns(width.toFloat(), minCellWidth)
+        if (layoutManager.spanCount != columns) {
+            layoutManager.spanCount = columns
+        }
+        placements = layoutExpandedCandidateGrid(itemWidths, width.toFloat(), columns)
+        layoutManager.spanSizeLookup.invalidateSpanIndexCache()
     }
 
     override fun onCreateCandidateLayout(): UnrolledCandidateLayout = UnrolledCandidateLayout(context, scope).apply {
         recyclerView.apply {
             adapter = this@FlexboxUnrolledCandidateWindow.adapter
             layoutManager = this@FlexboxUnrolledCandidateWindow.layoutManager
+            fun relayoutGrid() {
+                recomputePlacements()
+                requestLayout()
+            }
+            this@FlexboxUnrolledCandidateWindow.adapter.registerAdapterDataObserver(
+                object : RecyclerView.AdapterDataObserver() {
+                    override fun onChanged() = relayoutGrid()
+                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = relayoutGrid()
+                    override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) = relayoutGrid()
+                    override fun onItemRangeChanged(positionStart: Int, itemCount: Int) = relayoutGrid()
+                    override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) = relayoutGrid()
+                },
+            )
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-                gridWidth = right - left
-                if (right - left != oldRight - oldLeft) {
-                    this@FlexboxUnrolledCandidateWindow.layoutManager.spanSizeLookup.invalidateSpanIndexCache()
-                    requestLayout()
+                val newWidth = right - left
+                if (newWidth != gridWidth || right - left != oldRight - oldLeft) {
+                    gridWidth = newWidth
+                    recomputePlacements()
+                    if (right - left != oldRight - oldLeft) requestLayout()
                 }
             }
             addItemDecoration(object : RecyclerView.ItemDecoration() {

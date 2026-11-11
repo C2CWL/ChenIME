@@ -6,22 +6,27 @@
 package com.osfans.trime.ime.candidates.compact
 
 import android.content.res.Configuration
+import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
+import android.text.TextPaint
 import android.view.ContextThemeWrapper
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R
 import com.google.android.flexbox.FlexboxLayoutManager
+import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.core.Candidates
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
+import com.osfans.trime.data.theme.model.GeneralStyle
 import com.osfans.trime.ime.bar.InputBarDelegate
 import com.osfans.trime.ime.bar.UnrollButtonStateMachine
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
+import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
 import com.osfans.trime.ime.candidates.unrolled.decoration.FlexboxVerticalDecoration
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.util.InputLatency
@@ -62,6 +67,22 @@ class CompactCandidateDelegate(override val di: DI) :
 
     private var layoutMinWidth = 0
     private var layoutFlexGrow = 0f
+    private var pendingCandidates: Array<CandidateProto> = emptyArray()
+    private var pendingTotal = -1
+    private var pendingHighlighted = -1
+
+    private val textPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = theme.style.candidateTextSize * context.resources.displayMetrics.scaledDensity
+            typeface = theme.fonts.candidate
+        }
+    }
+    private val commentPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = theme.style.commentTextSize * context.resources.displayMetrics.scaledDensity
+            typeface = theme.fonts.comment
+        }
+    }
 
     /**
      * (for [CompactCandidateMode.AUTO_FILL] only)
@@ -162,15 +183,6 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     val view by lazy {
-        object : RecyclerView(context) {
-            override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-                super.onSizeChanged(w, h, oldw, oldh)
-                if (fillStyle == CompactCandidateMode.AUTO_FILL) {
-                    val maxSpanCount = maxSpanCountPref.getValue()
-                    layoutMinWidth = w / maxSpanCount - separatorDrawable.intrinsicWidth
-                }
-            }
-        }
         context.recyclerView(R.id.candidate_view) {
             itemAnimator = null
             isFocusable = false
@@ -181,6 +193,18 @@ class CompactCandidateDelegate(override val di: DI) :
             adapter = this@CompactCandidateDelegate.adapter
             layoutManager = this@CompactCandidateDelegate.layoutManager
             addItemDecoration(FlexboxVerticalDecoration(separatorDrawable))
+            addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+                val w = right - left
+                val oldw = oldRight - oldLeft
+                if (fillStyle == CompactCandidateMode.AUTO_FILL && w > 0) {
+                    val maxSpanCount = maxSpanCountPref.getValue()
+                    layoutMinWidth = w / maxSpanCount - separatorDrawable.intrinsicWidth
+                    this@CompactCandidateDelegate.adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
+                }
+                if (pendingCandidates.isNotEmpty() && w != oldw) {
+                    publishCompactCandidates()
+                }
+            }
         }
     }
 
@@ -216,11 +240,46 @@ class CompactCandidateDelegate(override val di: DI) :
         }
         if (!InputLatency.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
-        adapter.updateCandidates(candidates, total, highlighted)
+        pendingCandidates = candidates
+        pendingTotal = total
+        pendingHighlighted = highlighted
+        publishCompactCandidates()
+    }
 
-        // not sure why empty candidates won't trigger `FlexboxLayoutManager#onLayoutCompleted()`
+    private fun measureCandidateWidth(candidate: CandidateProto): Float {
+        val padding = context.dp(theme.style.candidatePadding * 2)
+        return candidateLayoutWidth(
+            textPaint.measureText(candidate.text),
+            candidate.comment,
+            commentPaint.measureText(candidate.comment),
+            theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT,
+        ) + padding
+    }
+
+    private fun publishCompactCandidates() {
+        val candidates = pendingCandidates
         if (candidates.isEmpty()) {
+            adapter.updateItemWidths(emptyList())
+            adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
             refreshUnrolled(0)
+            return
         }
+        val barWidth = view.width
+        if (barWidth <= 0) {
+            adapter.updateItemWidths(emptyList())
+            adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
+            return
+        }
+        val packed = layoutCompactCandidateBar(
+            candidates.map(::measureCandidateWidth),
+            barWidth.toFloat(),
+            separatorDrawable.intrinsicWidth.toFloat(),
+        )
+        val shown = candidates.take(packed.size)
+        val lastEllipsized = packed.lastOrNull()?.ellipsized == true
+        if (lastEllipsized) secondLayoutPassNeeded = false
+        adapter.updateItemWidths(packed.map { it.width.toInt().coerceAtLeast(1) }, lastEllipsized)
+        adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)
+        refreshUnrolled(shown.size)
     }
 }

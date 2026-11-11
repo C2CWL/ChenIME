@@ -142,7 +142,9 @@ constructor(
     ) {
         super.onSizeChanged(w, h, oldw, oldh)
         needsCalculateTransform = true
-        needsMeasureText = true
+        // Text glyphs did not change; only the scale/translate fit needs a recalc.
+        // Flexbox remasures often, and dropping this cache was a large part of
+        // the compact-bar's 20–60ms candidate_layout cost.
     }
 
     override fun onLayout(

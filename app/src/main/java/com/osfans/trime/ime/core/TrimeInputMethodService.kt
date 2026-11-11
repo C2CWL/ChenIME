@@ -630,6 +630,8 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
 
     override fun onWindowHidden() {
         LagDiagnostics.onWindowHidden()
+        inputView?.animate()?.cancel()
+        candidatesView?.animate()?.cancel()
         updatePreferredRefreshRate(false)
         super.onWindowHidden()
     }

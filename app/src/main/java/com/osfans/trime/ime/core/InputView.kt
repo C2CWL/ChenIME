@@ -41,6 +41,7 @@ import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.popup.PopupDelegate
 import com.osfans.trime.ime.symbol.LiquidWindow
 import com.osfans.trime.ime.window.BoardWindowManager
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
@@ -423,6 +424,7 @@ class InputView(
             }
 
             is RimeMessage.BulkCandidatesMessage -> {
+                LagDiagnostics.candidatesUpdated(it.data.candidates.isEmpty())
                 broadcaster.onCandidateListUpdate(it.data)
             }
 

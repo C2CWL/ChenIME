@@ -26,8 +26,10 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
     private val strokeKeys = mutableListOf<TextView>()
     private val strokeUndo = button("⌫", "撤回一笔，长按清空笔画") { onStrokeChange?.invoke(strokePrefix.dropLast(1)) }
     private val actions = mutableListOf<TextView>()
+    private val leftRail = LinearLayout(context).apply { orientation = VERTICAL }
     private var strokeExpanded = false
     private var displayedSyllables: List<String> = emptyList()
+    private val rowHeight = dp(expandedRowHeightDp(scope.theme.style.candidateViewHeight, scope.theme.style.commentHeight))
     var onResetFilters: (() -> Unit)? = null
     var onHandwriting: (() -> Unit)? = null
     var onStrokeChange: ((String) -> Unit)? = null
@@ -50,7 +52,8 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
     init {
         id = R.id.unrolled_candidate_view
         orientation = VERTICAL
-        clipToOutline = true
+        // A rounded outline can punch a hole at the bottom-left rail and let a key show through.
+        clipToOutline = false
         addView(
             LinearLayout(context).apply {
                 setPadding(dp(6), dp(3), dp(6), dp(3))
@@ -61,12 +64,9 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
             LayoutParams(LayoutParams.MATCH_PARENT, dp(40)),
         )
         val body = LinearLayout(context)
-        val left = LinearLayout(context).apply {
-            orientation = VERTICAL
-            addView(ScrollView(context).apply { addView(syllables) }, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
-            addView(strokeToggle, LayoutParams(LayoutParams.MATCH_PARENT, dp(44)))
-        }
-        body.addView(left, LayoutParams(dp(64), LayoutParams.MATCH_PARENT))
+        leftRail.addView(ScrollView(context).apply { addView(syllables) }, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+        leftRail.addView(strokeToggle, LayoutParams(LayoutParams.MATCH_PARENT, rowHeight))
+        body.addView(leftRail, LayoutParams(dp(64), LayoutParams.MATCH_PARENT))
         val center = LinearLayout(context).apply { orientation = VERTICAL }
         center.addView(recyclerView, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
         listOf("一" to "横", "丨" to "竖", "丿" to "撇", "丶" to "点或捺", "折" to "折").forEachIndexed { index, (label, description) ->
@@ -142,7 +142,7 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         while (syllables.childCount > labels.size) syllables.removeViewAt(syllables.childCount - 1)
         labels.forEachIndexed { index, syllable ->
             val view = (syllables.getChildAt(index) as? TextView) ?: button(syllable, "筛选 $syllable") {}.also {
-                syllables.addView(it, LayoutParams(LayoutParams.MATCH_PARENT, dp(44)))
+                syllables.addView(it, LayoutParams(LayoutParams.MATCH_PARENT, rowHeight))
             }
             view.text = syllable
             view.contentDescription = "筛选 $syllable"
@@ -156,6 +156,7 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
     fun refreshColors() {
         background = scope.decorDrawable("candidate_background", "candidate_border_color", dp(scope.theme.style.candidateBorder), dp(scope.theme.style.candidateBorderRound))
         val colors = scope.colors
+        leftRail.setBackgroundColor(colors.candidateBackground)
         val selected = buildSet {
             if (singleCharacter) add(single)
             if (!singleCharacter && activeSyllable == null && strokePrefix.isEmpty()) add(frequency)

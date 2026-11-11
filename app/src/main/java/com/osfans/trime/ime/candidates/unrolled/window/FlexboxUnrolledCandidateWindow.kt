@@ -10,10 +10,13 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.Slide
 import androidx.transition.Transition
+import com.osfans.trime.data.theme.model.GeneralStyle
 import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
+import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
 import com.osfans.trime.ime.candidates.unrolled.candidateSpan
+import com.osfans.trime.ime.candidates.unrolled.expandedRowHeightDp
 import com.osfans.trime.ime.window.BoardWindow
 import org.kodein.di.DI
 import splitties.dimensions.dp
@@ -26,6 +29,12 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
             typeface = theme.fonts.candidate
         }
     }
+    private val commentPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = theme.style.commentTextSize * context.resources.displayMetrics.scaledDensity
+            typeface = theme.fonts.comment
+        }
+    }
 
     override fun exitAnimation(nextWindow: BoardWindow): Transition = Slide().apply { slideEdge = Gravity.TOP }
 
@@ -34,7 +43,7 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CandidateViewHolder = super.onCreateViewHolder(parent, viewType).apply {
                 itemView.layoutParams = RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    context.dp(theme.style.run { candidateViewHeight + commentHeight }).coerceAtLeast(context.dp(44)),
+                    context.dp(theme.style.run { expandedRowHeightDp(candidateViewHeight, commentHeight) }),
                 )
             }
 
@@ -51,11 +60,13 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
                 override fun getSpanSize(position: Int): Int {
                     val candidate = adapter.peek(position)?.candidate ?: return 1
                     val textWidth = textPaint.measureText(candidate.text)
-                    val commentWidth = textPaint.measureText(candidate.comment)
-                    val width = when (theme.style.commentPosition) {
-                        com.osfans.trime.data.theme.model.GeneralStyle.CommentPosition.RIGHT -> textWidth + commentWidth
-                        else -> maxOf(textWidth, commentWidth)
-                    }
+                    val commentWidth = commentPaint.measureText(candidate.comment)
+                    val width = candidateLayoutWidth(
+                        textWidth,
+                        candidate.comment,
+                        commentWidth,
+                        theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT,
+                    )
                     return candidateSpan(width + context.dp(theme.style.candidatePadding * 2), gridWidth / 6f)
                 }
             }
@@ -68,7 +79,10 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
             layoutManager = this@FlexboxUnrolledCandidateWindow.layoutManager
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
                 gridWidth = right - left
-                if (right - left != oldRight - oldLeft) requestLayout()
+                if (right - left != oldRight - oldLeft) {
+                    this@FlexboxUnrolledCandidateWindow.layoutManager.spanSizeLookup.invalidateSpanIndexCache()
+                    requestLayout()
+                }
             }
             addItemDecoration(object : RecyclerView.ItemDecoration() {
                 private val paint = Paint()

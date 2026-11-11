@@ -111,6 +111,7 @@ class KeyboardWindow(di: DI) :
     override fun onCreateView(): View {
         keyboardView = context.frameLayout(R.id.keyboard_view)
         keyboardView.addOnLayoutChangeListener(onKeyboardViewLayoutChangeListener)
+        keyboardAsciiState.seed(service.englishLanguageSession.letterAsciiMode)
         attachKeyboard(evalKeyboard(".default"))
         return keyboardView
     }
@@ -314,7 +315,29 @@ class KeyboardWindow(di: DI) :
         }
         if (restarting) return
         lastLockKeyboardId = evalKeyboard("default")
+        keyboardAsciiState.seed(service.englishLanguageSession.letterAsciiMode)
         switchKeyboard(target)
+        applyChineseOnNewFocus(target)
+    }
+
+    /**
+     * A new letter-keyboard focus returns to Chinese unless 中/英 was chosen in this session.
+     * The Rime job re-checks composition so a mid-composition race cannot reset the schema.
+     */
+    private fun applyChineseOnNewFocus(target: String) {
+        val session = service.englishLanguageSession
+        val composing = rime.run { statusCached.isComposing }
+        if (!EnglishMode.shouldForceChinese(false, target, session.userChoseEnglish, composing)) return
+        service.postRimeJob {
+            if (statusCached.isComposing) return@postRimeJob
+            if (!EnglishMode.shouldForceChinese(false, target, session.userChoseEnglish, false)) return@postRimeJob
+            if (statusCached.schemaId == EnglishMode.SCHEMA) {
+                selectSchema(EnglishMode.CHINESE_SCHEMA)
+            }
+            if (statusCached.isAsciiMode) {
+                setKeyboardAsciiMode(false)
+            }
+        }
     }
 
     private fun dispatchCapsState(setShift: (Boolean, Boolean) -> Unit) {
@@ -357,6 +380,11 @@ class KeyboardWindow(di: DI) :
     /** Called in the serialized Rime job alongside an explicit language change. */
     fun resetLetterAsciiMode() {
         keyboardAsciiState.reset()
+    }
+
+    /** Restore the session letter mode after this window is recreated. */
+    fun seedLetterAsciiMode(letterAscii: Boolean) {
+        keyboardAsciiState.seed(letterAscii)
     }
 
     fun invalidateOptionLabels() {

@@ -47,11 +47,11 @@ data class StatusProto(
     val schemaName: String = "",
     val isDisabled: Boolean = true,
     val isComposing: Boolean = false,
-    val isAsciiMode: Boolean = true,
+    val isAsciiMode: Boolean = false,
     val isFullShape: Boolean = false,
     val isSimplified: Boolean = false,
     val isTraditional: Boolean = false,
-    val isAsciiPunct: Boolean = true,
+    val isAsciiPunct: Boolean = false,
 )
 
 /**

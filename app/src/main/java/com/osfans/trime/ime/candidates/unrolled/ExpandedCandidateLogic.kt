@@ -5,6 +5,23 @@ import kotlin.math.ceil
 
 internal fun candidateSpan(width: Float, cellWidth: Float, columns: Int = 6): Int = if (cellWidth <= 0f) 1 else ceil(width / cellWidth).toInt().coerceIn(1, columns)
 
+/** A lone user-dict star is drawn as a badge and must not steal a grid column. */
+internal const val USER_DICTIONARY_MARK = "*"
+
+internal fun spanCommentWidth(comment: String, measuredCommentWidth: Float): Float = if (comment.isEmpty() || comment == USER_DICTIONARY_MARK) 0f else measuredCommentWidth
+
+internal fun candidateLayoutWidth(
+    textWidth: Float,
+    comment: String,
+    measuredCommentWidth: Float,
+    commentOnRight: Boolean,
+): Float {
+    val commentWidth = spanCommentWidth(comment, measuredCommentWidth)
+    return if (commentOnRight) textWidth + commentWidth else maxOf(textWidth, commentWidth)
+}
+
+internal fun expandedRowHeightDp(candidateViewHeight: Int, commentHeight: Int): Int = (candidateViewHeight + commentHeight).coerceAtLeast(44)
+
 internal fun isSingleCharacter(text: String): Boolean = text.codePointCount(0, text.length) == 1
 
 /** Only expose boundaries supplied by the engine; retain repeated syllables. */

@@ -24,4 +24,15 @@ internal object EnglishMode {
 
     fun keepsKeyboard(previous: String, current: String): Boolean = (previous == CHINESE_SCHEMA && current == SCHEMA) ||
         (previous == SCHEMA && current == CHINESE_SCHEMA)
+
+    /**
+     * On a new letter-keyboard focus, return to Chinese unless the user explicitly chose English.
+     * Restarts (Send, backspace, clear) and an in-progress composition must not reset.
+     */
+    fun shouldForceChinese(
+        restarting: Boolean,
+        targetKeyboard: String,
+        userChoseEnglish: Boolean,
+        isComposing: Boolean,
+    ): Boolean = !restarting && targetKeyboard == "default" && !userChoseEnglish && !isComposing
 }

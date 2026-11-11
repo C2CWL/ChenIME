@@ -131,5 +131,4 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
             })
         }
     }
-
 }

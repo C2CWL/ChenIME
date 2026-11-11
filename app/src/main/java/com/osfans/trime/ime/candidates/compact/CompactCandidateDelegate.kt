@@ -25,6 +25,7 @@ import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.candidates.unrolled.decoration.FlexboxVerticalDecoration
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.util.InputLatency
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -142,6 +143,8 @@ class CompactCandidateDelegate(override val di: DI) :
                 refreshUnrolled(cnt)
                 if (candidateUpdateAt != 0L) {
                     InputLatency.log("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
+                    LagDiagnostics.duration("candidate_layout", candidateUpdateAt, minMs = 16)
+                    LagDiagnostics.candidatesLaidOut()
                     candidateUpdateAt = 0L
                 }
             }

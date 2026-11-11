@@ -13,6 +13,7 @@ import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.ime.core.InlinePreeditMode
 import com.osfans.trime.util.InputLatency
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -65,7 +66,7 @@ class Rime :
         RimeDispatcher(
             object : RimeDispatcher.RimeController {
                 override fun nativeStartup() {
-                    startRime(false)
+                    LagDiagnostics.measure("rime_startup") { startRime(false) }
                     lifecycleRegistry.emitEvent(RimeLifecycle.Event.ON_READY)
                 }
 
@@ -118,6 +119,7 @@ class Rime :
             }
         }
         registerRimeMessageHandler(deployHandler)
+        val deployAt = LagDiagnostics.start()
         try {
             withRimeContext {
                 exitRime()
@@ -134,6 +136,7 @@ class Rime :
             withContext(Dispatchers.Main.immediate) { ThemeManager.refreshFonts() }
         } finally {
             unregisterRimeMessageHandler(deployHandler)
+            LagDiagnostics.duration("rime_deploy", deployAt)
         }
     }
 
@@ -401,6 +404,12 @@ class Rime :
                     (engineAt - statusAt) / 1_000,
                     (finishedAt - engineAt) / 1_000,
                     (finishedAt - startedAt) / 1_000,
+                )
+                LagDiagnostics.keyProcessed(
+                    totalUs = (finishedAt - startedAt) / 1_000,
+                    engineUs = (engineAt - statusAt) / 1_000,
+                    responseUs = (finishedAt - engineAt) / 1_000,
+                    idleGapUs = if (lastKeyFinishedAt == 0L) -1L else (startedAt - lastKeyFinishedAt) / 1_000,
                 )
                 lastKeyFinishedAt = finishedAt
             } else {

@@ -6,6 +6,7 @@ package com.osfans.trime.core
 
 import android.os.Process
 import com.osfans.trime.util.InputLatency
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
@@ -56,7 +57,20 @@ class RimeDispatcher(
                 InputLatency.log("rime_queue_ms=%d", delta)
             }
             started = true
-            runnable.run()
+            if (!LagDiagnostics.enabled) {
+                runnable.run()
+                return
+            }
+            val queuedMs = delta
+            val runAt = System.nanoTime()
+            try {
+                runnable.run()
+            } finally {
+                LagDiagnostics.rimeJobFinished(queuedMs, System.nanoTime() - runAt) {
+                    // a coroutine continuation's toString names the suspending function that posted it
+                    (name ?: runnable.toString().substringAfter("Continuation at ").substringBefore('@').take(120)).replace(' ', '_')
+                }
+            }
         }
 
         override fun toString(): String = "WrappedRunnable[${name ?: hashCode()}]"

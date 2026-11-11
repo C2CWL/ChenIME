@@ -26,6 +26,7 @@ import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.ThemeManager
 import com.osfans.trime.receiver.RimeIntentReceiver
 import com.osfans.trime.ui.main.LogActivity
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import com.osfans.trime.util.isNightMode
 import com.osfans.trime.worker.BackgroundSyncWork
 import kotlinx.coroutines.CoroutineName
@@ -181,6 +182,7 @@ class TrimeApplication : Application() {
                 Timber.d("Last pid is $lastPid. Set it to current pid: $currentPid")
                 setValue(currentPid)
             }
+            LagDiagnostics.init(ctx)
             ClipboardHelper.init(ctx)
             CollectionHelper.init(ctx)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !isDirectBootMode) {

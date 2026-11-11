@@ -18,6 +18,7 @@ import com.osfans.trime.core.whenReady
 import com.osfans.trime.ui.main.LogActivity
 import com.osfans.trime.util.DeployNotification
 import com.osfans.trime.util.appContext
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import com.osfans.trime.util.readText
 import com.osfans.trime.util.subprocess
 import kotlinx.coroutines.CoroutineScope
@@ -62,7 +63,12 @@ object RimeDaemon {
         }
 
         override fun <T> run(block: suspend RimeApi.() -> T): T = ensureEstablished {
-            runBlocking { block(rimeImpl) }
+            val startedAt = LagDiagnostics.start()
+            try {
+                runBlocking { block(rimeImpl) }
+            } finally {
+                LagDiagnostics.rimeCallFinished(startedAt)
+            }
         }
 
         override suspend fun <T> runOnReady(block: suspend RimeApi.() -> T): T = ensureEstablished {

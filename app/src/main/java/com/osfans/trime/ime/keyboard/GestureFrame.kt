@@ -14,6 +14,7 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.util.InputLatency
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -99,6 +100,7 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                 startTime = SystemClock.elapsedRealtime()
                 if (InputLatency.enabled) {
                     InputLatency.log("touch_down dispatch_age_ms=%d", SystemClock.uptimeMillis() - event.eventTime)
+                    LagDiagnostics.touchDown(event.eventTime)
                 }
 
                 isLongPressed = false

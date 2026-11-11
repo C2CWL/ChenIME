@@ -199,7 +199,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 if (fillStyle == CompactCandidateMode.AUTO_FILL && w > 0) {
                     val maxSpanCount = maxSpanCountPref.getValue()
                     layoutMinWidth = w / maxSpanCount - separatorDrawable.intrinsicWidth
-                    adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
+                    this@CompactCandidateDelegate.adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
                 }
                 if (pendingCandidates.isNotEmpty() && w != oldw) {
                     publishCompactCandidates()
@@ -279,7 +279,7 @@ class CompactCandidateDelegate(override val di: DI) :
         val lastEllipsized = packed.lastOrNull()?.ellipsized == true
         if (lastEllipsized) secondLayoutPassNeeded = false
         adapter.updateItemWidths(packed.map { it.width.toInt().coerceAtLeast(1) }, lastEllipsized)
-        adapter.updateCandidates(shown, pendingTotal, pendingHighlighted)
+        adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)
         refreshUnrolled(shown.size)
     }
 }

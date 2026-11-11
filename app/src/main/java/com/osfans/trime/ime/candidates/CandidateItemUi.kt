@@ -8,7 +8,10 @@ package com.osfans.trime.ime.candidates
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
+import android.text.TextUtils
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import com.osfans.trime.core.CandidateProto
@@ -157,6 +160,39 @@ class CandidateItemUi(
                 gravity = gravityCenter
             },
         )
+    }
+
+    /**
+     * Stretch the visible pill to the full span, inset by [marginPx] on every
+     * side so neighboring pills share one uniform gap. Text stays centered and
+     * ellipsizes instead of shrinking. The compact bar leaves this unset.
+     */
+    fun setFillSpan(marginPx: Int) {
+        val layoutParams = (content.layoutParams as FrameLayout.LayoutParams).apply {
+            width = ViewGroup.LayoutParams.MATCH_PARENT
+            height = ViewGroup.LayoutParams.MATCH_PARENT
+            gravity = gravityCenter
+            val inset = marginPx.coerceAtLeast(0)
+            setMargins(inset, inset, inset, inset)
+        }
+        content.layoutParams = layoutParams
+        text.scaleMode = AutoScaleTextView.Mode.None
+        comment.scaleMode = AutoScaleTextView.Mode.None
+        text.ellipsize = TextUtils.TruncateAt.END
+        comment.ellipsize = TextUtils.TruncateAt.END
+        (text.layoutParams as ConstraintLayout.LayoutParams).let { params ->
+            params.constrainedWidth = true
+            if (commentPosition != GeneralStyle.CommentPosition.RIGHT) {
+                params.width = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+            text.layoutParams = params
+        }
+        (comment.layoutParams as ConstraintLayout.LayoutParams).let { params ->
+            params.constrainedWidth = true
+            comment.layoutParams = params
+        }
     }
 
     private var backgroundColor: Int? = null

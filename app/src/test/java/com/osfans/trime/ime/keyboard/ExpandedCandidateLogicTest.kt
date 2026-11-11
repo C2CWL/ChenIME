@@ -5,6 +5,10 @@ import com.osfans.trime.ime.candidates.compact.layoutCompactCandidateBar
 import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
 import com.osfans.trime.ime.candidates.unrolled.candidateSpan
 import com.osfans.trime.ime.candidates.unrolled.expandedGridColumns
+import com.osfans.trime.ime.candidates.unrolled.expandedGridGapPx
+import com.osfans.trime.ime.candidates.unrolled.expandedMinCellWidth
+import com.osfans.trime.ime.candidates.unrolled.expandedPillMargin
+import com.osfans.trime.ime.candidates.unrolled.expandedPillWidth
 import com.osfans.trime.ime.candidates.unrolled.expandedRowHeightDp
 import com.osfans.trime.ime.candidates.unrolled.isSingleCharacter
 import com.osfans.trime.ime.candidates.unrolled.layoutExpandedCandidateGrid
@@ -75,6 +79,35 @@ class ExpandedCandidateLogicTest :
             expandedGridColumns(300f, 40f) shouldBe 6
             expandedGridColumns(0f, 50f) shouldBe 6
             expandedGridColumns(200f, 0f) shouldBe 6
+        }
+        "a filled pill occupies its span minus a uniform gap, so two columns equal two cells plus a gutter" {
+            expandedPillMargin(0) shouldBe 0
+            expandedPillMargin(1) shouldBe 1
+            expandedPillMargin(8) shouldBe 4
+            expandedGridGapPx(0f, 0) shouldBe 0
+            expandedGridGapPx(4f, 4) shouldBe 4
+            expandedGridGapPx(0.5f, 1) shouldBe 2
+            val gap = 8f
+            val cell = 50f
+            val one = expandedPillWidth(cell, gap)
+            val two = expandedPillWidth(2 * cell, gap)
+            one shouldBe 42f
+            two shouldBe 92f
+            two shouldBe one + gap + one
+        }
+        "short words stay in one column and typical four-character words take one or two" {
+            val twoChar = 40f
+            val padding = 16f
+            val gap = 8f
+            val cell = expandedMinCellWidth(twoChar, padding, gap)
+            cell shouldBe 64f
+            // 哈* : the star does not add width
+            val haStar = candidateLayoutWidth(20f, "*", 12f, commentOnRight = true) + padding
+            candidateSpan(haStar, cell) shouldBe 1
+            // 蛤蛤
+            candidateSpan(twoChar + padding, cell) shouldBe 1
+            // 好啊好啊 (four characters, about two "汉字")
+            candidateSpan(twoChar * 2 + padding, cell) shouldBe 2
         }
         "equal-width words share one cell size and even spacing, even on a short last row" {
             // 哈哈 / 蛤蛤 / haha / 哈 / 蛤 / 铪 all fit one cell when the cell is wide enough

@@ -9,6 +9,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.text.TextUtils
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -73,7 +74,7 @@ class CandidateItemUi(
             this.textSize = this@CandidateItemUi.textSize
             typeface = theme.fonts.candidate
             isSingleLine = true
-            gravity = gravityCenter
+            gravity = Gravity.CENTER
             scaleMode = AutoScaleTextView.Mode.Proportional
         }
 

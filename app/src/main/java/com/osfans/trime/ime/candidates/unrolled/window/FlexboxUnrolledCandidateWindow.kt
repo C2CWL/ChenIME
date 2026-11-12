@@ -71,7 +71,7 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
 
     private fun gridGapPx(): Int = expandedGridGapPx(
         theme.style.candidateSpacing,
-        context.dp(theme.style.candidateSpacing),
+        context.dp(theme.style.candidateSpacing).toInt(),
     )
 
     private fun recomputePlacements() {

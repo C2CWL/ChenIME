@@ -5,6 +5,32 @@ import kotlin.math.ceil
 
 internal const val EXPANDED_GRID_MAX_COLUMNS = 6
 
+/**
+ * Uniform inset on each side of a pill. Two neighboring pills then sit [gap]
+ * apart both horizontally and vertically.
+ */
+internal fun expandedPillMargin(gap: Int): Int = if (gap <= 0) 0 else (gap / 2).coerceAtLeast(1)
+
+/**
+ * Visible pill width inside a span of [spanWidth], after the same [gap] used
+ * between every pair of pills. A two-column pill is then exactly two
+ * one-column pills plus one gutter: (2 * cell) - gap = 2 * (cell - gap) + gap.
+ */
+internal fun expandedPillWidth(spanWidth: Float, gap: Float): Float = (spanWidth - gap).coerceAtLeast(0f)
+
+/**
+ * Minimum column width so a two-character word (such as 蛤蛤) fits in one
+ * column after inner padding and the inter-pill gap. Typical four-character
+ * words then take one or two columns.
+ */
+internal fun expandedMinCellWidth(
+    twoCharTextWidth: Float,
+    innerPadding: Float,
+    gap: Float,
+): Float = (twoCharTextWidth + innerPadding + gap).coerceAtLeast(1f)
+
+internal fun expandedGridGapPx(spacingDp: Float, spacingPx: Int): Int = if (spacingDp <= 0f) 0 else maxOf(spacingPx, 2)
+
 internal fun expandedGridColumns(
     gridWidth: Float,
     minCellWidth: Float,

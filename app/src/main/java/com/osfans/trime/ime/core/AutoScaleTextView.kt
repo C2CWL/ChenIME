@@ -167,7 +167,7 @@ constructor(
         val contentWidth = viewWidth - paddingLeft - paddingRight
         val contentHeight = viewHeight - paddingTop - paddingBottom
         measureTextBounds()
-        val textWidth = textBounds.width()
+        val textWidth = displayTextWidth(contentWidth)
         val textHeight = textBounds.height()
 
         // Prevent division by zero: if text dimensions are zero
@@ -215,6 +215,20 @@ constructor(
         translateY = (contentHeight.toFloat() - fontHeight) / 2.0f - fontOffsetY + paddingTop
     }
 
+    /** Width used to place and clip text. When [Mode.None] and ellipsize is set, overflow is trimmed. */
+    private fun displayTextWidth(contentWidth: Int): Int {
+        val full = textBounds.width()
+        if (scaleMode != Mode.None || ellipsize == null || contentWidth <= 0 || full <= contentWidth) return full
+        return contentWidth
+    }
+
+    private fun textToDraw(contentWidth: Int): CharSequence {
+        val raw = text ?: ""
+        if (scaleMode != Mode.None || ellipsize == null || contentWidth <= 0) return raw
+        if (textBounds.width() <= contentWidth) return raw
+        return TextUtils.ellipsize(raw, paint, contentWidth.toFloat(), ellipsize)
+    }
+
     private fun calculateTranslateX(
         contentWidth: Int,
         textWidth: Int,
@@ -241,11 +255,11 @@ constructor(
             translate(scrollX.toFloat(), scrollY.toFloat())
             scale(textScaleX, textScaleY, 0f, translateY)
             translate(translateX, translateY)
-            val label = text.toString()
-            if (distinctLetterLabels && DistinctLetterGlyph.enabled(label)) {
-                DistinctLetterGlyph.draw(this, label, 0f, 0f, paint)
+            val label = textToDraw(width - paddingLeft - paddingRight)
+            if (distinctLetterLabels && DistinctLetterGlyph.enabled(label.toString())) {
+                DistinctLetterGlyph.draw(this, label.toString(), 0f, 0f, paint)
             } else {
-                drawText(text, 0, text.length, 0f, 0f, paint)
+                drawText(label, 0, label.length, 0f, 0f, paint)
             }
         }
     }

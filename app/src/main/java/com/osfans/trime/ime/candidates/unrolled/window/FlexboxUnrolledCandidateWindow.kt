@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.osfans.trime.ime.candidates.unrolled.window
 
-import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.TextPaint
 import android.view.Gravity
@@ -18,6 +17,9 @@ import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
 import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
 import com.osfans.trime.ime.candidates.unrolled.expandedGridColumns
+import com.osfans.trime.ime.candidates.unrolled.expandedGridGapPx
+import com.osfans.trime.ime.candidates.unrolled.expandedMinCellWidth
+import com.osfans.trime.ime.candidates.unrolled.expandedPillMargin
 import com.osfans.trime.ime.candidates.unrolled.expandedRowHeightDp
 import com.osfans.trime.ime.candidates.unrolled.layoutExpandedCandidateGrid
 import com.osfans.trime.ime.window.BoardWindow
@@ -45,6 +47,7 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
     override val adapter by lazy {
         object : PagingCandidateViewAdapter(scope) {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CandidateViewHolder = super.onCreateViewHolder(parent, viewType).apply {
+                ui.setFillSpan(expandedPillMargin(gridGapPx()))
                 itemView.layoutParams = RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     context.dp(theme.style.run { expandedRowHeightDp(candidateViewHeight, commentHeight) }),
@@ -66,6 +69,11 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
         }
     }
 
+    private fun gridGapPx(): Int = expandedGridGapPx(
+        theme.style.candidateSpacing,
+        context.dp(theme.style.candidateSpacing).toInt(),
+    )
+
     private fun recomputePlacements() {
         val width = gridWidth
         if (width <= 0) {
@@ -73,6 +81,7 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
             return
         }
         val padding = context.dp(theme.style.candidatePadding * 2)
+        val gap = gridGapPx()
         val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
         val itemWidths = List(adapter.itemCount) { position ->
             val candidate = adapter.peek(position)?.candidate ?: return@List 0f
@@ -83,7 +92,7 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
                 commentOnRight,
             ) + padding
         }
-        val minCellWidth = textPaint.measureText("汉字") + padding
+        val minCellWidth = expandedMinCellWidth(textPaint.measureText("汉字"), padding.toFloat(), gap.toFloat())
         val columns = expandedGridColumns(width.toFloat(), minCellWidth)
         if (layoutManager.spanCount != columns) {
             layoutManager.spanCount = columns
@@ -117,18 +126,6 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
                     if (right - left != oldRight - oldLeft) requestLayout()
                 }
             }
-            addItemDecoration(object : RecyclerView.ItemDecoration() {
-                private val paint = Paint()
-                override fun onDrawOver(canvas: Canvas, parent: RecyclerView, state: RecyclerView.State) {
-                    paint.color = scope.colors.candidateSeparatorColor
-                    paint.strokeWidth = context.dp(0.5f).coerceAtLeast(1f)
-                    for (i in 0 until parent.childCount) {
-                        val child = parent.getChildAt(i)
-                        canvas.drawLine(child.right.toFloat(), child.top.toFloat(), child.right.toFloat(), child.bottom.toFloat(), paint)
-                        canvas.drawLine(child.left.toFloat(), child.bottom.toFloat(), child.right.toFloat(), child.bottom.toFloat(), paint)
-                    }
-                }
-            })
         }
     }
 }

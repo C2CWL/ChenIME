@@ -47,6 +47,9 @@ import splitties.views.dsl.core.wrapContent
 import splitties.views.gravityCenter
 import splitties.views.horizontalPadding
 
+/** Gap (dp) between candidate text and a right-side comment in [CandidateItemUi]. */
+internal const val CANDIDATE_COMMENT_GAP_DP = 1
+
 class CandidateItemUi(
     override val ctx: Context,
     private val scope: ThemeScope,
@@ -104,7 +107,7 @@ class CandidateItemUi(
                 add(
                     comment,
                     lParams(wrapContent, wrapContent) {
-                        startToEndOf(text, ctx.dp(1))
+                        startToEndOf(text, ctx.dp(CANDIDATE_COMMENT_GAP_DP))
                         endOfParent()
                         baselineToBaselineOf(text)
                         horizontalChainStyle = ConstraintLayout.LayoutParams.CHAIN_PACKED

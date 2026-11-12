@@ -436,6 +436,18 @@ class BuiltinThemeTest :
             }
         }
 
+        "Frost enables the existing streaming emoji converter by default" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
+            val switches = schema["switches"]!!.sequence!!.items.associateBy { it["name"]?.string }
+            switches["emoji"]?.get("reset")?.string shouldBe "1"
+            val filters = schema["engine"]!!["filters"]!!.sequence!!.items.map { it.string }
+            filters.count { it == "simplifier@emoji" } shouldBe 1
+            schema["emoji"]?.get("option_name")?.string shouldBe "emoji"
+            schema["emoji"]?.get("opencc_config")?.string shouldBe "emoji.json"
+            schema["translator"]?.get("spelling_hints")?.string shouldBe "0"
+            schema["translator"]?.get("always_show_comments")?.string shouldBe "false"
+        }
+
         "Frost punctuation remains Chinese while letter shape is fixed" {
             val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
             val defaults = ThemeYaml.parser.parseToYamlNode(root.resolve("default.yaml").readText())

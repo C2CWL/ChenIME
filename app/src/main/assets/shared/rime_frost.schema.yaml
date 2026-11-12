@@ -33,6 +33,7 @@ switches:
     states: [ 。，, ．， ]
 
   - name: emoji
+    reset: 1
     states: [ 💀, 😄 ]
 
   - name: chinese_english

@@ -6,6 +6,7 @@
 package com.osfans.trime.ime.candidates.compact
 
 import android.content.res.Configuration
+import android.view.View
 import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
@@ -165,7 +166,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 if (candidateUpdateAt != 0L) {
                     InputLatency.log("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
                     LagDiagnostics.duration("candidate_layout", candidateUpdateAt, minMs = 16)
-                    LagDiagnostics.candidatesLaidOut(this@CompactCandidateDelegate.view)
+                    LagDiagnostics.candidatesLaidOut(getChildAt(0)?.parent as? View)
                     candidateUpdateAt = 0L
                 }
             }

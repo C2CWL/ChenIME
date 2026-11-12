@@ -65,7 +65,7 @@ class TouchToCandidatesClock {
 
     /** @return elapsed ms from the paired touch, or null if this layout does not belong to one. */
     @Synchronized
-    fun onCandidatesLaidOut(nowUptimeMs: Long): PathTiming? {
+    internal fun onCandidatesLaidOut(nowUptimeMs: Long): PathTiming? {
         if (!awaitingLayout || touchAt == 0L) return null
         layoutAt = nowUptimeMs
         awaitingLayout = false
@@ -79,7 +79,7 @@ class TouchToCandidatesClock {
      * is not waiting for one.
      */
     @Synchronized
-    fun onFrameDrawn(nowUptimeMs: Long): PathTiming? {
+    internal fun onFrameDrawn(nowUptimeMs: Long): PathTiming? {
         if (!awaitingDraw || touchAt == 0L || layoutAt == 0L) return null
         awaitingDraw = false
         val timing = snapshotLocked(drawAt = nowUptimeMs, includeDraw = true)

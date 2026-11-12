@@ -74,7 +74,6 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
         context.dp(theme.style.candidateSpacing),
     )
 
-
     private fun recomputePlacements() {
         val width = gridWidth
         if (width <= 0) {

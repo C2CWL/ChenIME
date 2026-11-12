@@ -108,6 +108,15 @@ env = make_env({ input = 'hundun' })
 out = run(env, { make_cand('混沌', '', 'phrase', 'hundun') })
 assert_eq(out[1].comment, '', 'no false hint')
 
+-- Empty ［］ leftover from comment_format with spelling_hints 0 must be cleared.
+env = make_env({ input = 'bei' })
+out = run(env, {
+    make_cand('呗', '［］', 'phrase', 'bei'),
+    make_cand('被', '［］', 'phrase', 'bei'),
+})
+assert_eq(out[1].comment, '', 'empty brackets cleared')
+assert_eq(out[2].comment, '', 'empty brackets cleared for all')
+
 -- User-phrase / sentence marks (formerly is_in_user_dict), and they win over hints.
 env = make_env({ input = 'hundun' })
 out = run(env, {

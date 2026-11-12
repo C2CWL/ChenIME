@@ -74,8 +74,9 @@ inline constexpr size_t kTypoDeriveRuleCount =
 
 inline bool IsTypoDeriveRule(const rime::string& rule) {
   for (const char* expected : kTypoDeriveRules) {
-    if (rule == expected)
+    if (rule == expected) {
       return true;
+    }
   }
   return false;
 }
@@ -83,10 +84,12 @@ inline bool IsTypoDeriveRule(const rime::string& rule) {
 inline rime::an<rime::ConfigList> ExistingAlgebraAppend(
     const rime::an<rime::ConfigMap>& patch) {
   auto item = patch->Get(kAlgebraAppendKey);
-  if (!item)
+  if (!item) {
     return rime::New<rime::ConfigList>();
-  if (auto list = rime::As<rime::ConfigList>(item))
+  }
+  if (auto list = rime::As<rime::ConfigList>(item)) {
     return list;
+  }
   if (auto value = rime::As<rime::ConfigValue>(item)) {
     auto list = rime::New<rime::ConfigList>();
     list->Append(value);
@@ -97,91 +100,107 @@ inline rime::an<rime::ConfigList> ExistingAlgebraAppend(
 
 inline bool ListHasRule(const rime::an<rime::ConfigList>& list,
                         const char* rule) {
-  if (!list)
+  if (!list) {
     return false;
+  }
   for (size_t i = 0; i < list->size(); ++i) {
     auto value = list->GetValueAt(i);
     rime::string text;
-    if (value && value->GetString(&text) && text == rule)
+    if (value && value->GetString(&text) && text == rule) {
       return true;
+    }
   }
   return false;
 }
 
 inline bool HasAllTypoDeriveRules(const rime::an<rime::ConfigMap>& patch) {
   auto list = rime::As<rime::ConfigList>(patch->Get(kAlgebraAppendKey));
-  if (!list)
+  if (!list) {
     return false;
+  }
   for (const char* rule : kTypoDeriveRules) {
-    if (!ListHasRule(list, rule))
+    if (!ListHasRule(list, rule)) {
       return false;
+    }
   }
   return true;
 }
 
 inline bool HasAnyTypoDeriveRule(const rime::an<rime::ConfigMap>& patch) {
   auto list = ExistingAlgebraAppend(patch);
-  if (!list)
+  if (!list) {
     return false;
+  }
   for (size_t i = 0; i < list->size(); ++i) {
     auto value = list->GetValueAt(i);
     rime::string text;
-    if (value && value->GetString(&text) && IsTypoDeriveRule(text))
+    if (value && value->GetString(&text) && IsTypoDeriveRule(text)) {
       return true;
+    }
   }
   return false;
 }
 
 inline void AppendTypoDeriveRules(const rime::an<rime::ConfigMap>& patch) {
   auto list = ExistingAlgebraAppend(patch);
-  if (!list)
+  if (!list) {
     return;
+  }
   for (const char* rule : kTypoDeriveRules) {
-    if (!ListHasRule(list, rule))
+    if (!ListHasRule(list, rule)) {
       list->Append(rime::New<rime::ConfigValue>(rule));
+    }
   }
   patch->Set(kAlgebraAppendKey, list);
 }
 
 inline void RemoveTypoDeriveRules(const rime::an<rime::ConfigMap>& patch) {
-  if (!patch->Get(kAlgebraAppendKey))
+  if (!patch->Get(kAlgebraAppendKey)) {
     return;
+  }
   auto existing = ExistingAlgebraAppend(patch);
-  if (!existing)
+  if (!existing) {
     return;
+  }
   auto kept = rime::New<rime::ConfigList>();
   for (size_t i = 0; i < existing->size(); ++i) {
     auto value = existing->GetValueAt(i);
     rime::string text;
-    if (value && value->GetString(&text) && IsTypoDeriveRule(text))
+    if (value && value->GetString(&text) && IsTypoDeriveRule(text)) {
       continue;
-    if (auto element = existing->GetAt(i))
+    }
+    if (auto element = existing->GetAt(i)) {
       kept->Append(element);
+    }
   }
-  if (kept->empty())
+  if (kept->empty()) {
     patch->Set(kAlgebraAppendKey, nullptr);
-  else
+  } else {
     patch->Set(kAlgebraAppendKey, kept);
+  }
 }
 
 // Changes only owned keys; unknown user patches survive serialization.
 inline bool PatchPinyinCorrection(rime::Config& config, bool enabled) {
   auto patch = config.GetMap("patch");
-  if (!patch)
+  if (!patch) {
     patch = rime::New<rime::ConfigMap>();
+  }
   auto value = patch->GetValue("translator/enable_correction");
   bool previous = false;
   const bool has_previous = value && value->GetBool(&previous);
   const bool algebra_ready =
       enabled ? HasAllTypoDeriveRules(patch) : !HasAnyTypoDeriveRule(patch);
-  if (has_previous && previous == enabled && algebra_ready)
+  if (has_previous && previous == enabled && algebra_ready) {
     return false;
+  }
   patch->Set("translator/enable_correction",
              rime::New<rime::ConfigValue>(enabled));
-  if (enabled)
+  if (enabled) {
     AppendTypoDeriveRules(patch);
-  else
+  } else {
     RemoveTypoDeriveRules(patch);
+  }
   config.SetItem("patch", patch);
   return true;
 }

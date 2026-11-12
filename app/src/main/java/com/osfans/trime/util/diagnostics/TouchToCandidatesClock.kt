@@ -123,8 +123,7 @@ class TouchToCandidatesClock {
 
     companion object {
         /** Elapsed ms between two marks, or -1 if either was not recorded. */
-        private fun stage(startMs: Long, endMs: Long): Long =
-            if (startMs == 0L || endMs == 0L) -1L else (endMs - startMs).coerceAtLeast(0L)
+        private fun stage(startMs: Long, endMs: Long): Long = if (startMs == 0L || endMs == 0L) -1L else (endMs - startMs).coerceAtLeast(0L)
     }
 }
 

@@ -27,7 +27,7 @@ import com.osfans.trime.data.theme.model.GeneralStyle
 import com.osfans.trime.ime.bar.InputBarDelegate
 import com.osfans.trime.ime.bar.UnrollButtonStateMachine
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
-import com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth
+import com.osfans.trime.ime.candidates.CANDIDATE_COMMENT_GAP_DP
 import com.osfans.trime.ime.candidates.unrolled.decoration.FlexboxVerticalDecoration
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.util.InputLatency
@@ -252,6 +252,11 @@ class CompactCandidateDelegate(override val di: DI) :
     private fun measureCandidateWidth(candidate: CandidateProto): Float {
         val padding = context.dp(theme.style.candidatePadding * 2).toFloat()
         val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
+        val commentGap = if (commentOnRight && candidate.comment.isNotEmpty()) {
+            context.dp(CANDIDATE_COMMENT_GAP_DP).toFloat()
+        } else {
+            0f
+        }
         return widthCache.getOrMeasure(
             candidate.text,
             candidate.comment,
@@ -261,11 +266,12 @@ class CompactCandidateDelegate(override val di: DI) :
             commentOnRight,
             (textPaint.typeface?.hashCode() ?: 0) xor (commentPaint.typeface?.hashCode() ?: 0),
         ) {
-            candidateLayoutWidth(
+            compactCandidateContentWidth(
                 textPaint.measureText(candidate.text),
                 candidate.comment,
                 commentPaint.measureText(candidate.comment),
                 commentOnRight,
+                commentGap,
             ) + padding
         }
     }

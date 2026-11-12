@@ -6,12 +6,12 @@
 package com.osfans.trime.ime.candidates.compact
 
 import android.content.res.Configuration
-import android.view.View
 import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
 import android.text.TextPaint
 import android.view.ContextThemeWrapper
+import android.view.View
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R

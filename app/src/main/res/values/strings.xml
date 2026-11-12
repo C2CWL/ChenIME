@@ -318,7 +318,7 @@
     <string name="swipe_clear">Clear</string>
     <string name="swipe_restore_clear">Undo clear</string>
     <string name="pinyin_correction">拼音纠错</string>
-    <string name="pinyin_correction_summary">保守邻键纠错：保留正常拼音、简拼和未输完的拼音，不抢原候选首位（白霜拼音）</string>
+    <string name="pinyin_correction_summary">保守邻键纠错，并容忍常见字母对调（如 fie→fei）；保留正常拼音和简拼，不抢原候选首位（白霜拼音）</string>
     <string name="pinyin_correction_failed">拼音纠错设置部署失败，请重试</string>
     <string name="input_latency_logging">卡顿诊断</string>
     <string name="input_latency_logging_summary">记录打开键盘、引擎、候选和绘制的耗时，以及主线程卡住时的调用栈和掉帧。不记录输入内容。默认关闭，复现卡顿后用下面的按钮导出 txt，诊断完成后请关闭。</string>

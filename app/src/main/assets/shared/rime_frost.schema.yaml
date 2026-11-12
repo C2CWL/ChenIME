@@ -416,7 +416,8 @@ speller:
     - derive/^([nl])ue$/$1ve/
     - derive/^([jqxy])v/$1u/
 
-    # 键盘误触只走 translator/enable_correction，避免派生拼写绕过开关。
+    # 字母对调等容错派生由「拼音纠错」开关在 custom patch 里以
+    # speller/algebra/+ 追加，关闭时不生效；不在此写死以免绕过开关。
     # 保留上面的简拼和 ü 等价写法，不默认启用发音模糊。
 
 frost_aux:

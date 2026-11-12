@@ -28,6 +28,7 @@ import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.db.ClipboardHelper
 import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.data.prefs.PreferenceDelegate
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.bar.ui.AlwaysUi
@@ -94,6 +95,27 @@ class InputBarDelegate(override val di: DI) :
     private fun requestHideKeyboard() {
         lastHideUptimeMs = SystemClock.uptimeMillis()
         service.requestHideSelf(0)
+    }
+
+    private fun visibleToolbarActions(): List<String> {
+        val themeActions = ToolbarButtonLayout.defaultActions(
+            theme.toolBar.primaryButton?.action,
+            theme.toolBar.buttons.map { it.action },
+        )
+        return ToolbarButtonLayout.visibleActions(
+            ToolbarButtonLayout.resolve(
+                themeActions,
+                ToolbarButtonLayout.deserialize(prefs.keyboard.toolbarButtons.getValue()),
+            ),
+        )
+    }
+
+    private val onToolbarButtonsChange = PreferenceDelegate.OnChangeListener<String> { _, _ ->
+        applyToolbarLayout()
+    }
+
+    private fun applyToolbarLayout() {
+        alwaysUi.rebuildToolbar(visibleToolbarActions())
     }
 
     @Keep
@@ -282,6 +304,8 @@ class InputBarDelegate(override val di: DI) :
             add(tabUi.root, lParams(matchParent, matchParent))
 
             evalAlwaysUiState()
+            applyToolbarLayout()
+            prefs.keyboard.toolbarButtons.registerOnChangeListener(onToolbarButtonsChange)
             ClipboardHelper.addOnUpdateListener(onClipboardUpdateListener)
             syncToolbarOptionStates()
         }
@@ -304,6 +328,7 @@ class InputBarDelegate(override val di: DI) :
     }
 
     override fun onStartInput(info: EditorInfo, restarting: Boolean) {
+        applyToolbarLayout()
         evalAlwaysUiState()
     }
 

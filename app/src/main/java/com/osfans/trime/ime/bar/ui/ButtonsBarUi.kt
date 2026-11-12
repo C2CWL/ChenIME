@@ -1,21 +1,20 @@
 /*
- * SPDX-FileCopyrightText: 2015 - 2025 Rime community
+ * SPDX-FileCopyrightText: 2015 - 2026 Rime community
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 package com.osfans.trime.ime.bar.ui
 
 import android.content.Context
+import android.view.Gravity
 import android.view.ViewConfiguration
-import androidx.annotation.DrawableRes
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.core.view.children
-import com.google.android.flexbox.AlignItems
-import com.google.android.flexbox.FlexDirection
-import com.google.android.flexbox.FlexboxLayout
-import com.google.android.flexbox.JustifyContent
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.ToolBar
+import com.osfans.trime.ime.bar.ToolbarButtonLayout
 import splitties.dimensions.dp
 import splitties.views.dsl.core.Ui
 import splitties.views.dsl.core.view
@@ -27,72 +26,80 @@ class ButtonsBarUi(
 ) : Ui {
     private val theme: Theme get() = scope.theme
 
-    override val root = view(::FlexboxLayout) {
-        alignItems = AlignItems.CENTER
-        justifyContent = JustifyContent.FLEX_START
-        flexDirection = FlexDirection.ROW_REVERSE
+    override val root = view(::LinearLayout) {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
     }
 
     val firstButton: ToolButton?
+        get() = root.children.filterIsInstance<ToolButton>().firstOrNull {
+            // The yaml Hide button, if it is currently shown.
+            (it.tag as? String) == ToolbarButtonLayout.HIDE_ACTION
+        }
 
     private val defaultButtonSize = theme.style.run { candidateViewHeight + commentHeight }
 
-    private fun isVoiceBesideHide(): Boolean {
-        val buttons = theme.toolBar.buttons
-        return buttons.getOrNull(0)?.action == "Hide" &&
-            buttons.getOrNull(1)?.action == "VOICE_ASSIST"
-    }
+    private var lastActions: List<String> = emptyList()
 
     private fun toolButton(
-        buttonConfig: ToolBar.Button?,
-        @DrawableRes icon: Int = 0,
-    ): ToolButton = if (buttonConfig != null) {
-        ToolButton(ctx, buttonConfig, scope).apply {
-            if (buttonConfig.action == "VOICE_ASSIST") {
-                // Lift must stay on this button; a press in the slop strip
-                // beside Hide is treated as Hide so a near-miss does not switch IME.
-                requireReleaseInside = true
-                setOnClickListener {
-                    val slop = ViewConfiguration.get(ctx).scaledTouchSlop.toFloat()
-                    val action = if (isVoiceBesideHide() && lastDownIsNearHideEdge(slop)) {
-                        "Hide"
-                    } else {
-                        buttonConfig.action
-                    }
-                    onButtonClick?.invoke(action)
+        buttonConfig: ToolBar.Button,
+        voiceBesideHide: Boolean,
+        hideOnRight: Boolean,
+    ): ToolButton = ToolButton(ctx, buttonConfig, scope).apply {
+        tag = buttonConfig.action
+        if (buttonConfig.action == ToolbarButtonLayout.VOICE_ACTION) {
+            // Lift must stay on this button; a press in the slop strip
+            // beside Hide is treated as Hide so a near-miss does not switch IME.
+            requireReleaseInside = true
+            setOnClickListener {
+                val slop = ViewConfiguration.get(ctx).scaledTouchSlop.toFloat()
+                val action = if (voiceBesideHide && lastDownIsNearHideEdge(slop, hideOnRight)) {
+                    ToolbarButtonLayout.HIDE_ACTION
+                } else {
+                    buttonConfig.action
                 }
-            } else {
-                setOnClickListener { onButtonClick?.invoke(buttonConfig.action) }
+                onButtonClick?.invoke(action)
             }
-            val longPressAction = buttonConfig.longPressAction
-            if (longPressAction.isNotEmpty()) {
-                setOnLongClickListener {
-                    onButtonClick?.invoke(longPressAction)
-                    true
-                }
-            }
+        } else {
+            setOnClickListener { onButtonClick?.invoke(buttonConfig.action) }
         }
-    } else {
-        ToolButton(ctx, icon, scope).apply {
-            setOnClickListener { onButtonClick?.invoke("") }
+        val longPressAction = buttonConfig.longPressAction
+        if (longPressAction.isNotEmpty()) {
+            setOnLongClickListener {
+                onButtonClick?.invoke(longPressAction)
+                true
+            }
         }
     }
 
-    init {
-        val buttons = theme.toolBar.buttons
-        firstButton = buttons.firstOrNull()?.let { toolButton(it) }
-
-        buttons.drop(1).forEach { config ->
-            val button = toolButton(config)
-            val size = getButtonSize(config)
-            val lParams = FlexboxLayout.LayoutParams(size.first, size.second).apply {
-                marginEnd = ctx.dp(theme.toolBar.buttonSpacing)
-                // Share spare viewport width equally, retaining the configured size when scrolling.
-                flexGrow = 1f
-                flexShrink = 0f
+    /**
+     * Rebuilds the row so [actions] share the bar width evenly, with a gap
+     * between neighboring hit areas. No-op when the actions are unchanged.
+     */
+    fun rebuild(actions: List<String>) {
+        if (actions == lastActions && root.childCount == actions.size) return
+        lastActions = actions
+        root.removeAllViews()
+        val gap = ctx.dp(theme.toolBar.buttonSpacing)
+        val voiceBesideHide = ToolbarButtonLayout.isVoiceBesideHide(actions)
+        val hideOnRight = ToolbarButtonLayout.hideIsOnRightOfVoice(actions)
+        actions.forEachIndexed { index, action ->
+            val config = configFor(action) ?: return@forEachIndexed
+            val button = toolButton(config, voiceBesideHide, hideOnRight)
+            val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
+                // Half-gap on each side so neighboring buttons do not touch and
+                // the space between every pair is the same.
+                marginStart = if (index == 0) 0 else gap / 2
+                marginEnd = if (index == actions.lastIndex) 0 else gap / 2
             }
-            root.addView(button, lParams)
+            root.addView(button, lp)
         }
+    }
+
+    private fun configFor(action: String): ToolBar.Button? {
+        val primary = theme.toolBar.primaryButton
+        if (primary?.action == action) return primary
+        return theme.toolBar.buttons.find { it.action == action }
     }
 
     internal fun getButtonSize(config: ToolBar.Button?, customDefaultSize: Int = defaultButtonSize): Pair<Int, Int> {
@@ -111,7 +118,6 @@ class ButtonsBarUi(
 
     /** Restyles the toolbar buttons after a scheme switch. */
     fun refreshColors() {
-        firstButton?.refreshColors()
         root.children.forEach { (it as ToolButton).refreshColors() }
     }
 }

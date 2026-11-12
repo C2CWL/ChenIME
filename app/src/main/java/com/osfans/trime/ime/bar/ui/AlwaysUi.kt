@@ -7,13 +7,10 @@ package com.osfans.trime.ime.bar.ui
 
 import android.content.Context
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
 import android.widget.ViewAnimator
 import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
-import androidx.core.view.doOnLayout
 import com.c2cwl.chenime.R
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
@@ -31,7 +28,6 @@ import splitties.views.dsl.core.Ui
 import splitties.views.dsl.core.add
 import splitties.views.dsl.core.lParams
 import splitties.views.dsl.core.matchParent
-import splitties.views.dsl.core.wrapContent
 import timber.log.Timber
 
 class AlwaysUi(
@@ -80,7 +76,6 @@ class AlwaysUi(
     private val rightMostButton =
         ViewAnimator(ctx).apply {
             add(hideKeyboardButton, lParams(matchParent, matchParent))
-            buttonsUi.firstButton?.let { add(it, lParams(matchParent, matchParent)) }
         }
 
     private val leftMostButton = toolButton(
@@ -91,16 +86,7 @@ class AlwaysUi(
     private val animator =
         ViewAnimator(ctx).apply {
             add(
-                HorizontalScrollView(ctx).apply {
-                    isHorizontalScrollBarEnabled = false
-                    isFillViewport = true
-                    addView(
-                        buttonsUi.root,
-                        FrameLayout.LayoutParams(wrapContent, matchParent),
-                    )
-                    // Start at the right: voice is adjacent to the pinned hide button.
-                    doOnLayout { fullScroll(View.FOCUS_RIGHT) }
-                },
+                buttonsUi.root,
                 lParams(matchParent, matchParent),
             )
             add(clipboardUi.root, lParams(matchParent, matchParent))
@@ -131,8 +117,10 @@ class AlwaysUi(
                 after(leftMostButton)
                 before(rightMostButton)
                 centerVertically()
-                // Same gap as between toolbar buttons, so Hide and Voice are not flush.
                 marginEnd = ctx.dp(theme.toolBar.buttonSpacing)
+                // When the pinned sides are GONE (toolbar state), use the full width.
+                goneEndMargin = 0
+                goneStartMargin = 0
             },
         )
     }.apply {
@@ -141,13 +129,11 @@ class AlwaysUi(
 
     fun updateButtonsStyle(option: String, enabled: Boolean) {
         leftMostButton.updateStyle(option, enabled)
-        buttonsUi.firstButton?.updateStyle(option, enabled)
         buttonsUi.updateStyle(option, enabled)
     }
 
     fun toggleOptions(): Set<String> = buildSet {
         leftMostButton.option?.let { add(it) }
-        buttonsUi.firstButton?.option?.let { add(it) }
         buttonsUi.root.children.forEach { (it as ToolButton).option?.let { add(it) } }
     }
 
@@ -159,6 +145,11 @@ class AlwaysUi(
         updateLeftMostButton(state)
     }
 
+    /** Rebuilds the equal-width toolbar row to match the user's order and visibility. */
+    fun rebuildToolbar(actions: List<String>) {
+        buttonsUi.rebuild(actions)
+    }
+
     /** Restyles the toolbar area after a scheme switch. */
     fun refreshColors() {
         leftMostButton.refreshColors()
@@ -168,9 +159,11 @@ class AlwaysUi(
     }
 
     private fun updateRightMostButton(state: State) {
-        val hasFirstButton = buttonsUi.firstButton != null
-        val showFirst = hasFirstButton && (theme.toolBar.buttons.isNotEmpty() || state != State.Toolbar)
-        rightMostButton.displayedChild = if (showFirst) 1 else 0
+        val toolbar = state == State.Toolbar
+        // In the toolbar state the Hide button lives in the equal-width row,
+        // so the pinned sides are hidden and the row uses the full bar width.
+        rightMostButton.visibility = if (toolbar) View.GONE else View.VISIBLE
+        leftMostButton.visibility = if (toolbar) View.GONE else View.VISIBLE
     }
 
     private fun updateLeftMostButton(state: State) {

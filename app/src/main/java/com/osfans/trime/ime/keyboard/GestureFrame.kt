@@ -330,6 +330,7 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
         behavior: KeyBehavior,
         longPress: Boolean,
     ) {
+        LagDiagnostics.keyDispatched()
         onRelease?.invoke(behavior, longPress)
         when (behavior) {
             KeyBehavior.CLICK -> performClick()

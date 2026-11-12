@@ -14,6 +14,8 @@ import android.graphics.RectF
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.text.InputType
 import android.view.InputDevice
@@ -100,6 +102,13 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     private var lastCommittedText: String = ""
 
     private var composingText: String = ""
+
+    // Latest inline preedit waiting to be sent to the editor. Flushed after the
+    // current animation frame so candidate layout/draw is not blocked by Binder IPC.
+    private var hasPendingComposing = false
+    private var pendingComposingText: String = ""
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
+    private val flushComposingRunnable = Runnable { flushScheduledComposing() }
 
     /** IME-side undo/redo steps for the toolbar buttons, see [ImeEditHistory]. */
     private val editHistory = ImeEditHistory()
@@ -264,7 +273,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             }
 
             is RimeMessage.InlinePreeditMessage -> {
-                updateComposingText(it.data)
+                scheduleComposingText(it.data)
             }
 
             is RimeMessage.KeyMessage ->
@@ -593,6 +602,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         attribute: EditorInfo,
         restarting: Boolean,
     ) {
+        cancelScheduledComposing()
         composingText = ""
         // A new field, or the same field restarted (often after the app replaced its text).
         editHistory.reset(attribute.initialSelStart, attribute.initialSelEnd)
@@ -710,6 +720,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
             finishComposingText()
             monitorCursorAnchor(false)
         }
+        cancelScheduledComposing()
         composingText = ""
         postRimeJob {
             clearComposition()
@@ -718,6 +729,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
     }
 
     fun commitText(text: String) {
+        flushScheduledComposing()
         val ic = currentInputConnection ?: return
 
         val hadComposing = composingText.isNotEmpty()
@@ -1149,11 +1161,55 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         }
     }
 
+    /**
+     * Apply inline preedit to the editor immediately. Used by explicit UI
+     * actions (e.g. the segments window). The per-key path uses
+     * [scheduleComposingText] so this Binder work does not stall the
+     * candidate bar.
+     */
     internal fun updateComposingText(text: String) {
+        cancelScheduledComposing()
+        applyComposingText(text)
+    }
+
+    private fun scheduleComposingText(text: String) {
+        pendingComposingText = text
+        hasPendingComposing = true
+        val runner = flushComposingRunnable
+        if (this::decorView.isInitialized) {
+            decorView.removeCallbacks(runner)
+            decorView.postOnAnimation(runner)
+        } else {
+            mainHandler.removeCallbacks(runner)
+            mainHandler.post(runner)
+        }
+    }
+
+    private fun flushScheduledComposing() {
+        if (!hasPendingComposing) return
+        val text = pendingComposingText
+        cancelScheduledComposing()
+        applyComposingText(text)
+    }
+
+    private fun cancelScheduledComposing() {
+        hasPendingComposing = false
+        pendingComposingText = ""
+        if (this::decorView.isInitialized) {
+            decorView.removeCallbacks(flushComposingRunnable)
+        }
+        mainHandler.removeCallbacks(flushComposingRunnable)
+    }
+
+    private fun applyComposingText(text: String) {
         val ic = currentInputConnection ?: return
+        val started = LagDiagnostics.start()
         ic.beginBatchEdit()
         if (composingText.isNotEmpty() || text.isNotEmpty()) {
-            if (!ic.getSelectedText(0).isNullOrEmpty()) {
+            // Only probe the editor for a selection when starting a new
+            // composition. During an ongoing composition this Binder call
+            // ran on every key and can take tens of milliseconds.
+            if (composingText.isEmpty() && !ic.getSelectedText(0).isNullOrEmpty()) {
                 ic.deleteSurroundingText(1, 0)
             }
             editHistory.expectComposingChange()
@@ -1164,6 +1220,7 @@ open class TrimeInputMethodService : LifecycleInputMethodService() {
         }
         composingText = text
         ic.endBatchEdit()
+        LagDiagnostics.duration("composing_ipc", started, minMs = 8, slowMs = 30)
     }
 
     fun getActiveText(type: Int): String {

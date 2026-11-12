@@ -11,6 +11,7 @@ import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
 import android.text.TextPaint
 import android.view.ContextThemeWrapper
+import android.view.View
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R
@@ -165,7 +166,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 if (candidateUpdateAt != 0L) {
                     InputLatency.log("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
                     LagDiagnostics.duration("candidate_layout", candidateUpdateAt, minMs = 16)
-                    LagDiagnostics.candidatesLaidOut()
+                    LagDiagnostics.candidatesLaidOut(getChildAt(0)?.parent as? View)
                     candidateUpdateAt = 0L
                 }
             }

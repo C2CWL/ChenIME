@@ -71,6 +71,8 @@ object RimeDaemon {
             }
         }
 
+        override fun <T> peek(block: RimeApi.() -> T): T = ensureEstablished { block(rimeImpl) }
+
         override suspend fun <T> runOnReady(block: suspend RimeApi.() -> T): T = ensureEstablished {
             realRime.lifecycle.whenReady { block(rimeImpl) }
         }

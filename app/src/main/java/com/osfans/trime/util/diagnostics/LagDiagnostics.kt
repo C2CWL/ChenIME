@@ -67,12 +67,20 @@ object LagDiagnostics {
     // per keyboard-visible session
     private val keyStats = DurationStats()
     private val touchToCandidates = DurationStats()
+    private val touchToDispatch = DurationStats()
+    private val dispatchToRime = DurationStats()
+    private val rimeStage = DurationStats()
+    private val rimeToMain = DurationStats()
+    private val mainToLayout = DurationStats()
+    private val layoutToDraw = DurationStats()
     private val frameStats = FrameStats()
     private val stallCount = AtomicInteger()
     private val touchToCandidatesClock = TouchToCandidatesClock()
     private var lastFrameTimeNs = 0L
     private var firstDrawListener: ViewTreeObserver.OnDrawListener? = null
     private var firstDrawDecorView: View? = null
+    private var pathDrawListener: ViewTreeObserver.OnDrawListener? = null
+    private var pathDrawView: View? = null
     private val frameCallback = FrameMonitorCallback()
     private var sessionStartUptime = 0L
     private var sessionStartCpuMs = 0L
@@ -195,16 +203,92 @@ object LagDiagnostics {
         if (age >= SLOW_MS) writeLine("touch_dispatch", LagLine.durationDetails(age, SLOW_MS, "note=touch_reached_keyboard_late"))
     }
 
-    fun candidatesUpdated(empty: Boolean) {
+    fun keyDispatched() {
         if (!enabled) return
-        touchToCandidatesClock.onCandidateUpdate(empty)
+        touchToCandidatesClock.onDispatched(SystemClock.uptimeMillis())
     }
 
-    fun candidatesLaidOut() {
+    fun rimeKeyStarted() {
         if (!enabled) return
-        val ms = touchToCandidatesClock.onCandidatesLaidOut(SystemClock.uptimeMillis()) ?: return
-        touchToCandidates.add(ms)
-        if (ms >= SLOW_TOUCH_TO_CANDIDATES_MS) writeLine("touch_to_candidates", LagLine.durationDetails(ms, SLOW_TOUCH_TO_CANDIDATES_MS))
+        touchToCandidatesClock.onRimeStarted(SystemClock.uptimeMillis())
+    }
+
+    fun rimeKeyFinished() {
+        if (!enabled) return
+        touchToCandidatesClock.onRimeFinished(SystemClock.uptimeMillis())
+    }
+
+    fun candidatesUpdated(empty: Boolean) {
+        if (!enabled) return
+        touchToCandidatesClock.onCandidateUpdate(empty, SystemClock.uptimeMillis())
+    }
+
+    fun candidatesLaidOut(hostView: View? = null) {
+        if (!enabled) return
+        val timing = touchToCandidatesClock.onCandidatesLaidOut(SystemClock.uptimeMillis()) ?: return
+        recordPathStages(timing)
+        if (timing.totalMs >= SLOW_TOUCH_TO_CANDIDATES_MS) {
+            writeLine(
+                "touch_to_candidates",
+                LagLine.durationDetails(timing.totalMs, SLOW_TOUCH_TO_CANDIDATES_MS, timing.details()),
+            )
+        }
+        awaitPathDraw(hostView)
+    }
+
+    private fun recordPathStages(timing: PathTiming) {
+        touchToCandidates.add(timing.totalMs)
+        if (timing.touchToDispatchMs >= 0) touchToDispatch.add(timing.touchToDispatchMs)
+        if (timing.dispatchToRimeMs >= 0) dispatchToRime.add(timing.dispatchToRimeMs)
+        if (timing.rimeMs >= 0) rimeStage.add(timing.rimeMs)
+        if (timing.rimeToMainMs >= 0) rimeToMain.add(timing.rimeToMainMs)
+        if (timing.mainToLayoutMs >= 0) mainToLayout.add(timing.mainToLayoutMs)
+        if (timing.layoutToDrawMs >= 0) layoutToDraw.add(timing.layoutToDrawMs)
+    }
+
+    private fun awaitPathDraw(hostView: View?) {
+        removePathDrawListener()
+        val view = hostView ?: return
+        val observer = view.viewTreeObserver
+        if (!observer.isAlive) return
+        val listener = object : ViewTreeObserver.OnDrawListener {
+            var done = false
+
+            override fun onDraw() {
+                if (done) return
+                done = true
+                val timing = touchToCandidatesClock.onFrameDrawn(SystemClock.uptimeMillis())
+                if (timing != null && timing.layoutToDrawMs >= 0) {
+                    layoutToDraw.add(timing.layoutToDrawMs)
+                    if (timing.layoutToDrawMs >= 16L || timing.totalMs >= SLOW_TOUCH_TO_CANDIDATES_MS) {
+                        writeLine(
+                            "layout_to_draw",
+                            LagLine.durationDetails(
+                                timing.layoutToDrawMs,
+                                SLOW_MS,
+                                "touch_to_cand_ms=${timing.totalMs}",
+                            ),
+                        )
+                    }
+                }
+                // a draw listener cannot remove itself while drawing
+                mainHandler.post { removePathDrawListener() }
+            }
+        }
+        pathDrawListener = listener
+        pathDrawView = view
+        observer.addOnDrawListener(listener)
+    }
+
+    private fun removePathDrawListener() {
+        val listener = pathDrawListener ?: return
+        val view = pathDrawView
+        pathDrawListener = null
+        pathDrawView = null
+        val observer = view?.viewTreeObserver
+        if (observer != null && observer.isAlive) {
+            runCatching { observer.removeOnDrawListener(listener) }
+        }
     }
 
     fun inputViewBuilt(startNs: Long, reason: String) {
@@ -237,6 +321,12 @@ object LagDiagnostics {
         sessionStartCpuMs = cpu
         keyStats.reset()
         touchToCandidates.reset()
+        touchToDispatch.reset()
+        dispatchToRime.reset()
+        rimeStage.reset()
+        rimeToMain.reset()
+        mainToLayout.reset()
+        layoutToDraw.reset()
         frameStats.reset()
         stallCount.set(0)
         val openedAt = startInputViewAt.takeIf { it > 0 } ?: now
@@ -262,7 +352,10 @@ object LagDiagnostics {
         writeLine(
             "session",
             "shown_s=${wallMs / 1_000} cpu_ms=$cpuMs cpu_pct=$cpuPercent ${keyStats.describe("keys")} " +
-                "${touchToCandidates.describe("touch_to_cand")} ${frameStats.describe()} main_stalls=${stallCount.get()}",
+                "${touchToCandidates.describe("touch_to_cand")} ${touchToDispatch.describe("touch_to_dispatch")} " +
+                "${dispatchToRime.describe("dispatch_to_rime")} ${rimeStage.describe("rime")} " +
+                "${rimeToMain.describe("rime_to_main")} ${mainToLayout.describe("main_to_layout")} " +
+                "${layoutToDraw.describe("layout_to_draw")} ${frameStats.describe()} main_stalls=${stallCount.get()}",
         )
         sessionStartUptime = 0L
     }
@@ -312,6 +405,7 @@ object LagDiagnostics {
         frameMonitorRunning = false
         lastFrameTimeNs = 0L
         removeFirstDrawListener()
+        removePathDrawListener()
         val removeFrame = Runnable {
             runCatching { Choreographer.getInstance().removeFrameCallback(frameCallback) }
         }

@@ -461,7 +461,27 @@ class BuiltinThemeTest :
         "Frost defaults native correction off through a bundled patch" {
             val patch = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.custom.yaml").readText())
             patch["patch"]?.get("translator/enable_correction")?.string shouldBe "false"
+            // Letter-swap derives are added at runtime by the switch, not baked into the
+            // bundled off patch, so they cannot bypass 「拼音纠错」.
+            patch["patch"]?.get("speller/algebra/+") shouldBe null
+            patch["patch"]?.get("speller/algebra") shouldBe null
             ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
+        }
+
+        "Frost schema keeps 简拼 and ü algebra and does not bake in letter-swap derives" {
+            val schema = ThemeYaml.parser.parseToYamlNode(root.resolve("rime_frost.schema.yaml").readText())
+            val algebra = schema["speller"]!!["algebra"]!!.sequence!!.items.map { it.string }
+            algebra.contains("abbrev/^([a-z]).+$/\$1/") shouldBe true
+            algebra.contains("abbrev/^([zcs]h).+$/\$1/") shouldBe true
+            algebra.contains("derive/^([a-z]+)\$/\\U\$1/") shouldBe true
+            algebra.contains("derive/^([nl])ve$/\$1ue/") shouldBe true
+            algebra.contains("derive/^([jqxy])u/\$1v/") shouldBe true
+            algebra.contains("derive/^([nl])ue$/\$1ve/") shouldBe true
+            algebra.contains("derive/^([jqxy])v/\$1u/") shouldBe true
+            algebra.any { it?.contains("([wfghkz])ei") == true } shouldBe false
+            algebra.any { it?.contains("hzi") == true } shouldBe false
+            // Side-effect zh/ch/sh transpositions (hzi → zhi) stay disabled.
+            algebra.any { it?.contains("([zcs])h(a|e|i|u|") == true } shouldBe false
         }
 
         "Frost bundles no character decomposition lookup or comments" {

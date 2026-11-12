@@ -1,3 +1,4 @@
-# Native correction is opt-in through 拼音纠错.
+# 「拼音纠错」开关会改写 translator/enable_correction，
+# 并在开启时通过 speller/algebra/+ 追加字母对调派生规则。
 patch:
   translator/enable_correction: false

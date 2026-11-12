@@ -59,7 +59,7 @@ diff --git a/test/config_test.cc b/test/config_test.cc
 index cae2a9fb..2ef0f15b 100644
 --- a/test/config_test.cc
 +++ b/test/config_test.cc
-@@ -293,3 +293,23 @@ TEST(RimeConfigListKeyPathTest, Greetings) {
+@@ -293,3 +293,94 @@ TEST(RimeConfigListKeyPathTest, Greetings) {
    EXPECT_TRUE(config->GetInt("list/@last/id", &id));
    EXPECT_EQ(6, id);
  }
@@ -82,6 +82,77 @@ index cae2a9fb..2ef0f15b 100644
 +  EXPECT_FALSE(chen::PatchPinyinCorrection(config, false));
 +  EXPECT_TRUE(chen::PatchPinyinCorrection(config, true));
 +  EXPECT_FALSE(chen::PatchPinyinCorrection(config, true));
++}
++
++static an<ConfigList> AlgebraAppend(an<ConfigMap> patch) {
++  return As<ConfigList>(patch->Get(chen::kAlgebraAppendKey));
++}
++
++static bool ListHas(an<ConfigList> list, const char* rule) {
++  if (!list) return false;
++  for (size_t i = 0; i < list->size(); ++i) {
++    auto value = list->GetValueAt(i);
++    string text;
++    if (value && value->GetString(&text) && text == rule) return true;
++  }
++  return false;
++}
++
++TEST(RimePinyinCorrectionMigrationTest, AppendsTypoRulesWhenEnabled) {
++  Config config;
++  config.SetString("patch/unrelated", "keep me");
++  auto user_list = New<ConfigList>();
++  user_list->Append(New<ConfigValue>("xform/^abc$/def/"));
++  auto patch = config.GetMap("patch");
++  patch->Set(chen::kAlgebraAppendKey, user_list);
++
++  EXPECT_TRUE(chen::PatchPinyinCorrection(config, true));
++  bool enabled = false;
++  EXPECT_TRUE(
++      patch->GetValue("translator/enable_correction")->GetBool(&enabled));
++  EXPECT_TRUE(enabled);
++  auto list = AlgebraAppend(patch);
++  ASSERT_TRUE(list);
++  // Append, do not replace: user rule stays first, then our derive rules.
++  EXPECT_EQ("xform/^abc$/def/", list->GetValueAt(0)->str());
++  EXPECT_EQ(1 + chen::kTypoDeriveRuleCount, list->size());
++  for (size_t i = 0; i < chen::kTypoDeriveRuleCount; ++i) {
++    EXPECT_TRUE(ListHas(list, chen::kTypoDeriveRules[i]));
++  }
++  // fiechang: fie is a derived spelling of fei.
++  EXPECT_TRUE(ListHas(list, "derive/([wfghkz])ei$/$1ie/"));
++  // Must be an append key so schema algebra (简拼, ve/ue, etc.) is kept.
++  EXPECT_FALSE(patch->Get("speller/algebra"));
++  EXPECT_FALSE(chen::PatchPinyinCorrection(config, true));
++
++  EXPECT_TRUE(chen::PatchPinyinCorrection(config, false));
++  enabled = true;
++  EXPECT_TRUE(
++      patch->GetValue("translator/enable_correction")->GetBool(&enabled));
++  EXPECT_FALSE(enabled);
++  auto after = AlgebraAppend(patch);
++  ASSERT_TRUE(after);
++  ASSERT_EQ(1, after->size());
++  EXPECT_EQ("xform/^abc$/def/", after->GetValueAt(0)->str());
++  EXPECT_FALSE(ListHas(after, "derive/([wfghkz])ei$/$1ie/"));
++  string unrelated;
++  EXPECT_TRUE(config.GetString("patch/unrelated", &unrelated));
++  EXPECT_EQ("keep me", unrelated);
++  EXPECT_FALSE(chen::PatchPinyinCorrection(config, false));
++}
++
++TEST(RimePinyinCorrectionMigrationTest, ClearsAppendKeyWhenNoUserRulesRemain) {
++  Config config;
++  EXPECT_TRUE(chen::PatchPinyinCorrection(config, true));
++  auto patch = config.GetMap("patch");
++  auto list = AlgebraAppend(patch);
++  ASSERT_TRUE(list);
++  EXPECT_EQ(chen::kTypoDeriveRuleCount, list->size());
++  EXPECT_TRUE(chen::PatchPinyinCorrection(config, false));
++  EXPECT_FALSE(patch->Get(chen::kAlgebraAppendKey));
++  // Already-on users missing the new rules are migrated on the next start.
++  EXPECT_TRUE(chen::PatchPinyinCorrection(config, true));
++  EXPECT_EQ(chen::kTypoDeriveRuleCount, AlgebraAppend(patch)->size());
 +}
 diff --git a/test/syllabifier_test.cc b/test/syllabifier_test.cc
 --- a/test/syllabifier_test.cc

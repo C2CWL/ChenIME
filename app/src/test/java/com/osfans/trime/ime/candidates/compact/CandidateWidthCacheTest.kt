@@ -26,20 +26,21 @@ class CandidateWidthCacheTest :
                 cache.size shouldBe 1
             }
 
-            then("a different comment, size or padding is a different key") {
+            then("a different comment, size, padding or typeface is a different key") {
                 val cache = CandidateWidthCache()
                 var measured = 0
                 val measure = {
                     measured += 1
                     measured.toFloat()
                 }
-                cache.getOrMeasure("词", "", 16f, 12f, 8f, false, measure)
-                cache.getOrMeasure("词", "*", 16f, 12f, 8f, false, measure)
-                cache.getOrMeasure("词", "", 18f, 12f, 8f, false, measure)
-                cache.getOrMeasure("词", "", 16f, 12f, 10f, false, measure)
-                cache.getOrMeasure("词", "", 16f, 12f, 8f, true, measure)
-                measured shouldBe 5
-                cache.size shouldBe 5
+                cache.getOrMeasure("词", "", 16f, 12f, 8f, false, measure = measure)
+                cache.getOrMeasure("词", "*", 16f, 12f, 8f, false, measure = measure)
+                cache.getOrMeasure("词", "", 18f, 12f, 8f, false, measure = measure)
+                cache.getOrMeasure("词", "", 16f, 12f, 10f, false, measure = measure)
+                cache.getOrMeasure("词", "", 16f, 12f, 8f, true, measure = measure)
+                cache.getOrMeasure("词", "", 16f, 12f, 8f, false, 42, measure = measure)
+                measured shouldBe 6
+                cache.size shouldBe 6
             }
 
             then("the oldest entry is evicted once the cache is full") {

@@ -92,11 +92,13 @@ local function correction_comment_for(cand, items)
     return nil
 end
 
--- Returns (correction_comment, hinted_pinyin). hinted_pinyin is only set when
--- the candidate already carried a ［拼音］ comment (the old spelling_hints path).
+-- Returns (correction_comment, hinted_pinyin). hinted_pinyin is set when the
+-- comment is wrapped in ［］, including the empty ［］ leftover when spelling_hints is 0.
 local function find_correction(cand, env)
     local pinyin = cand.comment:match("^［(.-)］$")
-    if pinyin and #pinyin > 0 then
+    -- Empty ［］ (spelling_hints off + comment_format still wrapping) must also
+    -- be cleared; otherwise the leftover brackets show as stray marks.
+    if pinyin then
         return correction_comment_for(cand, lookup_items(pinyin, env.delimiter)), pinyin
     end
     local items = lookup_items(cand.preedit, env.delimiter)

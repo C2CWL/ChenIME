@@ -24,9 +24,10 @@ internal class CandidateWidthCache(private val maxSize: Int = DEFAULT_MAX_SIZE) 
         commentSize: Float,
         padding: Float,
         commentOnRight: Boolean,
+        typefaceKey: Int = 0,
         measure: () -> Float,
     ): Float {
-        val key = "$text\u0000$comment\u0000$textSize\u0000$commentSize\u0000$padding\u0000$commentOnRight"
+        val key = "$text\u0000$comment\u0000$textSize\u0000$commentSize\u0000$padding\u0000$commentOnRight\u0000$typefaceKey"
         val cached = map[key]
         if (cached != null) return cached
         val width = measure()

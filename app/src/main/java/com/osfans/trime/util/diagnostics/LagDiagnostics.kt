@@ -73,6 +73,8 @@ object LagDiagnostics {
     private val rimeToMain = DurationStats()
     private val mainToLayout = DurationStats()
     private val layoutToDraw = DurationStats()
+    private val rimeTranslators = DurationStats()
+    private val rimeLua = DurationStats()
     private val frameStats = FrameStats()
     private val stallCount = AtomicInteger()
     private val touchToCandidatesClock = TouchToCandidatesClock()
@@ -184,15 +186,28 @@ object LagDiagnostics {
         if (runMs >= SLOW_RIME_JOB_MS) writeLine("rime_job", LagLine.durationDetails(runMs, SLOW_RIME_JOB_MS, "job=$job"))
     }
 
-    fun keyProcessed(totalUs: Long, engineUs: Long, responseUs: Long, idleGapUs: Long) {
+    fun keyProcessed(
+        totalUs: Long,
+        engineUs: Long,
+        responseUs: Long,
+        idleGapUs: Long,
+        translatorUs: Long = -1,
+        luaUs: Long = -1,
+    ) {
         if (!enabled) return
         val ms = totalUs / 1_000
         keyStats.add(ms)
+        if (translatorUs >= 0) rimeTranslators.add(translatorUs / 1_000)
+        if (luaUs >= 0) rimeLua.add(luaUs / 1_000)
         if (ms >= SLOW_KEY_MS) {
-            writeLine(
-                "key_process",
-                LagLine.durationDetails(ms, SLOW_MS, "engine_ms=${engineUs / 1_000} response_ms=${responseUs / 1_000} idle_gap_ms=${idleGapUs / 1_000}"),
-            )
+            val extra = buildString {
+                append("engine_ms=").append(engineUs / 1_000)
+                append(" response_ms=").append(responseUs / 1_000)
+                append(" idle_gap_ms=").append(idleGapUs / 1_000)
+                if (translatorUs >= 0) append(" translator_ms=").append(translatorUs / 1_000)
+                if (luaUs >= 0) append(" lua_ms=").append(luaUs / 1_000)
+            }
+            writeLine("key_process", LagLine.durationDetails(ms, SLOW_MS, extra))
         }
     }
 
@@ -327,6 +342,8 @@ object LagDiagnostics {
         rimeToMain.reset()
         mainToLayout.reset()
         layoutToDraw.reset()
+        rimeTranslators.reset()
+        rimeLua.reset()
         frameStats.reset()
         stallCount.set(0)
         val openedAt = startInputViewAt.takeIf { it > 0 } ?: now
@@ -355,7 +372,8 @@ object LagDiagnostics {
                 "${touchToCandidates.describe("touch_to_cand")} ${touchToDispatch.describe("touch_to_dispatch")} " +
                 "${dispatchToRime.describe("dispatch_to_rime")} ${rimeStage.describe("rime")} " +
                 "${rimeToMain.describe("rime_to_main")} ${mainToLayout.describe("main_to_layout")} " +
-                "${layoutToDraw.describe("layout_to_draw")} ${frameStats.describe()} main_stalls=${stallCount.get()}",
+                "${layoutToDraw.describe("layout_to_draw")} ${rimeTranslators.describe("rime_translators")} " +
+                "${rimeLua.describe("rime_lua")} ${frameStats.describe()} main_stalls=${stallCount.get()}",
         )
         sessionStartUptime = 0L
     }

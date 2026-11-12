@@ -383,7 +383,14 @@ class Rime :
         var engineAt = startedAt
         try {
             lastAsciiTipsText = asciiTipsText(getRimeStatus())
-            if (recording) statusAt = System.nanoTime()
+            if (recording) {
+                statusAt = System.nanoTime()
+                // Clear stale timings from the previous key (e.g. a schema
+                // without the chen_timing filters would otherwise be attributed
+                // to this one). Empty, never typed content.
+                setRimeProperty("_chen_xlt_us", "")
+                setRimeProperty("_chen_pipe_us", "")
+            }
             val handled = processRimeKey(value, modifiers)
             if (recording) engineAt = System.nanoTime()
             emitResponse()
@@ -407,11 +414,16 @@ class Rime :
                     (finishedAt - engineAt) / 1_000,
                     (finishedAt - startedAt) / 1_000,
                 )
+                val xltUs = getRimeProperty("_chen_xlt_us").toLongOrNull() ?: -1L
+                val pipeUs = getRimeProperty("_chen_pipe_us").toLongOrNull() ?: -1L
+                val luaUs = if (xltUs >= 0 && pipeUs >= xltUs) pipeUs - xltUs else -1L
                 LagDiagnostics.keyProcessed(
                     totalUs = (finishedAt - startedAt) / 1_000,
                     engineUs = (engineAt - statusAt) / 1_000,
                     responseUs = (finishedAt - engineAt) / 1_000,
                     idleGapUs = if (lastKeyFinishedAt == 0L) -1L else (startedAt - lastKeyFinishedAt) / 1_000,
+                    translatorUs = xltUs,
+                    luaUs = luaUs,
                 )
                 lastKeyFinishedAt = finishedAt
             } else {
@@ -678,6 +690,12 @@ class Rime :
 
         @JvmStatic
         external fun getRimeRawInput(): String
+
+        @JvmStatic
+        private external fun getRimeProperty(key: String): String
+
+        @JvmStatic
+        private external fun setRimeProperty(key: String, value: String)
 
         @JvmStatic
         external fun insertRimeCompositionText(text: String): Boolean

@@ -49,19 +49,32 @@ open class CompactCandidateViewAdapter(
         layoutFlexGrow = flexGrow
     }
 
-    fun updateItemWidths(widths: List<Int>, lastEllipsized: Boolean = false) {
+    /** @return true if the stored widths changed. */
+    fun updateItemWidths(widths: List<Int>, lastEllipsized: Boolean = false): Boolean {
+        if (itemWidths == widths && lastItemEllipsized == lastEllipsized) return false
         itemWidths = widths
         lastItemEllipsized = lastEllipsized
+        return true
     }
 
+    /**
+     * @return true if the list, total or highlight actually changed and a
+     * [submitList] ran. Identical updates (a second Flexbox pass, a no-op
+     * republish) skip the adapter rebind.
+     */
     fun updateCandidates(
         data: Array<CandidateProto>,
         total: Int,
         highlightedIndex: Int,
-    ) {
-        super.submitList(data.toList(), null)
+    ): Boolean {
+        val newItems = data.toList()
+        if (newItems == items && this.total == total && this.highlightedIdx == highlightedIndex) {
+            return false
+        }
+        super.submitList(newItems, null)
         this.total = total
         this.highlightedIdx = highlightedIndex
+        return true
     }
 
     override fun onCreateViewHolder(

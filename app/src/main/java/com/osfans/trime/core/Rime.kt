@@ -376,6 +376,7 @@ class Rime :
     private var lastKeyFinishedAt = 0L
 
     private fun processKeyInner(value: Int, modifiers: Int, isVirtual: Boolean): Boolean {
+        LagDiagnostics.rimeKeyStarted()
         val startedAt = if (InputLatency.enabled) System.nanoTime() else 0L
         val recording = startedAt != 0L
         var statusAt = startedAt
@@ -394,6 +395,7 @@ class Rime :
             }
             return handled
         } finally {
+            LagDiagnostics.rimeKeyFinished()
             if (recording) {
                 val finishedAt = System.nanoTime()
                 InputLatency.log(

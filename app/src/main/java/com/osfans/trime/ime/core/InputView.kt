@@ -151,10 +151,11 @@ class InputView(
     private var lastAppearanceState = Triple(false, false, false)
 
     private fun broadcastKeyAppearanceUpdate() {
-        val composing = rime.run { statusCached.isComposing }
-        val hasMenu = rime.run { hasMenu }
-        val paging = rime.run { paging }
-        val current = Triple(composing, hasMenu, paging)
+        // peek() reads already-updated caches on this thread; run() would
+        // runBlocking three times on the main thread for every Rime message.
+        val current = rime.peek {
+            Triple(statusCached.isComposing, hasMenu, paging)
+        }
         if (current != lastAppearanceState) {
             lastAppearanceState = current
             broadcaster.onKeyAppearanceUpdate(current.first, current.second, current.third)

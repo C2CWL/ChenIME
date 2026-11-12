@@ -165,7 +165,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 if (candidateUpdateAt != 0L) {
                     InputLatency.log("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
                     LagDiagnostics.duration("candidate_layout", candidateUpdateAt, minMs = 16)
-                    LagDiagnostics.candidatesLaidOut()
+                    LagDiagnostics.candidatesLaidOut(this@CompactCandidateDelegate.view)
                     candidateUpdateAt = 0L
                 }
             }

@@ -22,6 +22,13 @@ interface RimeSession {
     fun <T> run(block: suspend RimeApi.() -> T): T
 
     /**
+     * Read a non-blocking value on the caller's thread.
+     * Unlike [run], this does not start a coroutine or block the thread,
+     * so it is safe on the main thread in a tight input path.
+     */
+    fun <T> peek(block: RimeApi.() -> T): T
+
+    /**
      * Run an operation immediately if rime is at ready state.
      * Otherwise, caller will be suspended until rime is ready and operation is done.
      * The [block] will be executed in caller's thread.

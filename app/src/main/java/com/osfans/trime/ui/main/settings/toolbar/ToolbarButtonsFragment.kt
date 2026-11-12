@@ -88,8 +88,7 @@ class ToolbarButtonsFragment : Fragment() {
         }
     }
 
-    private fun loadItems(themeActions: List<String>): List<ToolbarButtonPref> =
-        ToolbarButtonLayout.resolve(themeActions, ToolbarButtonLayout.deserialize(prefs.getValue()))
+    private fun loadItems(themeActions: List<String>): List<ToolbarButtonPref> = ToolbarButtonLayout.resolve(themeActions, ToolbarButtonLayout.deserialize(prefs.getValue()))
 
     private fun persist(items: List<ToolbarButtonPref>) {
         prefs.setValue(ToolbarButtonLayout.serialize(items))

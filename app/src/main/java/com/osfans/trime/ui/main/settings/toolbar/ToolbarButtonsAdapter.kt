@@ -38,8 +38,7 @@ class ToolbarButtonsAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder =
-        Holder(ToolbarButtonsEntryUi(parent.context))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder = Holder(ToolbarButtonsEntryUi(parent.context))
 
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val pref = items[position]

@@ -86,8 +86,7 @@ object ToolbarButtonLayout {
         return voiceIdx >= 0 && hideIdx == voiceIdx + 1
     }
 
-    fun serialize(prefs: List<ToolbarButtonPref>): String =
-        prefs.joinToString(",") { "${it.action}:${if (it.visible) 1 else 0}" }
+    fun serialize(prefs: List<ToolbarButtonPref>): String = prefs.joinToString(",") { "${it.action}:${if (it.visible) 1 else 0}" }
 
     fun deserialize(raw: String?): List<ToolbarButtonPref> {
         if (raw.isNullOrBlank()) return emptyList()

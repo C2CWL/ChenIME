@@ -206,7 +206,7 @@ internal object LagReport {
         val parsed = lines.mapNotNull(LagLine::parse)
         appendLine("记录条数: ${parsed.size}")
         if (parsed.isEmpty()) {
-            appendLine("（没有记录。请先在 设置 → 虚拟键盘 打开“卡顿诊断”，复现卡顿后再导出。）")
+            appendLine("（没有记录。请先在 设置 → 高级 打开“卡顿诊断”，复现卡顿后再导出。）")
             return@buildString
         }
         appendLine("时间范围: ${parsed.first().time} ~ ${parsed.last().time}")

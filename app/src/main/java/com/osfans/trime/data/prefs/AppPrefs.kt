@@ -180,13 +180,6 @@ class AppPrefs(
             ALWAYS(R.string.always),
         }
 
-        val inputLatencyLogging = switch(
-            R.string.input_latency_logging,
-            "input_latency_logging",
-            false,
-            R.string.input_latency_logging_summary,
-        )
-
         val heightPercent = int(R.string.keyboard_height, HEIGHT_PERCENT, 100, 70, 150, "%")
 
         val landscapeMode = enum(R.string.enable_landscape_mode, LANDSCAPE_MODE, LandscapeMode.NEVER)
@@ -491,6 +484,13 @@ class AppPrefs(
             IGNORE_SYSTEM_GESTURE_INSETS,
             false,
         )
+
+        val inputLatencyLogging = switch(
+            R.string.input_latency_logging,
+            "input_latency_logging",
+            false,
+            R.string.input_latency_logging_summary,
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -502,6 +502,7 @@ class AppPrefs(
                 keyboard,
                 candidates,
                 clipboard,
+                advanced,
             ).forEach { category ->
                 category.preferenceDelegates.forEach {
                     it.value.putValueTo(this@edit)

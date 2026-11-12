@@ -307,6 +307,7 @@
     <string name="input_latency_logging">卡頓診斷</string>
     <string name="input_latency_logging_summary">記錄開啟鍵盤、引擎、候選和繪製的耗時，以及主執行緒卡住時的呼叫堆疊和掉幀。不記錄輸入內容。預設關閉，重現卡頓後用下面的按鈕匯出 txt，診斷完成後請關閉。</string>
     <string name="lag_diagnostics_export">匯出卡頓診斷（txt）</string>
+    <string name="lag_diagnostics_share">分享卡頓診斷</string>
     <string name="lag_diagnostics_export_summary">已記錄 %1$s</string>
     <string name="lag_diagnostics_clear">清除卡頓診斷</string>
     <string name="lag_diagnostics_clear_confirm">清除所有卡頓診斷記錄？</string>

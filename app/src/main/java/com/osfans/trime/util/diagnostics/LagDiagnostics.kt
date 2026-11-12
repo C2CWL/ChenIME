@@ -106,7 +106,7 @@ object LagDiagnostics {
         val ctx = context.applicationContext ?: context
         appContext = ctx
         store = LagLogStore(File(ctx.filesDir, "diagnostics"))
-        val pref = AppPrefs.defaultInstance().keyboard.inputLatencyLogging
+        val pref = AppPrefs.defaultInstance().advanced.inputLatencyLogging
         enabled = pref.getValue()
         pref.registerOnChangeListener(prefListener)
         if (enabled) {

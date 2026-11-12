@@ -40,6 +40,7 @@ import org.kodein.di.DIAware
 import org.kodein.di.instance
 import splitties.dimensions.dp
 import splitties.views.dsl.recyclerview.recyclerView
+import kotlin.math.ceil
 import kotlin.math.max
 
 class CompactCandidateDelegate(override val di: DI) :
@@ -258,6 +259,7 @@ class CompactCandidateDelegate(override val di: DI) :
             commentPaint.textSize,
             padding,
             commentOnRight,
+            (textPaint.typeface?.hashCode() ?: 0) xor (commentPaint.typeface?.hashCode() ?: 0),
         ) {
             candidateLayoutWidth(
                 textPaint.measureText(candidate.text),
@@ -291,7 +293,7 @@ class CompactCandidateDelegate(override val di: DI) :
         val lastEllipsized = packed.lastOrNull()?.ellipsized == true
         if (lastEllipsized) secondLayoutPassNeeded = false
         val widthsChanged = adapter.updateItemWidths(
-            packed.map { it.width.toInt().coerceAtLeast(1) },
+            packed.map { ceil(it.width).toInt().coerceAtLeast(1) },
             lastEllipsized,
         )
         val dataChanged = adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)

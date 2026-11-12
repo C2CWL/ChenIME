@@ -135,6 +135,19 @@ class Rime {
     return rime->get_option(session(), key.data());
   }
 
+  std::string getProperty(std::string_view key) {
+    char result[MAX_BUFFER_LENGTH];
+    result[0] = '\0';
+    if (rime->get_property(session(), key.data(), result, MAX_BUFFER_LENGTH)) {
+      return result;
+    }
+    return "";
+  }
+
+  void setProperty(std::string_view key, std::string_view value) {
+    rime->set_property(session(), key.data(), value.data());
+  }
+
   std::string currentSchemaId() {
     char result[MAX_BUFFER_LENGTH];
     return rime->get_current_schema(session(), result, MAX_BUFFER_LENGTH)
@@ -400,6 +413,18 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_com_osfans_trime_core_Rime_getRimeRawInput(JNIEnv* env,
                                                 jclass /* thiz */) {
   return env->NewStringUTF(Rime::Instance().rawInput().data());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_osfans_trime_core_Rime_getRimeProperty(JNIEnv* env, jclass /* thiz */,
+                                                jstring key) {
+  return env->NewStringUTF(Rime::Instance().getProperty(*CString(env, key)).c_str());
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_osfans_trime_core_Rime_setRimeProperty(JNIEnv* env, jclass /* thiz */,
+                                                jstring key, jstring value) {
+  Rime::Instance().setProperty(*CString(env, key), *CString(env, value));
 }
 
 extern "C" JNIEXPORT jint JNICALL

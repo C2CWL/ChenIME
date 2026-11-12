@@ -12,6 +12,7 @@ import android.graphics.Rect
 import android.text.TextUtils
 import android.util.AttributeSet
 import android.view.Gravity
+import android.view.accessibility.AccessibilityManager
 import android.widget.TextView
 import androidx.core.graphics.withSave
 import com.osfans.trime.ime.keyboard.DistinctLetterGlyph
@@ -76,8 +77,12 @@ constructor(
         widthMeasureSpec: Int,
         heightMeasureSpec: Int,
     ) {
-        // Update the framework Layout for accessibility before our custom measurement.
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        // Custom onDraw never uses the framework Layout. Building it on every
+        // Flexbox remasure was a large part of the 20–35ms candidate_layout cost.
+        // Only build it when a screen reader may query the TextView layout.
+        if (needsFrameworkLayout()) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
         val heightMode = MeasureSpec.getMode(heightMeasureSpec)
@@ -90,6 +95,11 @@ constructor(
             measure(widthMode, widthSize, min(max(width, minimumWidth), maxWidth)),
             measure(heightMode, heightSize, min(max(height, minimumHeight), maxHeight)),
         )
+    }
+
+    private fun needsFrameworkLayout(): Boolean {
+        val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
+        return am?.isEnabled == true && am?.isTouchExplorationEnabled == true
     }
 
     private fun measure(

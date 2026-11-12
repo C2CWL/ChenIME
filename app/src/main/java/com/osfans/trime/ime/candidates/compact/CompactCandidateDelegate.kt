@@ -84,6 +84,7 @@ class CompactCandidateDelegate(override val di: DI) :
             typeface = theme.fonts.comment
         }
     }
+    private val widthCache = CandidateWidthCache()
 
     /**
      * (for [CompactCandidateMode.AUTO_FILL] only)
@@ -249,12 +250,22 @@ class CompactCandidateDelegate(override val di: DI) :
 
     private fun measureCandidateWidth(candidate: CandidateProto): Float {
         val padding = context.dp(theme.style.candidatePadding * 2)
-        return candidateLayoutWidth(
-            textPaint.measureText(candidate.text),
+        val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
+        return widthCache.getOrMeasure(
+            candidate.text,
             candidate.comment,
-            commentPaint.measureText(candidate.comment),
-            theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT,
-        ) + padding
+            textPaint.textSize,
+            commentPaint.textSize,
+            padding,
+            commentOnRight,
+        ) {
+            candidateLayoutWidth(
+                textPaint.measureText(candidate.text),
+                candidate.comment,
+                commentPaint.measureText(candidate.comment),
+                commentOnRight,
+            ) + padding
+        }
     }
 
     private fun publishCompactCandidates() {
@@ -279,8 +290,16 @@ class CompactCandidateDelegate(override val di: DI) :
         val shown = candidates.take(packed.size)
         val lastEllipsized = packed.lastOrNull()?.ellipsized == true
         if (lastEllipsized) secondLayoutPassNeeded = false
-        adapter.updateItemWidths(packed.map { it.width.toInt().coerceAtLeast(1) }, lastEllipsized)
-        adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)
-        refreshUnrolled(shown.size)
+        val widthsChanged = adapter.updateItemWidths(
+            packed.map { it.width.toInt().coerceAtLeast(1) },
+            lastEllipsized,
+        )
+        val dataChanged = adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)
+        if (widthsChanged && !dataChanged) {
+            adapter.notifyItemRangeChanged(0, adapter.itemCount)
+        }
+        if (dataChanged || widthsChanged) {
+            refreshUnrolled(shown.size)
+        }
     }
 }

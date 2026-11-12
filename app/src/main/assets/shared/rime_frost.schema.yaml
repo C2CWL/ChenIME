@@ -77,8 +77,8 @@ engine:
     - lua_translator@*force_gc           # 暴力 GC
     - lua_translator@*calculator    # 计算器
   filters:
-    - lua_filter@*is_in_user_dict # 用户词典的词加上一个*
-    - lua_filter@*corrector                          # 错音错字提示
+    - lua_filter@*chen_timing@chen_xlt               # 诊断：翻译器耗时（不含输入内容）
+    - lua_filter@*corrector                          # 错音错字提示，并标记用户词 * / 句子 ∞
     - lua_filter@*autocap_filter                     # 英文自动大写
     - lua_filter@*v_filter                           # v 模式 symbols 优先
     - lua_filter@*chen_conservative_correction      # 纠错不抢原候选首位
@@ -87,6 +87,7 @@ engine:
     - lua_filter@*reduce_english_filter              # 降低部分英语单词在候选项的位置
     - lua_filter@*aux_lookup_filter                  # ` phrase aux lookup
     - lua_filter@*chen_custom_phrase_pos             # 自定义短语候选位置
+    - lua_filter@*chen_timing@chen_pipe              # 诊断：翻译器+Lua 滤镜总耗时（不含输入内容）
     - simplifier@emoji                              # Emoji
     - simplifier@chinese_english
     - simplifier@traditionalize                     # 简繁切换
@@ -237,10 +238,10 @@ translator:
   max_homographs: 4
   max_sentences: 3
   dictionary: rime_frost        # 挂载词库 rime_frost.dict.yaml
-  spelling_hints: 8           # corrector.lua ：为了让错音错字提示的 Lua 同时适配全拼双拼，将拼音显示在 comment 中
-  always_show_comments: true  # corrector.lua ：Rime 默认在 preedit 等于 comment 时取消显示 comment，这里强制一直显示，供 corrector.lua 做判断用。
+  spelling_hints: 0           # 关闭按键反查拼音。corrector.lua 改为用 preedit / 编码查纠错表，避免每个候选做一次 reverse lookup
+  always_show_comments: false # 不再需要把拼音塞进 comment 给 corrector 判断
   initial_quality: 1.2        # 拼音的权重应该比英文大
-  comment_format:             # 标记拼音注释，供 corrector.lua 做判断用
+  comment_format:             # 保留格式，万一其它组件仍往 comment 写拼音，corrector 旧路径仍可用
     - xform/^/［/
     - xform/$/］/
   preedit_format:             # preedit_format 影响到输入框的显示和“Shift+回车”上屏的字符

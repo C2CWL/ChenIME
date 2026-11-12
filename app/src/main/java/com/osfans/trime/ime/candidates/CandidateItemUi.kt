@@ -13,6 +13,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import com.osfans.trime.core.CandidateProto
@@ -20,7 +21,6 @@ import com.osfans.trime.data.theme.CornerRadiusOverrides
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.GeneralStyle
-import com.osfans.trime.ime.core.AutoScaleTextView
 import com.osfans.trime.ime.keyboard.GestureFrame
 import com.osfans.trime.util.roundedRippleDrawable
 import splitties.dimensions.dp
@@ -71,24 +71,26 @@ class CandidateItemUi(
     private val commentVerticalBias = theme.style.commentVerticalBias
     private val candidateTextVerticalBias = theme.style.candidateTextVerticalBias
 
+    // Candidates need TextView's measured baseline and ellipsis; the key-label
+    // canvas transform can shift recycled candidate text outside its bounds.
     private val text =
-        view(::AutoScaleTextView) {
+        view(::TextView) {
             id = View.generateViewId()
             this.textSize = this@CandidateItemUi.textSize
             typeface = theme.fonts.candidate
             isSingleLine = true
             gravity = Gravity.CENTER
-            scaleMode = AutoScaleTextView.Mode.Proportional
+            ellipsize = TextUtils.TruncateAt.END
         }
 
     private val comment =
-        view(::AutoScaleTextView) {
+        view(::TextView) {
             id = View.generateViewId()
             this.textSize = commentSize
             typeface = theme.fonts.comment
             isSingleLine = true
             gravity = gravityCenter
-            scaleMode = AutoScaleTextView.Mode.Proportional
+            ellipsize = TextUtils.TruncateAt.END
         }
 
     private val content = constraintLayout {
@@ -101,6 +103,7 @@ class CandidateItemUi(
                         centerVertically()
                         startOfParent()
                         endToStartOf(comment)
+                        constrainedWidth = true
                         horizontalChainStyle = ConstraintLayout.LayoutParams.CHAIN_PACKED
                     },
                 )
@@ -110,6 +113,7 @@ class CandidateItemUi(
                         startToEndOf(text, ctx.dp(CANDIDATE_COMMENT_GAP_DP))
                         endOfParent()
                         baselineToBaselineOf(text)
+                        constrainedWidth = true
                         horizontalChainStyle = ConstraintLayout.LayoutParams.CHAIN_PACKED
                     },
                 )
@@ -180,8 +184,6 @@ class CandidateItemUi(
             setMargins(inset, inset, inset, inset)
         }
         content.layoutParams = layoutParams
-        text.scaleMode = AutoScaleTextView.Mode.None
-        comment.scaleMode = AutoScaleTextView.Mode.None
         text.ellipsize = TextUtils.TruncateAt.END
         comment.ellipsize = TextUtils.TruncateAt.END
         (text.layoutParams as ConstraintLayout.LayoutParams).let { params ->

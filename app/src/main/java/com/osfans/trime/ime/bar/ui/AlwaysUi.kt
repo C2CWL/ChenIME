@@ -130,6 +130,8 @@ class AlwaysUi(
                 after(leftMostButton)
                 before(rightMostButton)
                 centerVertically()
+                // Same gap as between toolbar buttons, so Hide and Voice are not flush.
+                marginEnd = ctx.dp(theme.toolBar.buttonSpacing)
             },
         )
     }.apply {

@@ -249,7 +249,7 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     private fun measureCandidateWidth(candidate: CandidateProto): Float {
-        val padding = context.dp(theme.style.candidatePadding * 2)
+        val padding = context.dp(theme.style.candidatePadding * 2).toFloat()
         val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
         return widthCache.getOrMeasure(
             candidate.text,

@@ -18,6 +18,7 @@ import com.osfans.trime.ui.main.settings.KeyboardSettingsFragment
 import com.osfans.trime.ui.main.settings.ProfileSettingsFragment
 import com.osfans.trime.ui.main.settings.schema.SchemaListFragment
 import com.osfans.trime.ui.main.settings.theme.ThemeSettingsFragment
+import com.osfans.trime.ui.main.settings.toolbar.ToolbarButtonsFragment
 import com.osfans.trime.ui.main.settings.userdict.UserDictionaryFragment
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
@@ -42,6 +43,9 @@ sealed class NavigationRoute : Parcelable {
 
     @Serializable
     data object VirtualKeyboard : NavigationRoute()
+
+    @Serializable
+    data object ToolbarButtons : NavigationRoute()
 
     @Serializable
     data object CandidatesWindow : NavigationRoute()
@@ -87,6 +91,9 @@ sealed class NavigationRoute : Parcelable {
             }
             fragment<KeyboardSettingsFragment, VirtualKeyboard> {
                 label = ctx.getString(R.string.virtual_keyboard)
+            }
+            fragment<ToolbarButtonsFragment, ToolbarButtons> {
+                label = ctx.getString(R.string.toolbar_buttons)
             }
             fragment<CandidatesSettingsFragment, CandidatesWindow> {
                 label = ctx.getString(R.string.candidates_window)

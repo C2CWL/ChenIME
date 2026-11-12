@@ -385,10 +385,10 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
     }
 
     /** True if ACTION_DOWN landed in the slop strip adjacent to the Hide button. */
-    fun lastDownIsNearHideEdge(slopPx: Float): Boolean {
-        val hideOnRight = layoutDirection != LAYOUT_DIRECTION_RTL
-        return DeliberateClick.isNearHideEdge(startX, width, slopPx, hideOnRight)
-    }
+    fun lastDownIsNearHideEdge(
+        slopPx: Float,
+        hideOnRight: Boolean = layoutDirection != LAYOUT_DIRECTION_RTL,
+    ): Boolean = DeliberateClick.isNearHideEdge(startX, width, slopPx, hideOnRight)
 
     override fun performClick(): Boolean {
         super.performClick()

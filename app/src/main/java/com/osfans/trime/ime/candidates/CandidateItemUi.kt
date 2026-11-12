@@ -172,7 +172,7 @@ class CandidateItemUi(
         val layoutParams = (content.layoutParams as FrameLayout.LayoutParams).apply {
             width = ViewGroup.LayoutParams.MATCH_PARENT
             height = ViewGroup.LayoutParams.MATCH_PARENT
-            gravity = gravityCenter
+            gravity = Gravity.CENTER
             val inset = marginPx.coerceAtLeast(0)
             setMargins(inset, inset, inset, inset)
         }

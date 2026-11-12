@@ -6,6 +6,7 @@
 package com.osfans.trime.ime.bar
 
 import android.os.Build
+import android.os.SystemClock
 import android.util.Size
 import android.view.ContextThemeWrapper
 import android.view.View
@@ -37,6 +38,7 @@ import com.osfans.trime.ime.candidates.compact.CompactCandidateDelegate
 import com.osfans.trime.ime.candidates.unrolled.window.FlexboxUnrolledCandidateWindow
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.keyboard.CommonKeyboardActionListener
+import com.osfans.trime.ime.keyboard.DeliberateClick
 import com.osfans.trime.ime.keyboard.EnglishMode
 import com.osfans.trime.ime.keyboard.KeyBehavior
 import com.osfans.trime.ime.keyboard.KeyboardWindow
@@ -87,6 +89,13 @@ class InputBarDelegate(override val di: DI) :
     private var isClipboardFresh: Boolean = false
     private var isInlineSuggestionPresent: Boolean = false
 
+    private var lastHideUptimeMs = 0L
+
+    private fun requestHideKeyboard() {
+        lastHideUptimeMs = SystemClock.uptimeMillis()
+        service.requestHideSelf(0)
+    }
+
     @Keep
     private val onClipboardUpdateListener = ClipboardHelper.OnClipboardUpdateListener {
         if (!clipboardSuggestion) return@OnClipboardUpdateListener
@@ -127,7 +136,7 @@ class InputBarDelegate(override val di: DI) :
 
     private val swipeDownHideKeyboardCallback: ((KeyBehavior) -> Unit) = { d ->
         if (d == KeyBehavior.SWIPE_DOWN) {
-            service.requestHideSelf(0)
+            requestHideKeyboard()
         }
     }
 
@@ -136,6 +145,14 @@ class InputBarDelegate(override val di: DI) :
             // A touch that started on the toolbar can finish after candidates replace it.
             // ViewAnimator keeps that touch target even when its child becomes GONE.
             if (barStateMachine.currentState != QuickBarStateMachine.State.Always) return@AlwaysUi
+            if (action == "VOICE_ASSIST" &&
+                DeliberateClick.isWithinHideDebounce(lastHideUptimeMs, SystemClock.uptimeMillis())
+            ) {
+                return@AlwaysUi
+            }
+            if (action == "Hide") {
+                lastHideUptimeMs = SystemClock.uptimeMillis()
+            }
             if (action.isNotEmpty()) {
                 commonKeyboardActionListener.listener.onAction(theme.resolveAction(action))
             } else {
@@ -143,7 +160,7 @@ class InputBarDelegate(override val di: DI) :
             }
         }.apply {
             hideKeyboardButton.apply {
-                setOnClickListener { service.requestHideSelf(0) }
+                setOnClickListener { requestHideKeyboard() }
                 onSwipe = swipeDownHideKeyboardCallback
             }
             clipboardUi.suggestionView.apply {

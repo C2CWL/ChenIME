@@ -6,6 +6,7 @@
 package com.osfans.trime.ime.bar.ui
 
 import android.content.Context
+import android.view.ViewConfiguration
 import androidx.annotation.DrawableRes
 import androidx.core.view.children
 import com.google.android.flexbox.AlignItems
@@ -36,12 +37,33 @@ class ButtonsBarUi(
 
     private val defaultButtonSize = theme.style.run { candidateViewHeight + commentHeight }
 
+    private fun isVoiceBesideHide(): Boolean {
+        val buttons = theme.toolBar.buttons
+        return buttons.getOrNull(0)?.action == "Hide" &&
+            buttons.getOrNull(1)?.action == "VOICE_ASSIST"
+    }
+
     private fun toolButton(
         buttonConfig: ToolBar.Button?,
         @DrawableRes icon: Int = 0,
     ): ToolButton = if (buttonConfig != null) {
         ToolButton(ctx, buttonConfig, scope).apply {
-            setOnClickListener { onButtonClick?.invoke(buttonConfig.action) }
+            if (buttonConfig.action == "VOICE_ASSIST") {
+                // Lift must stay on this button; a press in the slop strip
+                // beside Hide is treated as Hide so a near-miss does not switch IME.
+                requireReleaseInside = true
+                setOnClickListener {
+                    val slop = ViewConfiguration.get(ctx).scaledTouchSlop.toFloat()
+                    val action = if (isVoiceBesideHide() && lastDownIsNearHideEdge(slop)) {
+                        "Hide"
+                    } else {
+                        buttonConfig.action
+                    }
+                    onButtonClick?.invoke(action)
+                }
+            } else {
+                setOnClickListener { onButtonClick?.invoke(buttonConfig.action) }
+            }
             val longPressAction = buttonConfig.longPressAction
             if (longPressAction.isNotEmpty()) {
                 setOnLongClickListener {

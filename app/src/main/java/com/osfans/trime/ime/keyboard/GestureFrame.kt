@@ -69,6 +69,14 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
     var isSlideDelete = false
     var hasClearSwipe = false
 
+    /**
+     * When true, ACTION_UP only clicks if the finger is still inside this view.
+     * Default is false so keyboard keys keep lift-to-type after a small slide.
+     */
+    var requireReleaseInside = false
+
+    private var gestureStarted = false
+
     private val clearSwipeThreshold get() = minOf(24f, if (swipeTravel > 0) swipeTravel.toFloat() else 24f)
 
     var hasLongPress = false
@@ -91,7 +99,11 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
         val y = event.y
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (!isEnabled) return false
+                if (!isEnabled) {
+                    gestureStarted = false
+                    return false
+                }
+                gestureStarted = true
                 touchId = (touchId + 1) and 0xFFFF
                 val currentTouchId = touchId
                 startX = x
@@ -181,12 +193,25 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                         SystemClock.uptimeMillis() - event.eventTime,
                     )
                 }
+                val started = gestureStarted
+                gestureStarted = false
                 val dx = x - startX
                 val dy = y - startY
 
                 isPressed = false
-                if (vibrateOnKeyRelease) InputFeedbackManager.keyPressVibrate(this)
                 cancelJobs()
+
+                // Ignore an ACTION_UP that never had ACTION_DOWN on this view
+                // (view swap or a touch that started on a neighbor).
+                if (!started) return true
+                if (vibrateOnKeyRelease) InputFeedbackManager.keyPressVibrate(this)
+
+                if (requireReleaseInside &&
+                    !DeliberateClick.isReleaseInside(x, y, width, height)
+                ) {
+                    onCancel?.invoke()
+                    return true
+                }
 
                 if (hasClearSwipe && DeleteSwipeDecision.vertical(dx, dy, clearSwipeThreshold)) {
                     dispatchBehavior(if (dy < 0) KeyBehavior.SWIPE_UP else KeyBehavior.SWIPE_DOWN, false)
@@ -253,6 +278,7 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                 isLongPressed = false
                 slideActivated = false
                 swipeTriggered = false
+                gestureStarted = false
 
                 onCancel?.invoke()
                 return true
@@ -356,6 +382,12 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
     override fun setOnLongClickListener(l: OnLongClickListener?) {
         hasLongPress = l != null
         super.setOnLongClickListener(l)
+    }
+
+    /** True if ACTION_DOWN landed in the slop strip adjacent to the Hide button. */
+    fun lastDownIsNearHideEdge(slopPx: Float): Boolean {
+        val hideOnRight = layoutDirection != LAYOUT_DIRECTION_RTL
+        return DeliberateClick.isNearHideEdge(startX, width, slopPx, hideOnRight)
     }
 
     override fun performClick(): Boolean {

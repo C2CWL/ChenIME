@@ -418,7 +418,8 @@ Java_com_osfans_trime_core_Rime_getRimeRawInput(JNIEnv* env,
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_osfans_trime_core_Rime_getRimeProperty(JNIEnv* env, jclass /* thiz */,
                                                 jstring key) {
-  return env->NewStringUTF(Rime::Instance().getProperty(*CString(env, key)).c_str());
+  return env->NewStringUTF(
+      Rime::Instance().getProperty(*CString(env, key)).c_str());
 }
 
 extern "C" JNIEXPORT void JNICALL

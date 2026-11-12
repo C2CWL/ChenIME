@@ -14,9 +14,7 @@ object DeliberateClick {
     const val HIDE_DEBOUNCE_MS = 400L
 
     /** True when the finger is still inside the view at ACTION_UP. */
-    fun isReleaseInside(x: Float, y: Float, width: Int, height: Int): Boolean {
-        return width > 0 && height > 0 && x >= 0f && y >= 0f && x < width && y < height
-    }
+    fun isReleaseInside(x: Float, y: Float, width: Int, height: Int): Boolean = width > 0 && height > 0 && x >= 0f && y >= 0f && x < width && y < height
 
     /**
      * Whether a click should run. [requireReleaseInside] cancels a lift that
@@ -55,7 +53,5 @@ object DeliberateClick {
         lastHideUptimeMs: Long,
         nowMs: Long,
         windowMs: Long = HIDE_DEBOUNCE_MS,
-    ): Boolean {
-        return lastHideUptimeMs > 0L && nowMs >= lastHideUptimeMs && nowMs - lastHideUptimeMs < windowMs
-    }
+    ): Boolean = lastHideUptimeMs > 0L && nowMs >= lastHideUptimeMs && nowMs - lastHideUptimeMs < windowMs
 }

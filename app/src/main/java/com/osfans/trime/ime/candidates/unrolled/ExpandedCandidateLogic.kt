@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.osfans.trime.ime.candidates.unrolled
 
+import com.osfans.trime.ime.candidates.compact.compactCandidateContentWidth
 import kotlin.math.ceil
 
 internal const val EXPANDED_GRID_MAX_COLUMNS = 6
@@ -101,20 +102,20 @@ internal fun layoutExpandedCandidateGrid(
     return cells
 }
 
-/** A lone user-dict star is drawn as a badge and must not steal a grid column. */
-internal const val USER_DICTIONARY_MARK = "*"
-
-internal fun spanCommentWidth(comment: String, measuredCommentWidth: Float): Float = if (comment.isEmpty() || comment == USER_DICTIONARY_MARK) 0f else measuredCommentWidth
-
+/** Match the text and annotation actually drawn inside the expanded pill. */
 internal fun candidateLayoutWidth(
     textWidth: Float,
     comment: String,
     measuredCommentWidth: Float,
     commentOnRight: Boolean,
-): Float {
-    val commentWidth = spanCommentWidth(comment, measuredCommentWidth)
-    return if (commentOnRight) textWidth + commentWidth else maxOf(textWidth, commentWidth)
-}
+    commentGap: Float = 0f,
+): Float = compactCandidateContentWidth(
+    textWidth,
+    comment,
+    measuredCommentWidth,
+    commentOnRight,
+    commentGap,
+)
 
 internal fun expandedRowHeightDp(candidateViewHeight: Int, commentHeight: Int): Int = (candidateViewHeight + commentHeight).coerceAtLeast(44)
 

@@ -10,8 +10,7 @@ internal data class CompactBarItem(
 /**
  * Width of one compact-bar candidate's text and comment, not including cell padding.
  *
- * Unlike [com.osfans.trime.ime.candidates.unrolled.candidateLayoutWidth], a
- * user-dict "*" or sentence "∞" still counts: those marks are drawn beside
+ * A user-dict "*" or sentence "∞" still counts: those marks are drawn beside
  * the text, and omitting them makes the cell too narrow, clipping both the
  * glyph and the mark. [commentGap] is the space between text and a right-side
  * comment, matching [com.osfans.trime.ime.candidates.CANDIDATE_COMMENT_GAP_DP].

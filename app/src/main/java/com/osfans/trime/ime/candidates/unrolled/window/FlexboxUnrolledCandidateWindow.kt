@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.Slide
 import androidx.transition.Transition
 import com.osfans.trime.data.theme.model.GeneralStyle
+import com.osfans.trime.ime.candidates.CANDIDATE_COMMENT_GAP_DP
 import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.ime.candidates.unrolled.EXPANDED_GRID_MAX_COLUMNS
 import com.osfans.trime.ime.candidates.unrolled.ExpandedGridCell
@@ -82,6 +83,8 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
         }
         val padding = context.dp(theme.style.candidatePadding * 2)
         val gap = gridGapPx()
+        val pillInsets = expandedPillMargin(gap) * 2
+        val commentGap = context.dp(CANDIDATE_COMMENT_GAP_DP).toFloat()
         val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
         val itemWidths = List(adapter.itemCount) { position ->
             val candidate = adapter.peek(position)?.candidate ?: return@List 0f
@@ -90,7 +93,8 @@ class FlexboxUnrolledCandidateWindow(di: DI) : BaseUnrolledCandidateWindow(di) {
                 candidate.comment,
                 commentPaint.measureText(candidate.comment),
                 commentOnRight,
-            ) + padding
+                commentGap,
+            ) + padding + pillInsets
         }
         val minCellWidth = expandedMinCellWidth(textPaint.measureText("汉字"), padding.toFloat(), gap.toFloat())
         val columns = expandedGridColumns(width.toFloat(), minCellWidth)

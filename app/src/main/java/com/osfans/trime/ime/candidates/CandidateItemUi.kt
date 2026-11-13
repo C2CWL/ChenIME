@@ -13,6 +13,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
@@ -24,19 +25,13 @@ import com.osfans.trime.data.theme.model.GeneralStyle
 import com.osfans.trime.ime.keyboard.GestureFrame
 import com.osfans.trime.util.roundedRippleDrawable
 import splitties.dimensions.dp
-import splitties.views.dsl.constraintlayout.baselineToBaselineOf
 import splitties.views.dsl.constraintlayout.bottomOfParent
 import splitties.views.dsl.constraintlayout.bottomToTopOf
 import splitties.views.dsl.constraintlayout.centerHorizontally
 import splitties.views.dsl.constraintlayout.centerInParent
-import splitties.views.dsl.constraintlayout.centerVertically
 import splitties.views.dsl.constraintlayout.constraintLayout
-import splitties.views.dsl.constraintlayout.endOfParent
-import splitties.views.dsl.constraintlayout.endToStartOf
 import splitties.views.dsl.constraintlayout.lParams
 import splitties.views.dsl.constraintlayout.matchConstraints
-import splitties.views.dsl.constraintlayout.startOfParent
-import splitties.views.dsl.constraintlayout.startToEndOf
 import splitties.views.dsl.constraintlayout.topOfParent
 import splitties.views.dsl.constraintlayout.topToBottomOf
 import splitties.views.dsl.core.Ui
@@ -97,24 +92,24 @@ class CandidateItemUi(
         horizontalPadding = dp(theme.style.candidatePadding)
         when (commentPosition) {
             GeneralStyle.CommentPosition.RIGHT -> {
+                // A horizontal row keeps GONE comments out of the text's constraints.
+                // Give only the candidate weight so it shrinks before the annotation.
+                val row = view(::LinearLayout) {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    addView(text, LinearLayout.LayoutParams(wrapContent, wrapContent, 1f))
+                    addView(
+                        comment,
+                        LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
+                            marginStart = ctx.dp(CANDIDATE_COMMENT_GAP_DP)
+                        },
+                    )
+                }
                 add(
-                    text,
+                    row,
                     lParams(wrapContent, wrapContent) {
-                        centerVertically()
-                        startOfParent()
-                        endToStartOf(comment)
+                        centerInParent()
                         constrainedWidth = true
-                        horizontalChainStyle = ConstraintLayout.LayoutParams.CHAIN_PACKED
-                    },
-                )
-                add(
-                    comment,
-                    lParams(wrapContent, wrapContent) {
-                        startToEndOf(text, ctx.dp(CANDIDATE_COMMENT_GAP_DP))
-                        endOfParent()
-                        baselineToBaselineOf(text)
-                        constrainedWidth = true
-                        horizontalChainStyle = ConstraintLayout.LayoutParams.CHAIN_PACKED
                     },
                 )
             }
@@ -186,18 +181,18 @@ class CandidateItemUi(
         content.layoutParams = layoutParams
         text.ellipsize = TextUtils.TruncateAt.END
         comment.ellipsize = TextUtils.TruncateAt.END
-        (text.layoutParams as ConstraintLayout.LayoutParams).let { params ->
-            params.constrainedWidth = true
-            if (commentPosition != GeneralStyle.CommentPosition.RIGHT) {
+        if (commentPosition != GeneralStyle.CommentPosition.RIGHT) {
+            (text.layoutParams as ConstraintLayout.LayoutParams).let { params ->
+                params.constrainedWidth = true
                 params.width = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
                 params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
                 params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                text.layoutParams = params
             }
-            text.layoutParams = params
-        }
-        (comment.layoutParams as ConstraintLayout.LayoutParams).let { params ->
-            params.constrainedWidth = true
-            comment.layoutParams = params
+            (comment.layoutParams as ConstraintLayout.LayoutParams).let { params ->
+                params.constrainedWidth = true
+                comment.layoutParams = params
+            }
         }
     }
 

@@ -16,7 +16,6 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.view.doOnPreDraw
 import androidx.core.view.isVisible
 import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.data.theme.CornerRadiusOverrides
@@ -24,7 +23,6 @@ import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.data.theme.model.GeneralStyle
 import com.osfans.trime.ime.keyboard.GestureFrame
-import com.osfans.trime.util.diagnostics.LagDiagnostics
 import com.osfans.trime.util.roundedRippleDrawable
 import splitties.dimensions.dp
 import splitties.views.dsl.constraintlayout.bottomOfParent
@@ -76,6 +74,8 @@ class CandidateItemUi(
             this.textSize = this@CandidateItemUi.textSize
             typeface = theme.fonts.candidate
             isSingleLine = true
+            // Keep centered single-line text in the measured cell, not TextView's scrolling layout.
+            setHorizontallyScrolling(false)
             gravity = Gravity.CENTER
             ellipsize = TextUtils.TruncateAt.END
         }
@@ -86,6 +86,7 @@ class CandidateItemUi(
             this.textSize = commentSize
             typeface = theme.fonts.comment
             isSingleLine = true
+            setHorizontallyScrolling(false)
             gravity = gravityCenter
             ellipsize = TextUtils.TruncateAt.END
         }
@@ -234,10 +235,5 @@ class CandidateItemUi(
         if (!comment.text.contentEquals(commentText)) comment.text = commentText
         if (comment.currentTextColor != cColor) comment.setTextColor(cColor)
         comment.isVisible = commentText.isNotEmpty()
-        if (LagDiagnostics.enabled) {
-            root.doOnPreDraw {
-                LagDiagnostics.candidateLayout(root, content, text, comment, commentPosition.name, highlighted)
-            }
-        }
     }
 }

@@ -6,7 +6,6 @@ package com.osfans.trime.util.diagnostics
 
 import android.app.ActivityManager
 import android.content.Context
-import android.graphics.Rect
 import android.os.Build
 import android.os.Debug
 import android.os.Handler
@@ -16,7 +15,6 @@ import android.os.SystemClock
 import android.view.Choreographer
 import android.view.View
 import android.view.ViewTreeObserver
-import android.widget.TextView
 import androidx.annotation.Keep
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.prefs.PreferenceDelegate
@@ -92,7 +90,6 @@ object LagDiagnostics {
     private var hiddenAtUptime = 0L
 
     private val inputViewBuilds = AtomicInteger()
-    private var candidateLayoutSamples = 0
     private var firstInputViewShown = false
     private var startInputViewAt = 0L
 
@@ -254,40 +251,6 @@ object LagDiagnostics {
         awaitPathDraw(hostView)
     }
 
-    /** Bounded, opt-in geometry samples; never include candidate or comment strings. */
-    fun candidateLayout(
-        root: View,
-        content: View,
-        text: TextView,
-        comment: TextView,
-        position: String,
-        highlighted: Boolean,
-    ) {
-        if (!enabled || candidateLayoutSamples >= 120) return
-        candidateLayoutSamples++
-        val visible = Rect()
-        val hasVisibleRect = text.getLocalVisibleRect(visible)
-        val layout = text.layout
-        val lineWidth = if (layout != null && layout.lineCount > 0) layout.getLineWidth(0) else -1f
-        val ellipsis = if (layout != null && layout.lineCount > 0) layout.getEllipsisCount(0) else -1
-        val metrics = text.paint.fontMetricsInt
-        writeLine(
-            "candidate_layout",
-            "sample=$candidateLayoutSamples position=$position highlighted=$highlighted " +
-                "root=${root.width}x${root.height} content=${content.width}x${content.height} " +
-                "parent=${(text.parent as View).width}x${(text.parent as View).height} " +
-                "text=${text.width}x${text.height} measured=${text.measuredWidth}x${text.measuredHeight} " +
-                "xy=${text.left},${text.top} padding=${text.compoundPaddingLeft},${text.compoundPaddingTop}," +
-                "${text.compoundPaddingRight},${text.compoundPaddingBottom} " +
-                "visible=$hasVisibleRect rect=${visible.flattenToString()} shown=${text.isShown} " +
-                "alpha=${root.alpha},${content.alpha},${text.alpha} color=${text.currentTextColor} " +
-                "chars=${text.length()} lines=${layout?.lineCount ?: -1} line_width=$lineWidth ellipsis=$ellipsis " +
-                "text_size=${text.textSize} baseline=${text.baseline} font_top=${metrics.top} font_bottom=${metrics.bottom} " +
-                "comment_visible=${comment.visibility} comment=${comment.width}x${comment.height} " +
-                "comment_chars=${comment.length()}",
-        )
-    }
-
     private fun recordPathStages(timing: PathTiming) {
         touchToCandidates.add(timing.totalMs)
         if (timing.touchToDispatchMs >= 0) touchToDispatch.add(timing.touchToDispatchMs)
@@ -369,7 +332,6 @@ object LagDiagnostics {
             ""
         }
         writeLine("window_shown", "first=$first$background ${memorySnapshot()}")
-        candidateLayoutSamples = 0
         sessionStartUptime = now
         sessionStartCpuMs = cpu
         keyStats.reset()

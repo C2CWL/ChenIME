@@ -13,6 +13,7 @@ import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.candidates.CandidateItemUi
 import com.osfans.trime.ime.candidates.CandidateViewHolder
+import com.osfans.trime.util.diagnostics.LagDiagnostics
 import splitties.dimensions.dp
 import splitties.views.dsl.core.matchParent
 import splitties.views.dsl.core.wrapContent
@@ -49,11 +50,22 @@ open class CompactCandidateViewAdapter(
         layoutFlexGrow = flexGrow
     }
 
+    // Cumulative while diagnostics is enabled; compare deltas between layout records.
+    internal var diagnosticBinds = 0L
+        private set
+    internal var diagnosticUpdates = 0L
+        private set
+    internal var diagnosticCreates = 0L
+        private set
+    internal var diagnosticInvalidations = 0L
+        private set
+
     private var bindGeneration = 0
 
     /** Forces the next bind to rewrite text and colors. */
     fun invalidateBindCache() {
         bindGeneration++
+        if (LagDiagnostics.enabled) diagnosticInvalidations++
     }
 
     /** @return true if the stored widths changed. */
@@ -89,6 +101,7 @@ open class CompactCandidateViewAdapter(
         parent: ViewGroup,
         viewType: Int,
     ): CandidateViewHolder {
+        if (LagDiagnostics.enabled) diagnosticCreates++
         val ui = CandidateItemUi(context, scope)
         ui.root.apply {
             minimumWidth = dp(40)
@@ -103,10 +116,12 @@ open class CompactCandidateViewAdapter(
         item: CandidateProto?,
     ) {
         item ?: return
+        if (LagDiagnostics.enabled) diagnosticBinds++
         val isHighlighted = position == highlightedIdx
         // Flexbox lays this row out on every key. Skip the text, color and
         // background work when the recycled row already shows this candidate.
         if (holder.bindGeneration != bindGeneration || holder.idx != position || holder.text != item.text || holder.comment != item.comment || holder.highlighted != isHighlighted) {
+            if (LagDiagnostics.enabled) diagnosticUpdates++
             holder.ui.update(item, isHighlighted)
             holder.text = item.text
             holder.comment = item.comment

@@ -13,7 +13,6 @@ import com.osfans.trime.ime.candidates.unrolled.expandedRowHeightDp
 import com.osfans.trime.ime.candidates.unrolled.isSingleCharacter
 import com.osfans.trime.ime.candidates.unrolled.layoutExpandedCandidateGrid
 import com.osfans.trime.ime.candidates.unrolled.preeditSyllables
-import com.osfans.trime.ime.candidates.unrolled.spanCommentWidth
 import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -27,18 +26,15 @@ class ExpandedCandidateLogicTest :
             candidateSpan(999f, 50f) shouldBe 6
             candidateSpan(99f, 0f) shouldBe 1
         }
-        "a lone user-dict star does not add to the span width" {
-            spanCommentWidth("", 12f) shouldBe 0f
-            spanCommentWidth("*", 20f) shouldBe 0f
-            spanCommentWidth("er", 20f) shouldBe 20f
-            candidateLayoutWidth(30f, "*", 20f, commentOnRight = true) shouldBe 30f
-            candidateLayoutWidth(30f, "", 20f, commentOnRight = true) shouldBe 30f
-            candidateLayoutWidth(30f, "hint", 20f, commentOnRight = true) shouldBe 50f
-            candidateLayoutWidth(30f, "hint", 40f, commentOnRight = false) shouldBe 40f
-            candidateLayoutWidth(30f, "*", 40f, commentOnRight = false) shouldBe 30f
-            // Single character plus star still fits one 50px cell after 14dp-style padding.
-            val width = candidateLayoutWidth(18f, "*", 20f, commentOnRight = true) + 28f
-            candidateSpan(width, 50f) shouldBe 1
+        "expanded widths include the star and the right-side comment gap" {
+            candidateLayoutWidth(30f, "*", 20f, true, 3f) shouldBe 53f
+            candidateLayoutWidth(30f, "", 20f, true, 3f) shouldBe 30f
+            candidateLayoutWidth(30f, "hint", 20f, true, 3f) shouldBe 53f
+            candidateLayoutWidth(30f, "hint", 40f, false, 3f) shouldBe 40f
+            candidateLayoutWidth(30f, "*", 40f, false, 3f) shouldBe 40f
+            // A text-only width fits 64px, but the drawn star and pill insets do not.
+            val width = candidateLayoutWidth(40f, "*", 12f, true, 3f) + 16f + 8f
+            candidateSpan(width, 64f) shouldBe 2
         }
         "expanded rows match the taller of the theme row and the 44dp minimum" {
             expandedRowHeightDp(34, 12) shouldBe 46
@@ -101,8 +97,8 @@ class ExpandedCandidateLogicTest :
             val gap = 8f
             val cell = expandedMinCellWidth(twoChar, padding, gap)
             cell shouldBe 64f
-            // 哈* : the star does not add width
-            val haStar = candidateLayoutWidth(20f, "*", 12f, commentOnRight = true) + padding
+            // 哈* includes the annotation width
+            val haStar = candidateLayoutWidth(20f, "*", 12f, commentOnRight = true) + padding + gap
             candidateSpan(haStar, cell) shouldBe 1
             // 蛤蛤
             candidateSpan(twoChar + padding, cell) shouldBe 1

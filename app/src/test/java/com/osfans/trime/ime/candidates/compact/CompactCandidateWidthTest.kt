@@ -11,10 +11,8 @@ class CompactCandidateWidthTest :
     BehaviorSpec({
         given("compact-bar candidate content width") {
             then("it includes a user-dict star and the gap beside the text") {
-                // The expanded-grid helper deliberately ignores "*". Reusing it on
-                // the compact bar left the cell too narrow, so both the glyph and
-                // the star were clipped.
-                candidateLayoutWidth(30f, "*", 12f, commentOnRight = true) shouldBe 30f
+                // Both layouts must include the annotation actually drawn.
+                candidateLayoutWidth(30f, "*", 12f, commentOnRight = true) shouldBe 42f
 
                 compactCandidateContentWidth(30f, "*", 12f, commentOnRight = true, commentGap = 3f) shouldBe 45f
                 compactCandidateContentWidth(30f, "∞", 16f, commentOnRight = true, commentGap = 3f) shouldBe 49f
@@ -40,9 +38,9 @@ class CompactCandidateWidthTest :
                 val gap = 3f
                 val padding = 14f
                 val allocated = compactCandidateContentWidth(text, "*", star, commentOnRight = true, commentGap = gap) + padding
-                val old = candidateLayoutWidth(text, "*", star, commentOnRight = true) + padding
+                val expanded = candidateLayoutWidth(text, "*", star, commentOnRight = true, commentGap = gap) + padding
                 allocated shouldBe 63f
-                old shouldBe 50f
+                expanded shouldBe allocated
             }
         }
     })

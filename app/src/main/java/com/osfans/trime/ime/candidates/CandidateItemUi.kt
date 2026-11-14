@@ -184,7 +184,14 @@ class CandidateItemUi(
         content.layoutParams = layoutParams
         text.ellipsize = TextUtils.TruncateAt.END
         comment.ellipsize = TextUtils.TruncateAt.END
-        if (commentPosition != GeneralStyle.CommentPosition.RIGHT) {
+        if (commentPosition == GeneralStyle.CommentPosition.RIGHT) {
+            // Resolve the row against the pill before distributing space to its text.
+            val row = text.parent as LinearLayout
+            (row.layoutParams as ConstraintLayout.LayoutParams).let { params ->
+                params.width = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                row.layoutParams = params
+            }
+        } else {
             (text.layoutParams as ConstraintLayout.LayoutParams).let { params ->
                 params.constrainedWidth = true
                 params.width = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT

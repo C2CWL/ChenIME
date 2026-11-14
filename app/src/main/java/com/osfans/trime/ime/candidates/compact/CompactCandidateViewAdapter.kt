@@ -69,9 +69,9 @@ open class CompactCandidateViewAdapter(
      * notification ran. Identical updates (a second Flexbox pass, a no-op
      * republish) skip the adapter rebind.
      *
-     * Same-size updates rebind in place. [submitList] on this adapter would
-     * call [notifyDataSetChanged], which detaches every row and waits for a
-     * full Flexbox relayout.
+     * Same-size updates rebind in place through [set]. [submitList] on this
+     * adapter would call [notifyDataSetChanged], which detaches every row and
+     * waits for a full Flexbox relayout.
      */
     fun updateCandidates(
         data: Array<CandidateProto>,
@@ -83,26 +83,22 @@ open class CompactCandidateViewAdapter(
             return false
         }
         val oldSize = items.size
-        // setItems replaces the backing list without notifying; we dispatch
-        // the precise range updates below.
-        items = newItems
+        // highlightedIdx is read during bind, so update it before notifying.
         this.total = total
         this.highlightedIdx = highlightedIndex
-        applyCandidateListNotify(planCompactCandidateListNotify(oldSize, newItems.size))
-        return true
-    }
-
-    private fun applyCandidateListNotify(notify: CompactCandidateListNotify) {
-        if (notify.isNoOp) return
-        if (notify.changeCount > 0) {
-            notifyItemRangeChanged(0, notify.changeCount)
+        val notify = planCompactCandidateListNotify(oldSize, newItems.size)
+        for (index in 0 until notify.changeCount) {
+            set(index, newItems[index])
         }
         if (notify.insertCount > 0) {
-            notifyItemRangeInserted(notify.insertStart, notify.insertCount)
+            addAll(notify.insertStart, newItems.subList(notify.insertStart, newItems.size))
         }
         if (notify.removeCount > 0) {
-            notifyItemRangeRemoved(notify.removeStart, notify.removeCount)
+            for (index in oldSize - 1 downTo notify.removeStart) {
+                removeAt(index)
+            }
         }
+        return true
     }
 
     override fun onCreateViewHolder(

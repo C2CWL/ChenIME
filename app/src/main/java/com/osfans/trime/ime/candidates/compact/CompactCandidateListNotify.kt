@@ -4,10 +4,9 @@
 package com.osfans.trime.ime.candidates.compact
 
 /**
- * RecyclerView notifications to apply after the compact adapter's item list
- * has already been replaced. Same-size updates stay in place instead of
- * going through [androidx.recyclerview.widget.RecyclerView.Adapter.notifyDataSetChanged],
- * which detaches every row and waits for a full Flexbox relayout.
+ * How the compact candidate adapter should change its current list: rebind the
+ * overlapping prefix, then insert or remove the tail. Same-size updates stay
+ * in place instead of [androidx.recyclerview.widget.RecyclerView.Adapter.notifyDataSetChanged].
  */
 data class CompactCandidateListNotify(
     val changeCount: Int,

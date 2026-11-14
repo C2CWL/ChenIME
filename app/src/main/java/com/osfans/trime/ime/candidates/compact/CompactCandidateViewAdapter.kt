@@ -68,6 +68,13 @@ open class CompactCandidateViewAdapter(
      * @return true if the list, total or highlight actually changed and a
      * [submitList] ran. Identical updates (a second Flexbox pass, a no-op
      * republish) skip the adapter rebind.
+     *
+     * Same-size content changes must use [submitList], which on this adapter
+     * calls [notifyDataSetChanged]. Per-index [set] only issues
+     * [notifyItemChanged] with a null payload. This adapter also uses
+     * [setHasStableIds] and [getItemId] from the candidate hash, so
+     * notifyItemChanged can leave the old Flexbox rows on screen after the
+     * composition/preedit has already changed.
      */
     fun updateCandidates(
         data: Array<CandidateProto>,
@@ -75,7 +82,15 @@ open class CompactCandidateViewAdapter(
         highlightedIndex: Int,
     ): Boolean {
         val newItems = data.toList()
-        if (newItems == items && this.total == total && this.highlightedIdx == highlightedIndex) {
+        if (shouldSkipCompactCandidateUpdate(
+                items,
+                newItems,
+                this.total,
+                total,
+                this.highlightedIdx,
+                highlightedIndex,
+            )
+        ) {
             return false
         }
         super.submitList(newItems, null)

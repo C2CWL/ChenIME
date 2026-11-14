@@ -66,8 +66,12 @@ open class CompactCandidateViewAdapter(
 
     /**
      * @return true if the list, total or highlight actually changed and a
-     * [submitList] ran. Identical updates (a second Flexbox pass, a no-op
+     * notification ran. Identical updates (a second Flexbox pass, a no-op
      * republish) skip the adapter rebind.
+     *
+     * Same-size updates rebind in place. [submitList] on this adapter would
+     * call [notifyDataSetChanged], which detaches every row and waits for a
+     * full Flexbox relayout.
      */
     fun updateCandidates(
         data: Array<CandidateProto>,
@@ -78,10 +82,27 @@ open class CompactCandidateViewAdapter(
         if (newItems == items && this.total == total && this.highlightedIdx == highlightedIndex) {
             return false
         }
-        super.submitList(newItems, null)
+        val oldSize = items.size
+        // setItems replaces the backing list without notifying; we dispatch
+        // the precise range updates below.
+        items = newItems
         this.total = total
         this.highlightedIdx = highlightedIndex
+        applyCandidateListNotify(planCompactCandidateListNotify(oldSize, newItems.size))
         return true
+    }
+
+    private fun applyCandidateListNotify(notify: CompactCandidateListNotify) {
+        if (notify.isNoOp) return
+        if (notify.changeCount > 0) {
+            notifyItemRangeChanged(0, notify.changeCount)
+        }
+        if (notify.insertCount > 0) {
+            notifyItemRangeInserted(notify.insertStart, notify.insertCount)
+        }
+        if (notify.removeCount > 0) {
+            notifyItemRangeRemoved(notify.removeStart, notify.removeCount)
+        }
     }
 
     override fun onCreateViewHolder(

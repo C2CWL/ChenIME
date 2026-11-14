@@ -4,7 +4,6 @@
 package com.osfans.trime.ime.candidates.compact
 
 import com.osfans.trime.core.CandidateProto
-
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe

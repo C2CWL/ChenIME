@@ -6,9 +6,9 @@ package com.osfans.trime.ime.candidates.compact
 import com.osfans.trime.core.CandidateProto
 
 /**
- * How the compact candidate adapter should change its current list: rebind the
- * overlapping prefix, then insert or remove the tail. Same-size updates stay
- * in place instead of [androidx.recyclerview.widget.RecyclerView.Adapter.notifyDataSetChanged].
+ * Size-only plan for compact candidate list changes. Same-size *content*
+ * replacement is not applied through this plan; the adapter uses submitList
+ * because content-hash stable IDs make per-index set() notifications unsafe.
  */
 data class CompactCandidateListNotify(
     val changeCount: Int,

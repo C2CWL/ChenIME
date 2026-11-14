@@ -22,11 +22,14 @@ data class CompactCandidateListNotify(
 fun planCompactCandidateListNotify(oldSize: Int, newSize: Int): CompactCandidateListNotify {
     require(oldSize >= 0 && newSize >= 0)
     val common = minOf(oldSize, newSize)
+    val insertCount = (newSize - oldSize).coerceAtLeast(0)
+    val removeCount = (oldSize - newSize).coerceAtLeast(0)
     return CompactCandidateListNotify(
         changeCount = common,
-        insertStart = oldSize,
-        insertCount = (newSize - oldSize).coerceAtLeast(0),
-        removeStart = newSize,
-        removeCount = (oldSize - newSize).coerceAtLeast(0),
+        // Unused starts stay at 0 so the plan matches equality checks.
+        insertStart = if (insertCount > 0) oldSize else 0,
+        insertCount = insertCount,
+        removeStart = if (removeCount > 0) newSize else 0,
+        removeCount = removeCount,
     )
 }

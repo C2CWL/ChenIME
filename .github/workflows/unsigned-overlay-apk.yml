@@ -98,19 +98,16 @@ jobs:
             exit 1
           fi
           grep -q "native-code: 'arm64-v8a'" /tmp/apk-badging.txt
-          python3 -c "
-import re
-text = open('/tmp/apk-badging.txt').read()
-m = re.search(r\"versionCode='(\\d+)'\", text)
-if not m:
-    raise SystemExit('versionCode missing')
-code = int(m.group(1))
-if code < 20261135:
-    raise SystemExit(f'versionCode {code} < 20261135')
-print(f'versionCode={code}')
-if 'application-debuggable' in text:
-    raise SystemExit('APK is marked debuggable')
-"
+          code=$(sed -n "s/.*versionCode='\([0-9][0-9]*\)'.*/\1/p" /tmp/apk-badging.txt | head -n 1)
+          echo "versionCode=$code"
+          if [ -z "$code" ] || [ "$code" -lt 20261135 ]; then
+            echo "versionCode must be >= 20261135"
+            exit 1
+          fi
+          if grep -q 'application-debuggable' /tmp/apk-badging.txt; then
+            echo "APK is marked debuggable"
+            exit 1
+          fi
 
       - name: Upload unsigned arm64 release APK
         uses: actions/upload-artifact@v7

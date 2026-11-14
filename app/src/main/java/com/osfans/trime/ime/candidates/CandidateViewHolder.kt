@@ -12,4 +12,6 @@ class CandidateViewHolder(
     var idx = -1
     var text = ""
     var comment = ""
+    var highlighted = false
+    var bindGeneration = -1
 }

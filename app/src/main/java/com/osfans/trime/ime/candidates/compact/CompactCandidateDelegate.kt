@@ -119,6 +119,8 @@ class CompactCandidateDelegate(override val di: DI) :
     /** Restyles the compact list after a scheme switch; visible rows re-bind. */
     fun refreshColors() {
         separatorDrawable.paint.color = scope.colors.candidateSeparatorColor
+        // Drop the bind cache so a scheme switch repaints text that did not change.
+        adapter.invalidateBindCache()
         adapter.notifyDataSetChanged()
     }
 

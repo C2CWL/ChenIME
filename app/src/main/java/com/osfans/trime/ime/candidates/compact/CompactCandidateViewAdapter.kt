@@ -49,6 +49,13 @@ open class CompactCandidateViewAdapter(
         layoutFlexGrow = flexGrow
     }
 
+    private var bindGeneration = 0
+
+    /** Forces the next bind to rewrite text and colors. */
+    fun invalidateBindCache() {
+        bindGeneration++
+    }
+
     /** @return true if the stored widths changed. */
     fun updateItemWidths(widths: List<Int>, lastEllipsized: Boolean = false): Boolean {
         if (itemWidths == widths && lastItemEllipsized == lastEllipsized) return false
@@ -97,10 +104,16 @@ open class CompactCandidateViewAdapter(
     ) {
         item ?: return
         val isHighlighted = position == highlightedIdx
-        holder.ui.update(item, isHighlighted)
-        holder.text = item.text
-        holder.comment = item.comment
-        holder.idx = position // unused
+        // Flexbox lays this row out on every key. Skip the text, color and
+        // background work when the recycled row already shows this candidate.
+        if (holder.bindGeneration != bindGeneration || holder.idx != position || holder.text != item.text || holder.comment != item.comment || holder.highlighted != isHighlighted) {
+            holder.ui.update(item, isHighlighted)
+            holder.text = item.text
+            holder.comment = item.comment
+            holder.idx = position
+            holder.highlighted = isHighlighted
+            holder.bindGeneration = bindGeneration
+        }
         val root = holder.ui.root
         val params = root.layoutParams as FlexboxLayoutManager.LayoutParams
         val displayWidth = itemWidths.getOrNull(position)

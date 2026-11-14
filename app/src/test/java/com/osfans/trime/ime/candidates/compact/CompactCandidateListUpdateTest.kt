@@ -3,6 +3,8 @@
 
 package com.osfans.trime.ime.candidates.compact
 
+import com.osfans.trime.core.CandidateProto
+
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -41,6 +43,37 @@ class CompactCandidateListUpdateTest :
             then("negative sizes are rejected") {
                 shouldThrow<IllegalArgumentException> { planCompactCandidateListNotify(-1, 0) }
                 shouldThrow<IllegalArgumentException> { planCompactCandidateListNotify(0, -2) }
+            }
+        }
+
+        given("compact candidate content at the same length") {
+            val ma = listOf(
+                CandidateProto("吗", "", ""),
+                CandidateProto("慢", "*", ""),
+                CandidateProto("没", "*", ""),
+                CandidateProto("名", "*", ""),
+                CandidateProto("买", "*", ""),
+                CandidateProto("忙", "*", ""),
+            )
+            val da = listOf(
+                CandidateProto("打", "", ""),
+                CandidateProto("大", "", ""),
+                CandidateProto("答", "", ""),
+                CandidateProto("达", "", ""),
+                CandidateProto("搭", "", ""),
+                CandidateProto("DAH", "", ""),
+            )
+
+            then("different text of the same length is not treated as a no-op") {
+                shouldSkipCompactCandidateUpdate(ma, da, 6, 6, 0, 0) shouldBe false
+            }
+
+            then("an identical republish is still skipped") {
+                shouldSkipCompactCandidateUpdate(ma, ma.toList(), 6, 6, 0, 0) shouldBe true
+            }
+
+            then("a highlight-only change is not skipped") {
+                shouldSkipCompactCandidateUpdate(ma, ma, 6, 6, 0, 1) shouldBe false
             }
         }
     })

@@ -66,12 +66,15 @@ open class CompactCandidateViewAdapter(
 
     /**
      * @return true if the list, total or highlight actually changed and a
-     * notification ran. Identical updates (a second Flexbox pass, a no-op
+     * [submitList] ran. Identical updates (a second Flexbox pass, a no-op
      * republish) skip the adapter rebind.
      *
-     * Same-size updates rebind in place through [set]. [submitList] on this
-     * adapter would call [notifyDataSetChanged], which detaches every row and
-     * waits for a full Flexbox relayout.
+     * Same-size content changes must use [submitList], which on this adapter
+     * calls [notifyDataSetChanged]. Per-index [set] only issues
+     * [notifyItemChanged] with a null payload. This adapter also uses
+     * [setHasStableIds] and [getItemId] from the candidate hash, so
+     * notifyItemChanged can leave the old Flexbox rows on screen after the
+     * composition/preedit has already changed.
      */
     fun updateCandidates(
         data: Array<CandidateProto>,
@@ -79,25 +82,20 @@ open class CompactCandidateViewAdapter(
         highlightedIndex: Int,
     ): Boolean {
         val newItems = data.toList()
-        if (newItems == items && this.total == total && this.highlightedIdx == highlightedIndex) {
+        if (shouldSkipCompactCandidateUpdate(
+                items,
+                newItems,
+                this.total,
+                total,
+                this.highlightedIdx,
+                highlightedIndex,
+            )
+        ) {
             return false
         }
-        val oldSize = items.size
-        // highlightedIdx is read during bind, so update it before notifying.
+        super.submitList(newItems, null)
         this.total = total
         this.highlightedIdx = highlightedIndex
-        val notify = planCompactCandidateListNotify(oldSize, newItems.size)
-        for (index in 0 until notify.changeCount) {
-            set(index, newItems[index])
-        }
-        if (notify.insertCount > 0) {
-            addAll(notify.insertStart, newItems.subList(notify.insertStart, newItems.size))
-        }
-        if (notify.removeCount > 0) {
-            for (index in oldSize - 1 downTo notify.removeStart) {
-                removeAt(index)
-            }
-        }
         return true
     }
 

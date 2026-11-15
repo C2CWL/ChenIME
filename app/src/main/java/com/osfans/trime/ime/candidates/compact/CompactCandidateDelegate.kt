@@ -321,7 +321,7 @@ class CompactCandidateDelegate(override val di: DI) :
             // horizontally, so nothing has to be packed, shrunk or ellipsized.
             val widths = candidates.map { ceil(measureCandidateWidth(it)).toInt().coerceAtLeast(1) }
             val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
-            val dataChanged = adapter.updateCandidates(candidates.toTypedArray(), pendingTotal, pendingHighlighted)
+            val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
             if (widthsChanged && !dataChanged) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
             }

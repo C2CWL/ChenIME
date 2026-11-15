@@ -29,12 +29,10 @@ import com.osfans.trime.ime.candidates.unrolled.CandidatesPagingSource
 import com.osfans.trime.ime.candidates.unrolled.FilteringCandidatesPagingSource
 import com.osfans.trime.ime.candidates.unrolled.IndexedCandidate
 import com.osfans.trime.ime.candidates.unrolled.PagingCandidateViewAdapter
-import com.osfans.trime.ime.candidates.unrolled.StrokeOrderIndex
 import com.osfans.trime.ime.candidates.unrolled.UnrolledCandidateLayout
 import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
 import com.osfans.trime.ime.core.InputView
 import com.osfans.trime.ime.core.TrimeInputMethodService
-import com.osfans.trime.ime.handwriting.HandwritingMode
 import com.osfans.trime.ime.keyboard.KeyboardWindow
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.BoardWindowManager
@@ -68,13 +66,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
     private lateinit var lifecycleCoroutineScope: LifecycleCoroutineScope
     private lateinit var candidateLayout: UnrolledCandidateLayout
 
-    // Evaluated by Paging on IO, never while creating or laying out the panel.
-    private val strokeOrders by lazy {
-        LagDiagnostics.measure("stroke_index_load") {
-            context.assets.open("stroke/orders.tsv").reader(Charsets.UTF_8).use(StrokeOrderIndex::read)
-        }
-    }
-
     protected val separatorDrawable by lazy {
         ShapeDrawable(RectShape()).apply {
             val spacing = theme.style.candidateSpacing
@@ -100,23 +91,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         val createAt = LagDiagnostics.start()
         candidateLayout =
             onCreateCandidateLayout().apply {
-                onHandwriting = { windowManager.showHandwriting(HandwritingMode.FindChar) }
-                onResetFilters = {
-                    singleCharacter = false
-                    clearSyllableFilter()
-                    setStrokeExpanded(false)
-                    reloadCandidates()
-                }
-                onSingleCharacterToggle = {
-                    singleCharacter = !singleCharacter
-                    resetPosition()
-                    reloadCandidates()
-                }
-                onStrokeChange = { prefix ->
-                    updateStrokePrefix(prefix)
-                    resetPosition()
-                    reloadCandidates()
-                }
                 onSyllableToggle = { index, syllables ->
                     filterJob?.cancel()
                     if (activeSyllable == index) {
@@ -137,11 +111,7 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                     }
                 }
                 onCompositionKey = { key ->
-                    if (key == "BackSpace" && strokePrefix.isNotEmpty()) {
-                        onStrokeChange?.invoke(strokePrefix.dropLast(1))
-                    } else {
-                        rime.launchOnReady { it.processKey(RimeKeyEvent.getKeycodeByName(key), 0u) }
-                    }
+                    rime.launchOnReady { it.processKey(RimeKeyEvent.getKeycodeByName(key), 0u) }
                 }
                 recyclerView.apply {
                     // disable item cross-fade animation
@@ -162,9 +132,8 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     private fun clearSyllableFilter() {
         filterJob?.cancel()
-        if (filterEnd == null && candidateLayout.activeSyllable == null && candidateLayout.strokePrefix.isEmpty()) return
+        if (filterEnd == null && candidateLayout.activeSyllable == null) return
         filterEnd = null
-        candidateLayout.updateStrokePrefix("")
         candidateLayout.activeSyllable = null
         candidateLayout.resetPosition()
         reloadCandidates()
@@ -179,8 +148,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     private fun candidatesPager(): Pager<Int, IndexedCandidate> {
         val end = filterEnd
-        val single = candidateLayout.singleCharacter
-        val prefix = candidateLayout.strokePrefix
         val total = compactCandidate.adapter.total
         return Pager(
             config = PagingConfig(
@@ -188,16 +155,12 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                 enablePlaceholders = false,
             ),
             pagingSourceFactory = {
-                if (end != null || single || prefix.isNotEmpty()) {
+                if (end != null) {
                     FilteringCandidatesPagingSource(
                         rime,
                         end,
-                        single,
-                        prefix,
-                        { strokeOrders },
                     )
                 } else {
-                    // 词频 shows the full list, including words already in the compact bar.
                     CandidatesPagingSource(
                         rime,
                         total = total,

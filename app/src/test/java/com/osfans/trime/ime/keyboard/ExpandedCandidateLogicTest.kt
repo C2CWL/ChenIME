@@ -10,7 +10,6 @@ import com.osfans.trime.ime.candidates.unrolled.expandedMinCellWidth
 import com.osfans.trime.ime.candidates.unrolled.expandedPillMargin
 import com.osfans.trime.ime.candidates.unrolled.expandedPillWidth
 import com.osfans.trime.ime.candidates.unrolled.expandedRowHeightDp
-import com.osfans.trime.ime.candidates.unrolled.isSingleCharacter
 import com.osfans.trime.ime.candidates.unrolled.layoutExpandedCandidateGrid
 import com.osfans.trime.ime.candidates.unrolled.preeditSyllables
 import com.osfans.trime.ime.candidates.unrolled.syllableInputEnd
@@ -40,12 +39,6 @@ class ExpandedCandidateLogicTest :
             expandedRowHeightDp(34, 12) shouldBe 46
             expandedRowHeightDp(28, 12) shouldBe 44
             expandedRowHeightDp(40, 12) shouldBe 52
-        }
-        "single character filter counts Unicode code points" {
-            isSingleCharacter("你") shouldBe true
-            isSingleCharacter("𠀀") shouldBe true
-            isSingleCharacter("你好") shouldBe false
-            isSingleCharacter("") shouldBe false
         }
         "syllables use only explicit engine boundaries and discard non-pinyin" {
             preeditSyllables("ni kan") shouldBe listOf("ni", "kan")

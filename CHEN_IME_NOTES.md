@@ -302,28 +302,6 @@ Adjust the count with `chen_eng_translator/frequent_completions` (`0` disables i
 The pinyin schema's mixed English (`melt_eng` inside `rime_frost`) is unchanged.
 
 
-## Simplified stroke lookup in expanded candidates
+## Pinyin candidate panel
 
-Expanded candidates now offer five equal-width stroke keys below the candidate
-grid (horizontal, vertical, left-falling, dot/right-falling, fold), with the
-selected prefix, undo and clear in a separate row. The left rail only contains
-pinyin segments. The former lower-right Return action is replaced by the single
-character toggle; ordinary keyboard Return is unchanged. The old whole-character
-handwriting lookup entry is removed from this panel; full handwriting is unchanged.
-
-Stroke filters use cnchar simplified data pinned in third_party/cnchar (MIT),
-converted by tools/generate_stroke_orders.py. The derived asset has 6,896 entries;
-traditional-only forms identified by cnchar's conversion table are excluded.
-This is not complete national-standard character coverage. Vertical hook is
-vertical, rising is horizontal, and remaining folded strokes use fold.
-
-Filtering matches the beginning of each single character's stroke sequence,
-retains original Rime order/global indices, and does not alter composition.
-The existing expanded-filter scan ceiling of 1,500 raw candidates is retained;
-characters beyond that limit or absent from the data cannot be found here.
-Composition changes and leaving the panel clear the stroke prefix. Backspace
-undoes a selected stroke first, otherwise goes to Rime. Data loads on IO.
-
-Checks: Python generator/data tests and targeted ktlint; Kotlin unit tests added
-for the actual parser/matcher and bundled data, to be executed by CI. No local
-Gradle build or device UI verification.
+The expanded pinyin panel keeps syllable filters. Frequency, the single-character toggle, stroke filtering and the handwriting-find-character button are no longer shown there. The handwriting keyboard itself is unchanged and is still opened from the keyboard switcher, not from this panel.

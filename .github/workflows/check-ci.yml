@@ -19,8 +19,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Check simplified stroke data
-        run: python3 tools/test_generate_stroke_orders.py
 
       # Install Lua from lua.org instead of the Ubuntu mirrors, which can be
       # unreachable from runners. Fall back to apt (with retries) if needed.

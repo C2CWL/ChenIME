@@ -375,6 +375,9 @@ class Rime :
 
     private var lastKeyFinishedAt = 0L
 
+    /** Last value published to chen_timing.lua. Avoids a property write on every key while diagnostics stay off. */
+    private var lagDiagPublished: Boolean? = null
+
     private fun processKeyInner(value: Int, modifiers: Int, isVirtual: Boolean): Boolean {
         LagDiagnostics.rimeKeyStarted()
         val startedAt = if (InputLatency.enabled) System.nanoTime() else 0L
@@ -385,11 +388,22 @@ class Rime :
             lastAsciiTipsText = asciiTipsText(getRimeStatus())
             if (recording) {
                 statusAt = System.nanoTime()
+                // Tell chen_timing.lua to record. The filters stay mounted, but
+                // they write nothing unless this is "1".
+                if (lagDiagPublished != true) {
+                    setRimeProperty("_chen_lag_diag", "1")
+                    lagDiagPublished = true
+                }
                 // Clear stale timings from the previous key (e.g. a schema
                 // without the chen_timing filters would otherwise be attributed
                 // to this one). Empty, never typed content.
                 setRimeProperty("_chen_xlt_us", "")
                 setRimeProperty("_chen_pipe_us", "")
+            } else if (lagDiagPublished != false) {
+                // Once, on the transition to off. A normal key then does not
+                // cross into librime just to say diagnostics are disabled.
+                setRimeProperty("_chen_lag_diag", "")
+                lagDiagPublished = false
             }
             val handled = processRimeKey(value, modifiers)
             if (recording) engineAt = System.nanoTime()

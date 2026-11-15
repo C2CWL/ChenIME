@@ -147,6 +147,24 @@ class CompactCandidateDelegate(override val di: DI) :
 
             override fun canScrollVertically(): Boolean = false
 
+            override fun onLayoutChildren(recycler: RecyclerView.Recycler, state: RecyclerView.State) {
+                val startedAt = LagDiagnostics.start()
+                try {
+                    super.onLayoutChildren(recycler, state)
+                } finally {
+                    if (startedAt != 0L) {
+                        LagDiagnostics.duration(
+                            "candidate_layout_work",
+                            startedAt,
+                            extra = "work_us=${(System.nanoTime() - startedAt) / 1_000} " +
+                                "items=${adapter.itemCount} children=$childCount pre_layout=${state.isPreLayout} " +
+                                "binds_total=${adapter.diagnosticBinds} updates_total=${adapter.diagnosticUpdates} " +
+                                "creates_total=${adapter.diagnosticCreates} invalidations_total=${adapter.diagnosticInvalidations}",
+                        )
+                    }
+                }
+            }
+
             override fun onLayoutCompleted(state: RecyclerView.State?) {
                 super.onLayoutCompleted(state)
                 val cnt = this.childCount
@@ -240,10 +258,10 @@ class CompactCandidateDelegate(override val di: DI) :
             }
         }
 
-        if (InputLatency.enabled && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
+        if (LagDiagnostics.enabled && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
             candidateUpdateAt = System.nanoTime()
         }
-        if (!InputLatency.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
+        if (!LagDiagnostics.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
         pendingCandidates = candidates
         pendingTotal = total
@@ -279,37 +297,49 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     private fun publishCompactCandidates() {
-        val candidates = pendingCandidates
-        if (candidates.isEmpty()) {
-            adapter.updateItemWidths(emptyList())
-            adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
-            refreshUnrolled(0)
-            return
-        }
-        val barWidth = view.width
-        if (barWidth <= 0) {
-            adapter.updateItemWidths(emptyList())
-            adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
-            return
-        }
-        val packed = layoutCompactCandidateBar(
-            candidates.map(::measureCandidateWidth),
-            barWidth.toFloat(),
-            separatorDrawable.intrinsicWidth.toFloat(),
-        )
-        val shown = candidates.take(packed.size)
-        val lastEllipsized = packed.lastOrNull()?.ellipsized == true
-        if (lastEllipsized) secondLayoutPassNeeded = false
-        val widthsChanged = adapter.updateItemWidths(
-            packed.map { ceil(it.width).toInt().coerceAtLeast(1) },
-            lastEllipsized,
-        )
-        val dataChanged = adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)
-        if (widthsChanged && !dataChanged) {
-            adapter.notifyItemRangeChanged(0, adapter.itemCount)
-        }
-        if (dataChanged || widthsChanged) {
-            refreshUnrolled(shown.size)
+        val startedAt = LagDiagnostics.start()
+        try {
+            val candidates = pendingCandidates
+            if (candidates.isEmpty()) {
+                adapter.updateItemWidths(emptyList())
+                adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
+                refreshUnrolled(0)
+                return
+            }
+            val barWidth = view.width
+            if (barWidth <= 0) {
+                adapter.updateItemWidths(emptyList())
+                adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
+                return
+            }
+            val packed = layoutCompactCandidateBar(
+                candidates.map(::measureCandidateWidth),
+                barWidth.toFloat(),
+                separatorDrawable.intrinsicWidth.toFloat(),
+            )
+            val shown = candidates.take(packed.size)
+            val lastEllipsized = packed.lastOrNull()?.ellipsized == true
+            if (lastEllipsized) secondLayoutPassNeeded = false
+            val widthsChanged = adapter.updateItemWidths(
+                packed.map { ceil(it.width).toInt().coerceAtLeast(1) },
+                lastEllipsized,
+            )
+            val dataChanged = adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)
+            if (widthsChanged && !dataChanged) {
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
+            }
+            if (dataChanged || widthsChanged) {
+                refreshUnrolled(shown.size)
+            }
+        } finally {
+            if (startedAt != 0L) {
+                LagDiagnostics.duration(
+                    "candidate_publish",
+                    startedAt,
+                    extra = "work_us=${(System.nanoTime() - startedAt) / 1_000} " +
+                        "incoming=${pendingCandidates.size} shown=${adapter.itemCount} bar_width=${view.width}",
+                )
+            }
         }
     }
 }

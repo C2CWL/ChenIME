@@ -110,10 +110,12 @@ class CompactCandidateDelegate(override val di: DI) :
 
     fun refreshUnrolled(childCount: Int) {
         _unrolledCandidateOffset.tryEmit(childCount)
+    }
+
+    private fun updateUnrollButton(overflows: Boolean) {
         bar.unrollButtonStateMachine.push(
             UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesUpdated,
-            UnrollButtonStateMachine.BooleanKey.UnrolledCandidatesEmpty to
-                (adapter.total == childCount),
+            UnrollButtonStateMachine.BooleanKey.UnrolledCandidatesEmpty to !overflows,
         )
     }
 
@@ -309,6 +311,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 adapter.updateItemWidths(emptyList())
                 adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
                 refreshUnrolled(0)
+                updateUnrollButton(overflows = false)
                 return
             }
             val barWidth = view.width
@@ -325,6 +328,11 @@ class CompactCandidateDelegate(override val di: DI) :
             if (widthsChanged && !dataChanged) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
             }
+            // The row no longer clips, so "more candidates exist" is the width that
+            // does not fit, not a truncated item count. The expand button follows that.
+            val separator = separatorDrawable.intrinsicWidth
+            val contentWidth = widths.sum() + separator * (widths.size - 1).coerceAtLeast(0)
+            updateUnrollButton(contentWidth > barWidth)
         } finally {
             if (startedAt != 0L) {
                 LagDiagnostics.duration(

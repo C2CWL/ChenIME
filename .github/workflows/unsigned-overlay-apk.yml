@@ -1,0 +1,118 @@
+# SPDX-FileCopyrightText: 2015 - 2026 Rime community
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Test-only unsigned release APK for overlay install trials.
+# Does not create a GitHub Release, does not read or write signing secrets,
+# and must not be confused with release-ci.yml (tags / workflow_dispatch).
+name: Unsigned overlay APK
+
+on:
+  push:
+    branches:
+      - perf/compact-candidate-inplace-update
+    paths:
+      - ".github/workflows/unsigned-overlay-apk.yml"
+
+concurrency:
+  group: unsigned-overlay-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+
+env:
+  CI_NAME: Unsigned overlay test CI
+  BUILD_ABI: arm64-v8a
+
+jobs:
+  build-unsigned-arm64:
+    if: github.repository == 'C2CWL/ChenIME'
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Fetch source code
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: "temurin"
+          java-version: 25
+          cache: "gradle"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools cmake;3.31.6"
+
+      - name: Calculate JNI cache hash
+        id: cache-hash
+        run: ./gradlew :app:calculateNativeCacheHash
+
+      - name: Fetch JNI cache
+        uses: actions/cache@v6
+        id: jni-cache
+        with:
+          path: "app/prebuilt"
+          key: ${{ runner.os }}-trime-jni-release-${{ steps.cache-hash.outputs.native-cache-hash }}
+
+      - name: Build unsigned release APK
+        # make release is patch-apply + :app:assembleRelease only; it does not publish.
+        # No keystore.properties / signing secrets are provided, so the APK stays unsigned.
+        run: make release
+
+      - name: Add JNI cache
+        if: ${{ !steps.jni-cache.outputs.cache-hit }}
+        run: cp -R app/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib app/prebuilt
+
+      - name: Verify official package name and ABI
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/release/*arm64-v8a*.apk)
+          if [ "${#apks[@]}" -lt 1 ]; then
+            echo "No arm64-v8a APK under app/build/outputs/apk/release/"
+            ls -la app/build/outputs/apk/release/ || true
+            exit 1
+          fi
+          apk="${apks[0]}"
+          echo "apk=$apk"
+          ls -l "$apk"
+          aapt_bin=""
+          for d in "${ANDROID_HOME:-/dev/null}"/build-tools/*; do
+            if [ -x "$d/aapt" ]; then aapt_bin="$d/aapt"; fi
+          done
+          if [ -z "$aapt_bin" ]; then
+            echo "aapt not found; listing APK name only"
+            echo "$apk" | grep -q 'arm64-v8a' || exit 1
+            exit 0
+          fi
+          "$aapt_bin" dump badging "$apk" | tee /tmp/apk-badging.txt
+          grep -q "package: name='com.c2cwl.chenime' versionCode=" /tmp/apk-badging.txt
+          if grep -q "package: name='com.c2cwl.chenime.debug'" /tmp/apk-badging.txt; then
+            echo "Debug package name is not acceptable for overlay install"
+            exit 1
+          fi
+          grep -q "native-code: 'arm64-v8a'" /tmp/apk-badging.txt
+          code=$(sed -n "s/.*versionCode='\([0-9][0-9]*\)'.*/\1/p" /tmp/apk-badging.txt | head -n 1)
+          echo "versionCode=$code"
+          if [ -z "$code" ] || [ "$code" -lt 20261135 ]; then
+            echo "versionCode must be >= 20261135"
+            exit 1
+          fi
+          if grep -q 'application-debuggable' /tmp/apk-badging.txt; then
+            echo "APK is marked debuggable"
+            exit 1
+          fi
+
+      - name: Upload unsigned arm64 release APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: chenime-unsigned-arm64-overlay
+          path: app/build/outputs/apk/release/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14

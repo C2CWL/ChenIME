@@ -11,7 +11,6 @@ import kotlinx.coroutines.ensureActive
 internal class FilteringCandidatesPagingSource(
     private val rime: RimeSession,
     private val end: Int?,
-    private val singleCharacter: Boolean,
 ) : PagingSource<Int, IndexedCandidate>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, IndexedCandidate> {
         var rawIndex = params.key ?: 0
@@ -26,9 +25,7 @@ internal class FilteringCandidatesPagingSource(
             var consumed = 0
             for ((index, candidate) in candidates.withIndex()) {
                 consumed++
-                if ((end == null || ends.getOrNull(index + 2) == end) &&
-                    (!singleCharacter || isSingleCharacter(candidate.text))
-                ) {
+                if (ends.getOrNull(index + 2) == end) {
                     matches.add(IndexedCandidate(rawIndex + index, candidate))
                 }
                 if (matches.size == params.loadSize) break

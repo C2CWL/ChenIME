@@ -91,16 +91,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
         val createAt = LagDiagnostics.start()
         candidateLayout =
             onCreateCandidateLayout().apply {
-                onResetFilters = {
-                    singleCharacter = false
-                    clearSyllableFilter()
-                    reloadCandidates()
-                }
-                onSingleCharacterToggle = {
-                    singleCharacter = !singleCharacter
-                    resetPosition()
-                    reloadCandidates()
-                }
                 onSyllableToggle = { index, syllables ->
                     filterJob?.cancel()
                     if (activeSyllable == index) {
@@ -158,7 +148,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     private fun candidatesPager(): Pager<Int, IndexedCandidate> {
         val end = filterEnd
-        val single = candidateLayout.singleCharacter
         val total = compactCandidate.adapter.total
         return Pager(
             config = PagingConfig(
@@ -166,14 +155,12 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                 enablePlaceholders = false,
             ),
             pagingSourceFactory = {
-                if (end != null || single) {
+                if (end != null) {
                     FilteringCandidatesPagingSource(
                         rime,
                         end,
-                        single,
                     )
                 } else {
-                    // 词频 shows the full list, including words already in the compact bar.
                     CandidatesPagingSource(
                         rime,
                         total = total,

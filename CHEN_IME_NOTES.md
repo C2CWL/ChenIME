@@ -304,4 +304,4 @@ The pinyin schema's mixed English (`melt_eng` inside `rime_frost`) is unchanged.
 
 ## Pinyin candidate panel
 
-The expanded pinyin panel keeps syllable filters, frequency and the single-character toggle. Stroke filtering (the five stroke keys) and the handwriting-find-character button are no longer shown there. The handwriting keyboard itself is unchanged and is still opened from the keyboard switcher, not from this panel.
+The expanded pinyin panel keeps syllable filters. Frequency, the single-character toggle, stroke filtering and the handwriting-find-character button are no longer shown there. The handwriting keyboard itself is unchanged and is still opened from the keyboard switcher, not from this panel.

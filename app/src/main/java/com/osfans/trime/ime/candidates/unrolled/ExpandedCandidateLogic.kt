@@ -119,8 +119,6 @@ internal fun candidateLayoutWidth(
 
 internal fun expandedRowHeightDp(candidateViewHeight: Int, commentHeight: Int): Int = (candidateViewHeight + commentHeight).coerceAtLeast(44)
 
-internal fun isSingleCharacter(text: String): Boolean = text.codePointCount(0, text.length) == 1
-
 /** Only expose boundaries supplied by the engine; retain repeated syllables. */
 internal fun preeditSyllables(preedit: String?): List<String> = preedit.orEmpty()
     .split(Regex("[^a-zA-ZüÜāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]+"))

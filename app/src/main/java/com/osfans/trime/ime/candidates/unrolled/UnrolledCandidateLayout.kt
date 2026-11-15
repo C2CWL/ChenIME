@@ -18,14 +18,10 @@ import splitties.dimensions.dp
 class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) : LinearLayout(context) {
     val recyclerView = RecyclerView(context)
     private val syllables = LinearLayout(context).apply { orientation = VERTICAL }
-    private val frequency = button("词频", "按词频显示全部候选") { onResetFilters?.invoke() }
-    private val single = button("单字", "仅显示单字") { onSingleCharacterToggle?.invoke() }
     private val actions = mutableListOf<TextView>()
     private val leftRail = LinearLayout(context).apply { orientation = VERTICAL }
     private var displayedSyllables: List<String> = emptyList()
     private val rowHeight = dp(expandedRowHeightDp(scope.theme.style.candidateViewHeight, scope.theme.style.commentHeight))
-    var onResetFilters: (() -> Unit)? = null
-    var onSingleCharacterToggle: (() -> Unit)? = null
     var onSyllableToggle: ((Int, List<String>) -> Unit)? = null
     var onCompositionKey: ((String) -> Unit)? = null
     var activeSyllable: Int? = null
@@ -33,26 +29,11 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
             field = value
             refreshColors()
         }
-    var singleCharacter = false
-        set(value) {
-            field = value
-            refreshColors()
-        }
-
     init {
         id = R.id.unrolled_candidate_view
         orientation = VERTICAL
         // A rounded outline can punch a hole at the bottom-left rail and let a key show through.
         clipToOutline = false
-        addView(
-            LinearLayout(context).apply {
-                setPadding(dp(6), dp(3), dp(6), dp(3))
-                listOf(frequency, single).forEach {
-                    addView(it, LayoutParams(0, LayoutParams.MATCH_PARENT, 1f))
-                }
-            },
-            LayoutParams(LayoutParams.MATCH_PARENT, dp(40)),
-        )
         val body = LinearLayout(context)
         leftRail.addView(ScrollView(context).apply { addView(syllables) }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         body.addView(leftRail, LayoutParams(dp(64), LayoutParams.MATCH_PARENT))
@@ -112,11 +93,9 @@ class UnrolledCandidateLayout(context: Context, private val scope: ThemeScope) :
         val colors = scope.colors
         leftRail.setBackgroundColor(colors.candidateBackground)
         val selected = buildSet {
-            if (singleCharacter) add(single)
-            if (!singleCharacter && activeSyllable == null) add(frequency)
             activeSyllable?.let { end -> for (i in 0..end) (syllables.getChildAt(i) as? TextView)?.let(::add) }
         }
-        val views = listOf(frequency, single) + actions +
+        val views = actions +
             (0 until syllables.childCount).map { syllables.getChildAt(it) as TextView }
         views.forEach { view ->
             val highlighted = view in selected

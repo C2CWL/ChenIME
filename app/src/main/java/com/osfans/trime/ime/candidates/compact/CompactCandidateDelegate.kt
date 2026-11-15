@@ -328,6 +328,11 @@ class CompactCandidateDelegate(override val di: DI) :
             if (widthsChanged && !dataChanged) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
             }
+            // The bar now scrolls instead of packing, so the unrolled panel can no
+            // longer learn its size from the packed layout: refresh it from the data.
+            if (dataChanged || widthsChanged) {
+                refreshUnrolled(candidates.size)
+            }
             // The row no longer clips, so "more candidates exist" is the width that
             // does not fit, not a truncated item count. The expand button follows that.
             val separator = separatorDrawable.intrinsicWidth

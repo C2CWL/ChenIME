@@ -15,6 +15,7 @@ import android.view.View
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import com.c2cwl.chenime.R
+import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.core.Candidates
@@ -143,7 +144,11 @@ class CompactCandidateDelegate(override val di: DI) :
 
     val layoutManager by lazy {
         object : FlexboxLayoutManager(context) {
-            override fun canScrollHorizontally(): Boolean = false
+            init {
+                // One scrolling row: candidates keep their natural width instead of
+                // being packed into the bar and ellipsized at the end.
+                flexWrap = FlexWrap.NOWRAP
+            }
 
             override fun canScrollVertically(): Boolean = false
 
@@ -312,24 +317,13 @@ class CompactCandidateDelegate(override val di: DI) :
                 adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
                 return
             }
-            val packed = layoutCompactCandidateBar(
-                candidates.map(::measureCandidateWidth),
-                barWidth.toFloat(),
-                separatorDrawable.intrinsicWidth.toFloat(),
-            )
-            val shown = candidates.take(packed.size)
-            val lastEllipsized = packed.lastOrNull()?.ellipsized == true
-            if (lastEllipsized) secondLayoutPassNeeded = false
-            val widthsChanged = adapter.updateItemWidths(
-                packed.map { ceil(it.width).toInt().coerceAtLeast(1) },
-                lastEllipsized,
-            )
-            val dataChanged = adapter.updateCandidates(shown.toTypedArray(), pendingTotal, pendingHighlighted)
+            // Every candidate stays in the bar at its natural width: the row scrolls
+            // horizontally, so nothing has to be packed, shrunk or ellipsized.
+            val widths = candidates.map { ceil(measureCandidateWidth(it)).toInt().coerceAtLeast(1) }
+            val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
+            val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
             if (widthsChanged && !dataChanged) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
-            }
-            if (dataChanged || widthsChanged) {
-                refreshUnrolled(shown.size)
             }
         } finally {
             if (startedAt != 0L) {

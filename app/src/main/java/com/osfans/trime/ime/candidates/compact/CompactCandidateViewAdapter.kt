@@ -154,9 +154,12 @@ open class CompactCandidateViewAdapter(
         val width = displayWidth ?: root.wrapContent
         val minimum = if (displayWidth != null) minOf(root.dp(40), displayWidth) else root.dp(40)
         if (root.minimumWidth != minimum) root.minimumWidth = minimum
-        if (params.minWidth != minWidth || params.flexGrow != flexGrow || params.maxWidth != maxWidth || params.width != width) {
+        if (params.minWidth != minWidth || params.flexGrow != flexGrow || params.flexShrink != 0f || params.maxWidth != maxWidth || params.width != width) {
             params.minWidth = minWidth
             params.flexGrow = flexGrow
+            // The bar scrolls: an item keeps its natural width instead of shrinking
+            // into an ellipsis when the row is full.
+            params.flexShrink = 0f
             params.maxWidth = maxWidth
             params.width = width
             root.layoutParams = params

@@ -10,12 +10,7 @@ The JSON inputs are unchanged copies from:
 - src/cnchar/plugin/order/dict/stroke-table.json
 - src/cnchar/plugin/trad/dict/trad-simple.json
 
-Run `python3 tools/generate_stroke_orders.py` to regenerate the APK's
-`app/src/main/assets/stroke/orders.tsv`. This derived data remains under MIT.
-Only simplified/common-form characters in the upstream simplified table are
-included; mapped traditional-only variants are excluded. This is not a claim
-that the table covers every character in the national standard character list.
-
-Five classes: horizontal (including rising), vertical (including vertical hook),
-left-falling, dot/right-falling, and fold (other bends/hooks).
+The pinyin candidate panel no longer ships a stroke filter, so this pin is not
+converted into an APK asset. The JSON copies stay here under MIT so the source
+attribution remains with the tree.
 No JavaScript runtime, web page, handwriting model, or network service is used.

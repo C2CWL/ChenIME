@@ -350,13 +350,17 @@ class CompactCandidateDelegate(override val di: DI) :
         }
     }
 
-    /** RecyclerView drops every requestLayout while layout is suppressed. */
-    private fun releaseSuppressedLayout() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed) {
-            adapter.trace("layout_suppressed") { "released=true" }
-            view.suppressLayout(false)
-            view.requestLayout()
+    /**
+     * RecyclerView skips its own requestLayout while adapter updates are still
+     * pending, and never lays out again if that pass was lost. Ask explicitly.
+     */
+    private fun ensureLayoutRequested() {
+        val suppressed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed
+        adapter.trace("layout_request") {
+            "pending_updates=${view.hasPendingAdapterUpdates()} requested=${view.isLayoutRequested} suppressed=$suppressed"
         }
+        if (suppressed) view.suppressLayout(false)
+        if (!view.isLayoutRequested) view.requestLayout()
     }
 
     private fun publishCompactCandidates() {
@@ -388,7 +392,7 @@ class CompactCandidateDelegate(override val di: DI) :
             if (widthsChanged && !dataChanged) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
             }
-            if (dataChanged || widthsChanged) releaseSuppressedLayout()
+            if (dataChanged || widthsChanged) ensureLayoutRequested()
             // The bar now scrolls instead of packing, so the unrolled panel can no
             // longer learn its size from the packed layout: refresh it from the data.
             if (dataChanged || widthsChanged) {

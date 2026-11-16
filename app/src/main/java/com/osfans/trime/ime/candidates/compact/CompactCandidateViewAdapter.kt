@@ -60,6 +60,24 @@ open class CompactCandidateViewAdapter(
     internal var diagnosticInvalidations = 0L
         private set
 
+    internal var diagnosticSequence = 0L
+
+    internal inline fun trace(stage: String, details: () -> String) {
+        CompactCandidateTrace.log(this, diagnosticSequence, stage, details)
+    }
+
+    init {
+        registerAdapterDataObserver(object : androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+            override fun onChanged() = trace("notify_all") { "items=$itemCount" }
+
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) = trace("notify_change") { "start=$positionStart count=$itemCount payload=${payload != null}" }
+
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = trace("notify_insert") { "start=$positionStart count=$itemCount" }
+
+            override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) = trace("notify_remove") { "start=$positionStart count=$itemCount" }
+        })
+    }
+
     private var bindGeneration = 0
 
     /** Forces the next bind to rewrite text and colors. */
@@ -103,9 +121,14 @@ open class CompactCandidateViewAdapter(
                 highlightedIndex,
             )
         ) {
+            trace("submit_skip") { "items=$itemCount total=$total highlight=$highlightedIndex" }
             return false
         }
+        trace("submit_begin") {
+            "old=$itemCount new=${newItems.size} fp=${CompactCandidateTrace.fingerprint(newItems)} total=$total highlight=$highlightedIndex"
+        }
         super.submitList(newItems, null)
+        trace("submit_end") { "items=$itemCount fp=${CompactCandidateTrace.fingerprint(items)}" }
         this.total = total
         this.highlightedIdx = highlightedIndex
         return true
@@ -133,6 +156,14 @@ open class CompactCandidateViewAdapter(
         item ?: return
         if (LagDiagnostics.enabled) diagnosticBinds++
         val isHighlighted = position == highlightedIdx
+        if (position < 12) {
+            trace("bind") {
+                "holder=${System.identityHashCode(holder)} position=$position cached_position=${holder.idx} " +
+                    "generation=$bindGeneration cached_generation=${holder.bindGeneration} " +
+                    "cache_text_match=${holder.text == item.text} cache_comment_match=${holder.comment == item.comment} " +
+                    "ui_text_match=${holder.ui.displayedText == item.text} ui_comment_match=${holder.ui.displayedComment == item.comment}"
+            }
+        }
         // Flexbox lays this row out on every key. Skip the text, color and
         // background work when the recycled row already shows this candidate.
         if (holder.bindGeneration != bindGeneration || holder.idx != position || holder.text != item.text || holder.comment != item.comment || holder.highlighted != isHighlighted) {
@@ -143,6 +174,12 @@ open class CompactCandidateViewAdapter(
             holder.idx = position
             holder.highlighted = isHighlighted
             holder.bindGeneration = bindGeneration
+        }
+        if (position < 12) {
+            trace("bind_end") {
+                "holder=${System.identityHashCode(holder)} position=$position text_match=${holder.ui.displayedText == item.text} " +
+                    "comment_match=${holder.ui.displayedComment == item.comment} highlighted=$isHighlighted"
+            }
         }
         val root = holder.ui.root
         val params = root.layoutParams as FlexboxLayoutManager.LayoutParams

@@ -99,6 +99,23 @@ class CompactCandidateDelegate(override val di: DI) :
 
     // This is a batched layout delay, not a per-key or screen-presentation timestamp.
     private var candidateUpdateAt = 0L
+    private var diagnosticLayoutSequence = -1L
+    private val diagnosticSnapshot: Runnable = Runnable {
+        adapter.trace("settled") {
+            val checked = minOf(view.childCount, 12)
+            val mismatches = (0 until checked).count { index ->
+                val child = view.getChildAt(index)
+                val holder = view.getChildViewHolder(child) as? com.osfans.trime.ime.candidates.CandidateViewHolder
+                val expected = holder?.let { adapter.items.getOrNull(it.bindingAdapterPosition) }
+                holder == null || expected == null || !holder.ui.text.text.contentEquals(expected.text) ||
+                    !holder.ui.comment.text.contentEquals(expected.comment)
+            }
+            "layout_seq=$diagnosticLayoutSequence items=${adapter.itemCount} children=${view.childCount} " +
+                "checked=$checked mismatches=$mismatches attached=${view.isAttachedToWindow} " +
+                "shown=${view.isShown} requested=${view.isLayoutRequested} suppressed=${view.isLayoutSuppressed} " +
+                "binds=${adapter.diagnosticBinds} updates=${adapter.diagnosticUpdates}"
+        }
+    }
 
     private val _unrolledCandidateOffset =
         MutableSharedFlow<Int>(
@@ -109,10 +126,12 @@ class CompactCandidateDelegate(override val di: DI) :
     val unrolledCandidateOffset = _unrolledCandidateOffset.asSharedFlow()
 
     fun refreshUnrolled(childCount: Int) {
-        _unrolledCandidateOffset.tryEmit(childCount)
+        val emitted = _unrolledCandidateOffset.tryEmit(childCount)
+        adapter.trace("unrolled_offset") { "offset=$childCount emitted=$emitted" }
     }
 
     private fun updateUnrollButton(overflows: Boolean) {
+        adapter.trace("unroll_button") { "overflows=$overflows" }
         bar.unrollButtonStateMachine.push(
             UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesUpdated,
             UnrollButtonStateMachine.BooleanKey.UnrolledCandidatesEmpty to !overflows,
@@ -156,6 +175,9 @@ class CompactCandidateDelegate(override val di: DI) :
 
             override fun onLayoutChildren(recycler: RecyclerView.Recycler, state: RecyclerView.State) {
                 val startedAt = LagDiagnostics.start()
+                adapter.trace("layout_begin") {
+                    "state_items=${state.itemCount} adapter_items=${adapter.itemCount} children=$childCount pre_layout=${state.isPreLayout} structure_changed=${state.didStructureChange()}"
+                }
                 try {
                     super.onLayoutChildren(recycler, state)
                 } finally {
@@ -175,6 +197,24 @@ class CompactCandidateDelegate(override val di: DI) :
             override fun onLayoutCompleted(state: RecyclerView.State?) {
                 super.onLayoutCompleted(state)
                 val cnt = this.childCount
+                if (LagDiagnostics.enabled) diagnosticLayoutSequence = adapter.diagnosticSequence
+                adapter.trace("layout_complete") { "children=$cnt items=${adapter.itemCount} pre_layout=${state?.isPreLayout}" }
+                if (LagDiagnostics.enabled) {
+                    for (i in 0 until minOf(cnt, 12)) {
+                        val child = getChildAt(i) ?: continue
+                        val holder = (child.parent as? RecyclerView)?.getChildViewHolder(child)
+                            as? com.osfans.trime.ime.candidates.CandidateViewHolder ?: continue
+                        val position = holder.bindingAdapterPosition
+                        val expected = adapter.items.getOrNull(position)
+                        adapter.trace("child") {
+                            "child=$i holder=${System.identityHashCode(holder)} position=$position bound_position=${holder.idx} " +
+                                "expected=${expected != null} text_match=${expected != null && holder.ui.text.text.contentEquals(expected.text)} " +
+                                "comment_match=${expected != null && holder.ui.comment.text.contentEquals(expected.comment)} " +
+                                "cache_match=${expected != null && holder.text == expected.text && holder.comment == expected.comment} " +
+                                "bounds=${child.left},${child.top},${child.right},${child.bottom} requested=${child.isLayoutRequested}"
+                        }
+                    }
+                }
                 if (secondLayoutPassNeeded) {
                     if (cnt < adapter.itemCount) {
                         // [^2] RecyclerView can't display all candidates
@@ -240,6 +280,12 @@ class CompactCandidateDelegate(override val di: DI) :
 
     override fun onCandidateListUpdate(data: Candidates.Bulk) {
         val (total, highlighted, candidates) = data
+        if (LagDiagnostics.enabled) {
+            adapter.diagnosticSequence++
+            adapter.trace("receive") {
+                "count=${candidates.size} total=$total highlight=$highlighted fp=${CompactCandidateTrace.fingerprint(candidates.toList())}"
+            }
+        }
 
         val maxSpanCount = maxSpanCountPref.getValue()
 
@@ -306,6 +352,9 @@ class CompactCandidateDelegate(override val di: DI) :
     private fun publishCompactCandidates() {
         val startedAt = LagDiagnostics.start()
         try {
+            adapter.trace("publish_begin") {
+                "incoming=${pendingCandidates.size} width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout} suppressed=${view.isLayoutSuppressed}"
+            }
             val candidates = pendingCandidates
             if (candidates.isEmpty()) {
                 adapter.updateItemWidths(emptyList())
@@ -339,6 +388,10 @@ class CompactCandidateDelegate(override val di: DI) :
             val contentWidth = widths.sum() + separator * (widths.size - 1).coerceAtLeast(0)
             updateUnrollButton(contentWidth > barWidth)
         } finally {
+            if (LagDiagnostics.enabled) {
+                view.removeCallbacks(diagnosticSnapshot)
+                view.postDelayed(diagnosticSnapshot, 250)
+            }
             if (startedAt != 0L) {
                 LagDiagnostics.duration(
                     "candidate_publish",

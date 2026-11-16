@@ -9,6 +9,7 @@ import android.content.res.Configuration
 import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
+import android.os.Build
 import android.text.TextPaint
 import android.view.ContextThemeWrapper
 import android.view.View
@@ -349,11 +350,21 @@ class CompactCandidateDelegate(override val di: DI) :
         }
     }
 
+    /** RecyclerView drops every requestLayout while layout is suppressed. */
+    private fun releaseSuppressedLayout() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed) {
+            adapter.trace("layout_suppressed") { "released=true" }
+            view.suppressLayout(false)
+            view.requestLayout()
+        }
+    }
+
     private fun publishCompactCandidates() {
         val startedAt = LagDiagnostics.start()
         try {
             adapter.trace("publish_begin") {
-                "incoming=${pendingCandidates.size} width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout}"
+                "incoming=${pendingCandidates.size} width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout} " +
+                    "suppressed=${Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed}"
             }
             val candidates = pendingCandidates
             if (candidates.isEmpty()) {
@@ -377,6 +388,7 @@ class CompactCandidateDelegate(override val di: DI) :
             if (widthsChanged && !dataChanged) {
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
             }
+            if (dataChanged || widthsChanged) releaseSuppressedLayout()
             // The bar now scrolls instead of packing, so the unrolled panel can no
             // longer learn its size from the packed layout: refresh it from the data.
             if (dataChanged || widthsChanged) {

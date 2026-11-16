@@ -21,11 +21,8 @@ import splitties.views.dsl.core.wrapContent
 open class CompactCandidateViewAdapter(
     val scope: ThemeScope,
 ) : BaseQuickAdapter<CandidateProto, CandidateViewHolder>() {
-    init {
-        setHasStableIds(true)
-    }
-
-    override fun getItemId(position: Int): Long = items.getOrNull(position).hashCode().toLong()
+    // Rows are rebound by position. Content-derived stable ids change on every
+    // composition update, so RecyclerView cannot match the previous row.
 
     var total: Int = -1
         private set
@@ -99,13 +96,11 @@ open class CompactCandidateViewAdapter(
      * [submitList] ran. Identical updates (a second Flexbox pass, a no-op
      * republish) skip the adapter rebind.
      *
-     * Same-size content changes must use [submitList], which on this adapter
-     * calls [notifyDataSetChanged]. Per-index [set] only issues
-     * [notifyItemChanged] with a null payload. This adapter also uses
-     * [setHasStableIds] and [getItemId] from the candidate hash, so
-     * notifyItemChanged can leave the old Flexbox rows on screen after the
-     * composition/preedit has already changed.
+     * Same-size content changes must use [submitList]. Per-index [set] only
+     * issues [notifyItemChanged] with a null payload, which can leave the old
+     * Flexbox row on screen after the composition has already changed.
      */
+
     fun updateCandidates(
         data: Array<CandidateProto>,
         total: Int,

@@ -11,6 +11,7 @@ import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
 import android.os.Build
 import android.text.TextPaint
+import android.view.Choreographer
 import android.view.ContextThemeWrapper
 import android.view.View
 import androidx.core.view.updateLayoutParams
@@ -74,6 +75,17 @@ class CompactCandidateDelegate(override val di: DI) :
     private var pendingCandidates: Array<CandidateProto> = emptyArray()
     private var pendingTotal = -1
     private var pendingHighlighted = -1
+
+    // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
+    // single apply per frame so the bar rebinds once, with the final candidate list.
+    private var publishScheduled = false
+    private var publishCoalesced = 0
+    private val publishFrameCallback =
+        Choreographer.FrameCallback {
+            publishScheduled = false
+            adapter.trace("publish_frame") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
+            publishCompactCandidates()
+        }
 
     private val textPaint by lazy {
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -264,6 +276,14 @@ class CompactCandidateDelegate(override val di: DI) :
             adapter = this@CompactCandidateDelegate.adapter
             layoutManager = this@CompactCandidateDelegate.layoutManager
             addItemDecoration(FlexboxVerticalDecoration(separatorDrawable))
+            addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) = Unit
+
+                override fun onViewDetachedFromWindow(v: View) {
+                    // A queued frame callback must not touch a detached or torn-down view.
+                    cancelPendingPublish()
+                }
+            })
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
                 val w = right - left
                 val oldw = oldRight - oldLeft
@@ -320,7 +340,30 @@ class CompactCandidateDelegate(override val di: DI) :
         pendingCandidates = candidates
         pendingTotal = total
         pendingHighlighted = highlighted
-        publishCompactCandidates()
+        schedulePublish()
+    }
+
+    /**
+     * Defers the apply to the next frame's callback phase, which runs before the
+     * traversal of that same frame. Several publishes inside one frame therefore
+     * collapse into one adapter update and one layout, rendering only the last list.
+     */
+    private fun schedulePublish() {
+        if (publishScheduled) {
+            publishCoalesced++
+            adapter.trace("publish_coalesce") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
+            return
+        }
+        publishScheduled = true
+        Choreographer.getInstance().postFrameCallback(publishFrameCallback)
+    }
+
+    private fun cancelPendingPublish() {
+        if (!publishScheduled) return
+        publishScheduled = false
+        publishCoalesced = 0
+        Choreographer.getInstance().removeFrameCallback(publishFrameCallback)
+        adapter.trace("publish_cancel") { "pending=${pendingCandidates.size}" }
     }
 
     private fun measureCandidateWidth(candidate: CandidateProto): Float {
@@ -367,7 +410,7 @@ class CompactCandidateDelegate(override val di: DI) :
         val startedAt = LagDiagnostics.start()
         try {
             adapter.trace("publish_begin") {
-                "incoming=${pendingCandidates.size} width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout} " +
+                "incoming=${pendingCandidates.size} coalesced=$publishCoalesced width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout} " +
                     "suppressed=${Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed}"
             }
             val candidates = pendingCandidates
@@ -387,10 +430,16 @@ class CompactCandidateDelegate(override val di: DI) :
             // Every candidate stays in the bar at its natural width: the row scrolls
             // horizontally, so nothing has to be packed, shrunk or ellipsized.
             val widths = candidates.map { ceil(measureCandidateWidth(it)).toInt().coerceAtLeast(1) }
+            val previousWidths = adapter.itemWidths
             val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
             val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
             if (widthsChanged && !dataChanged) {
-                adapter.notifyItemRangeChanged(0, adapter.itemCount)
+                // Same candidates, different widths: rebind only the rows whose width moved.
+                val range = compactCandidateWidthChangeRange(previousWidths, widths)
+                if (range != null) {
+                    adapter.trace("notify_width") { "start=${range.first} count=${range.last - range.first + 1}" }
+                    adapter.notifyItemRangeChanged(range.first, range.last - range.first + 1)
+                }
             }
             if (dataChanged || widthsChanged) ensureLayoutRequested()
             // The bar now scrolls instead of packing, so the unrolled panel can no
@@ -404,6 +453,7 @@ class CompactCandidateDelegate(override val di: DI) :
             val contentWidth = widths.sum() + separator * (widths.size - 1).coerceAtLeast(0)
             updateUnrollButton(contentWidth > barWidth)
         } finally {
+            publishCoalesced = 0
             if (LagDiagnostics.enabled) {
                 view.removeCallbacks(diagnosticSnapshot)
                 view.postDelayed(diagnosticSnapshot, 250)

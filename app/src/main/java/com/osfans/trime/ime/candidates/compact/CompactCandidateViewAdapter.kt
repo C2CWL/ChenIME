@@ -119,14 +119,37 @@ open class CompactCandidateViewAdapter(
             trace("submit_skip") { "items=$itemCount total=$total highlight=$highlightedIndex" }
             return false
         }
+        // Size plan: rebind only the changed prefix and only insert/remove the delta.
+        // The differ-less BaseQuickAdapter.submitList() ends in notifyDataSetChanged(),
+        // which rebound all 16 rows on every key even when nothing but the highlight moved.
+        val plan = planCompactCandidateListNotify(itemCount, newItems.size)
         trace("submit_begin") {
-            "old=$itemCount new=${newItems.size} fp=${CompactCandidateTrace.fingerprint(newItems)} total=$total highlight=$highlightedIndex"
+            "old=$itemCount new=${newItems.size} change=${plan.changeCount} insert=${plan.insertCount} remove=${plan.removeCount} " +
+                "fp=${CompactCandidateTrace.fingerprint(newItems)} total=$total highlight=$highlightedIndex"
         }
-        super.submitList(newItems, null)
-        trace("submit_end") { "items=$itemCount fp=${CompactCandidateTrace.fingerprint(items)}" }
+        replaceItems(newItems)
         this.total = total
         this.highlightedIdx = highlightedIndex
+        trace("submit_end") { "items=$itemCount fp=${CompactCandidateTrace.fingerprint(items)}" }
+        dispatchListNotify(plan)
         return true
+    }
+
+    /**
+     * Replaces the backing list without notifying. adapter4 has no silent setter, and
+     * [submitList] always ends in [notifyDataSetChanged] when no differ is configured,
+     * so the caller dispatches the planned ranges itself.
+     */
+    @Suppress("DEPRECATION_ERROR")
+    private fun replaceItems(newItems: List<CandidateProto>) {
+        items = newItems
+    }
+
+    private fun dispatchListNotify(plan: CompactCandidateListNotify) {
+        if (plan.isNoOp) return
+        if (plan.changeCount > 0) notifyItemRangeChanged(0, plan.changeCount)
+        if (plan.insertCount > 0) notifyItemRangeInserted(plan.insertStart, plan.insertCount)
+        if (plan.removeCount > 0) notifyItemRangeRemoved(plan.removeStart, plan.removeCount)
     }
 
     override fun onCreateViewHolder(

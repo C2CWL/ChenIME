@@ -48,3 +48,24 @@ fun shouldSkipCompactCandidateUpdate(
     oldHighlight: Int,
     newHighlight: Int,
 ): Boolean = newItems == oldItems && oldTotal == newTotal && oldHighlight == newHighlight
+
+/**
+ * First..last position whose measured width differs between [old] and [new], or
+ * null when nothing moved. Widths are positional, so a size change is not a
+ * "change" range and returns null; the size plan covers that case.
+ */
+fun compactCandidateWidthChangeRange(
+    old: List<Int>,
+    new: List<Int>,
+): IntRange? {
+    if (old.size != new.size) return null
+    var first = -1
+    var last = -1
+    for (i in old.indices) {
+        if (old[i] != new[i]) {
+            if (first < 0) first = i
+            last = i
+        }
+    }
+    return if (first < 0) null else first..last
+}

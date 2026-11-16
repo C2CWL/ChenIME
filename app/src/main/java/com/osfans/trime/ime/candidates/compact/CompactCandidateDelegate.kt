@@ -107,12 +107,12 @@ class CompactCandidateDelegate(override val di: DI) :
                 val child = view.getChildAt(index)
                 val holder = view.getChildViewHolder(child) as? com.osfans.trime.ime.candidates.CandidateViewHolder
                 val expected = holder?.let { adapter.items.getOrNull(it.bindingAdapterPosition) }
-                holder == null || expected == null || !holder.ui.text.text.contentEquals(expected.text) ||
-                    !holder.ui.comment.text.contentEquals(expected.comment)
+                holder == null || expected == null || holder.ui.displayedText != expected.text ||
+                    holder.ui.displayedComment != expected.comment
             }
             "layout_seq=$diagnosticLayoutSequence items=${adapter.itemCount} children=${view.childCount} " +
                 "checked=$checked mismatches=$mismatches attached=${view.isAttachedToWindow} " +
-                "shown=${view.isShown} requested=${view.isLayoutRequested} suppressed=${view.isLayoutSuppressed} " +
+                "shown=${view.isShown} requested=${view.isLayoutRequested} " +
                 "binds=${adapter.diagnosticBinds} updates=${adapter.diagnosticUpdates}"
         }
     }
@@ -208,8 +208,8 @@ class CompactCandidateDelegate(override val di: DI) :
                         val expected = adapter.items.getOrNull(position)
                         adapter.trace("child") {
                             "child=$i holder=${System.identityHashCode(holder)} position=$position bound_position=${holder.idx} " +
-                                "expected=${expected != null} text_match=${expected != null && holder.ui.text.text.contentEquals(expected.text)} " +
-                                "comment_match=${expected != null && holder.ui.comment.text.contentEquals(expected.comment)} " +
+                                "expected=${expected != null} text_match=${expected != null && holder.ui.displayedText == expected.text} " +
+                                "comment_match=${expected != null && holder.ui.displayedComment == expected.comment} " +
                                 "cache_match=${expected != null && holder.text == expected.text && holder.comment == expected.comment} " +
                                 "bounds=${child.left},${child.top},${child.right},${child.bottom} requested=${child.isLayoutRequested}"
                         }
@@ -353,7 +353,7 @@ class CompactCandidateDelegate(override val di: DI) :
         val startedAt = LagDiagnostics.start()
         try {
             adapter.trace("publish_begin") {
-                "incoming=${pendingCandidates.size} width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout} suppressed=${view.isLayoutSuppressed}"
+                "incoming=${pendingCandidates.size} width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout}"
             }
             val candidates = pendingCandidates
             if (candidates.isEmpty()) {

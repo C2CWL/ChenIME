@@ -206,6 +206,11 @@ class CandidateItemUi(
         }
     }
 
+    /** Diagnostics only: what this row currently shows, to compare against adapter data. */
+    internal val displayedText: String get() = text.text.toString()
+
+    internal val displayedComment: String get() = comment.text.toString()
+
     private var backgroundColor: Int? = null
     private var backgroundContentColor: Int? = null
     private var backgroundCornerRadius: Float? = null

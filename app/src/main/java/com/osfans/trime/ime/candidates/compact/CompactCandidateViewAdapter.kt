@@ -161,7 +161,7 @@ open class CompactCandidateViewAdapter(
                 "holder=${System.identityHashCode(holder)} position=$position cached_position=${holder.idx} " +
                     "generation=$bindGeneration cached_generation=${holder.bindGeneration} " +
                     "cache_text_match=${holder.text == item.text} cache_comment_match=${holder.comment == item.comment} " +
-                    "ui_text_match=${holder.ui.text.text.contentEquals(item.text)} ui_comment_match=${holder.ui.comment.text.contentEquals(item.comment)}"
+                    "ui_text_match=${holder.ui.displayedText == item.text} ui_comment_match=${holder.ui.displayedComment == item.comment}"
             }
         }
         // Flexbox lays this row out on every key. Skip the text, color and
@@ -177,8 +177,8 @@ open class CompactCandidateViewAdapter(
         }
         if (position < 12) {
             trace("bind_end") {
-                "holder=${System.identityHashCode(holder)} position=$position text_match=${holder.ui.text.text.contentEquals(item.text)} " +
-                    "comment_match=${holder.ui.comment.text.contentEquals(item.comment)} highlighted=$isHighlighted"
+                "holder=${System.identityHashCode(holder)} position=$position text_match=${holder.ui.displayedText == item.text} " +
+                    "comment_match=${holder.ui.displayedComment == item.comment} highlighted=$isHighlighted"
             }
         }
         val root = holder.ui.root

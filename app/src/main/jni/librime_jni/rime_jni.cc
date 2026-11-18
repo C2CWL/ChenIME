@@ -535,10 +535,9 @@ Java_com_osfans_trime_core_Rime_getRimeResponse(JNIEnv* env, jclass clazz,
         Rime::Instance().getBulkCandidates();
     auto jList =
         JRef<jobjectArray>(env, rimeCandidateListToJObjectArray(env, list));
-    jCandidates =
-        env->NewObject(GlobalRef->CandidatesBulk, GlobalRef->CandidatesBulkInit,
-                       size, prepared ? JNI_TRUE : JNI_FALSE, highlighted,
-                       *jList);
+    jCandidates = env->NewObject(
+        GlobalRef->CandidatesBulk, GlobalRef->CandidatesBulkInit, size,
+        prepared ? JNI_TRUE : JNI_FALSE, highlighted, *jList);
   }
   return rimeResponseToJObject(env, jCommit, jComposition, jCandidates,
                                jStatus);

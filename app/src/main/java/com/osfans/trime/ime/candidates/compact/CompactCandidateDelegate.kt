@@ -21,6 +21,7 @@ import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.core.Candidates
+import com.osfans.trime.core.Rime
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.prefs.AppPrefs
@@ -300,11 +301,13 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     override fun onCandidateListUpdate(data: Candidates.Bulk) {
-        val (total, highlighted, candidates) = data
+        val (total, prepared, highlighted, candidates) = data
         if (LagDiagnostics.enabled) {
             adapter.diagnosticSequence++
             adapter.trace("receive") {
-                "count=${candidates.size} total=$total highlight=$highlighted fp=${CompactCandidateTrace.fingerprint(candidates.toList())}"
+                "count=${candidates.size} total=$total prepared=$prepared highlight=$highlighted " +
+                    "composition=${Rime.compositionCached.length} " +
+                    "fp=${CompactCandidateTrace.fingerprint(candidates.toList())}"
             }
         }
 

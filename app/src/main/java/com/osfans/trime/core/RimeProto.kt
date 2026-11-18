@@ -103,9 +103,17 @@ sealed interface Candidates {
         override fun toString(): String = "Paged(hasPrevPage=$hasPrevPage, hasNextPage=$hasNextPage, isHorizontalLayout=$isHorizontalLayout, highlighted=$highlighted, candidatesCount=${candidates.size})"
     }
 
-    /** Bulk list: [total] is the candidate count, or -1 if unknown */
+    /**
+     * Bulk list: [total] is the candidate count, or -1 if unknown.
+     *
+     * [prepared] is true when the native query found an empty iterator while a
+     * composition was still active and asked the menu to prepare one page before
+     * reading again. It distinguishes "the menu was not ready" from "there is
+     * really no candidate".
+     */
     data class Bulk(
         val total: Int = -1,
+        val prepared: Boolean = false,
         override val highlighted: Int = 0,
         override val candidates: Array<CandidateProto> = arrayOf(),
     ) : Candidates {
@@ -116,6 +124,7 @@ sealed interface Candidates {
             other as Bulk
 
             if (total != other.total) return false
+            if (prepared != other.prepared) return false
             if (highlighted != other.highlighted) return false
             if (!candidates.contentEquals(other.candidates)) return false
 
@@ -124,12 +133,13 @@ sealed interface Candidates {
 
         override fun hashCode(): Int {
             var result = total
+            result = 31 * result + prepared.hashCode()
             result = 31 * result + highlighted
             result = 31 * result + candidates.contentHashCode()
             return result
         }
 
-        override fun toString(): String = "Bulk(total=$total, highlighted=$highlighted, candidatesCount=${candidates.size})"
+        override fun toString(): String = "Bulk(total=$total, prepared=$prepared, highlighted=$highlighted, candidatesCount=${candidates.size})"
     }
 }
 

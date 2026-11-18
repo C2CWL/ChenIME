@@ -215,7 +215,7 @@ class GlobalRefSingleton {
         env->FindClass("com/osfans/trime/core/Candidates$Bulk")));
     CandidatesBulkInit =
         env->GetMethodID(CandidatesBulk, "<init>",
-                         "(II[Lcom/osfans/trime/core/CandidateProto;)V");
+                         "(IZI[Lcom/osfans/trime/core/CandidateProto;)V");
 
     SchemaListItem = reinterpret_cast<jclass>(
         env->NewGlobalRef(env->FindClass("com/osfans/trime/core/SchemaItem")));

@@ -216,13 +216,39 @@ class Rime {
     return std::move(result);
   }
 
-  std::tuple<int, int, std::vector<CandidateProto>> getBulkCandidates() {
+  // candidate_list_next only calls Menu::GetCandidateAt. That returns nothing
+  // when the merged translation has not produced its first candidate yet, even
+  // though Context::HasMenu() is already true. A Lua filter that buffers before
+  // its first yield (pin, reorder, timing) hits exactly this window: the same
+  // key later returns a full page. Probing one candidate cannot tell "no menu"
+  // from "not ready", and the empty result is what makes punctuation page or
+  // commit depending on which snapshot won.
+  //
+  // get_context builds its page through Menu::CreatePage, which prepares the
+  // candidates the iterator reads next. Do that once and read again. Still
+  // empty means the menu really has no candidate.
+  void prepareCandidatePage() {
+    RimeContext ctx{};
+    if (rime->get_context(session(), &ctx)) {
+      rime->free_context(&ctx);
+    }
+  }
+
+  std::tuple<int, int, bool, std::vector<CandidateProto>> getBulkCandidates() {
     constexpr int limit = 16;
     auto list = getCandidates(0, limit);
+    // Only while composing. An empty menu with no composition is a real clear
+    // (backspace to nothing, commit) and must stay empty.
+    bool prepared = false;
+    if (list.empty() && !rawInput().empty()) {
+      prepareCandidatePage();
+      prepared = true;
+      list = getCandidates(0, limit);
+    }
     // use -1 to indicate it's not sure how many candidates now
-    auto size = list.size() < limit ? list.size() : -1;
+    auto size = list.size() < limit ? static_cast<int>(list.size()) : -1;
     auto highlighted = rime_get_highlighted_candidate_index(session());
-    return std::make_tuple(size, highlighted, std::move(list));
+    return std::make_tuple(size, highlighted, prepared, std::move(list));
   }
 
   void exit() {
@@ -505,12 +531,13 @@ Java_com_osfans_trime_core_Rime_getRimeResponse(JNIEnv* env, jclass clazz,
     jCandidates =
         rimeCandidatesPagedToJObject(env, context->menu, is_horizontal_layout);
   } else {
-    auto [size, highlighted, list] = Rime::Instance().getBulkCandidates();
+    auto [size, highlighted, prepared, list] =
+        Rime::Instance().getBulkCandidates();
     auto jList =
         JRef<jobjectArray>(env, rimeCandidateListToJObjectArray(env, list));
-    jCandidates =
-        env->NewObject(GlobalRef->CandidatesBulk, GlobalRef->CandidatesBulkInit,
-                       size, highlighted, *jList);
+    jCandidates = env->NewObject(
+        GlobalRef->CandidatesBulk, GlobalRef->CandidatesBulkInit, size,
+        prepared ? JNI_TRUE : JNI_FALSE, highlighted, *jList);
   }
   return rimeResponseToJObject(env, jCommit, jComposition, jCandidates,
                                jStatus);

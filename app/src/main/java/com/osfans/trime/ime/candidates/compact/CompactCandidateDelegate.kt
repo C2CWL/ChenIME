@@ -21,6 +21,7 @@ import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.core.CandidateProto
 import com.osfans.trime.core.Candidates
+import com.osfans.trime.core.CompositionProto
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.prefs.AppPrefs
@@ -75,6 +76,7 @@ class CompactCandidateDelegate(override val di: DI) :
     private var pendingCandidates: Array<CandidateProto> = emptyArray()
     private var pendingTotal = -1
     private var pendingHighlighted = -1
+    private var compositionLength = 0
 
     // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
     // single apply per frame so the bar rebinds once, with the final candidate list.
@@ -299,12 +301,18 @@ class CompactCandidateDelegate(override val di: DI) :
         }
     }
 
+    override fun onCompositionUpdate(data: CompositionProto) {
+        compositionLength = data.length
+    }
+
     override fun onCandidateListUpdate(data: Candidates.Bulk) {
-        val (total, highlighted, candidates) = data
+        val (total, prepared, highlighted, candidates) = data
         if (LagDiagnostics.enabled) {
             adapter.diagnosticSequence++
             adapter.trace("receive") {
-                "count=${candidates.size} total=$total highlight=$highlighted fp=${CompactCandidateTrace.fingerprint(candidates.toList())}"
+                "count=${candidates.size} total=$total prepared=$prepared highlight=$highlighted " +
+                    "composition=$compositionLength " +
+                    "fp=${CompactCandidateTrace.fingerprint(candidates.toList())}"
             }
         }
 

@@ -16,6 +16,7 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.candidates.CandidateItemUi
 import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.util.diagnostics.LagDiagnostics
+import splitties.dimensions.dip
 import splitties.dimensions.dp
 import splitties.views.dsl.core.matchParent
 import splitties.views.dsl.core.wrapContent
@@ -181,7 +182,7 @@ open class CompactCandidateViewAdapter(
     ): CandidateViewHolder {
         if (viewType == VIEW_TYPE_SPACER) {
             val spacer = View(context)
-            spacer.layoutParams = FlexboxLayoutManager.LayoutParams(wrapContent, matchParent)
+            spacer.layoutParams = FlexboxLayoutManager.LayoutParams(spacer.dip(40), matchParent)
             return CandidateViewHolder(spacer)
         }
         if (LagDiagnostics.enabled) diagnosticCreates++
@@ -257,7 +258,7 @@ open class CompactCandidateViewAdapter(
         val root = holder.itemView
         val params = (root.layoutParams as? FlexboxLayoutManager.LayoutParams)
             ?: FlexboxLayoutManager.LayoutParams(wrapContent, matchParent)
-        val width = itemWidths.getOrNull(position)?.coerceAtLeast(1) ?: root.dp(40)
+        val width = itemWidths.getOrNull(position)?.coerceAtLeast(1) ?: root.dip(40)
         if (params.width != width || params.height != matchParent || params.flexGrow != 0f || params.flexShrink != 0f) {
             params.width = width
             params.height = matchParent

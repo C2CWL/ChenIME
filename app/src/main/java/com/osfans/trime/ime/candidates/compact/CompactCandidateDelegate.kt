@@ -264,7 +264,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 // Only correct the window after the user has scrolled. The initial
                 // publish already chose it from measured widths; posting here would
                 // replace that choice with Flexbox's still-unscrolled positions.
-                if (view.computeHorizontalScrollOffset() > 0) postWindowUpgrade()
+                if (computeHorizontalScrollOffset(RecyclerView.State()) > 0) postWindowUpgrade()
             }
         }
     }

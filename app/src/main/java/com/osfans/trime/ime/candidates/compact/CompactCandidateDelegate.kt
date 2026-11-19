@@ -10,6 +10,8 @@ import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.text.TextPaint
 import android.view.Choreographer
 import android.view.ContextThemeWrapper
@@ -79,7 +81,8 @@ class CompactCandidateDelegate(override val di: DI) :
     private var compositionLength = 0
 
     // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
-    // single apply per frame so the bar rebinds once, with the final candidate list.
+    // single apply on the current main-loop turn so the bar rebinds once, with the
+    // final candidate list, without waiting for the next frame.
     private var publishScheduled = false
     private var windowUpgradePosted = false
     private val windowUpgradeCallback =
@@ -90,8 +93,9 @@ class CompactCandidateDelegate(override val di: DI) :
         }
 
     private var publishCoalesced = 0
-    private val publishFrameCallback =
-        Choreographer.FrameCallback {
+    private val publishHandler = Handler(Looper.getMainLooper())
+    private val publishRunner =
+        Runnable {
             publishScheduled = false
             adapter.trace("publish_frame") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
             publishCompactCandidates()
@@ -377,9 +381,12 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     /**
-     * Defers the apply to the next frame's callback phase, which runs before the
-     * traversal of that same frame. Several publishes inside one frame therefore
-     * collapse into one adapter update and one layout, rendering only the last list.
+     * Defers the apply until the current main-loop turn finishes. Posted from the
+     * main thread, that still runs before this frame's traversal, so the bar lays
+     * out in the same frame. A Handler is used instead of the view: a view drops
+     * the runnable until it is attached, which loses the first candidates when
+     * the keyboard is opening. Several callbacks posted before the runnable runs
+     * collapse into one adapter update.
      */
     private fun schedulePublish() {
         if (publishScheduled) {
@@ -388,7 +395,7 @@ class CompactCandidateDelegate(override val di: DI) :
             return
         }
         publishScheduled = true
-        Choreographer.getInstance().postFrameCallback(publishFrameCallback)
+        publishHandler.post(publishRunner)
     }
 
     private fun postWindowUpgrade() {
@@ -424,7 +431,7 @@ class CompactCandidateDelegate(override val di: DI) :
         if (!publishScheduled) return
         publishScheduled = false
         publishCoalesced = 0
-        Choreographer.getInstance().removeFrameCallback(publishFrameCallback)
+        publishHandler.removeCallbacks(publishRunner)
         adapter.trace("publish_cancel") { "pending=${pendingCandidates.size}" }
     }
 

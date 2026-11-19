@@ -6,7 +6,9 @@
 package com.osfans.trime.ime.candidates.compact
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import com.chad.library.adapter4.BaseQuickAdapter
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.osfans.trime.core.CandidateProto
@@ -14,6 +16,7 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.candidates.CandidateItemUi
 import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.util.diagnostics.LagDiagnostics
+import splitties.dimensions.dip
 import splitties.dimensions.dp
 import splitties.views.dsl.core.matchParent
 import splitties.views.dsl.core.wrapContent
@@ -41,6 +44,26 @@ open class CompactCandidateViewAdapter(
 
     var lastItemEllipsized: Boolean = false
         private set
+
+    private var fullWindow: IntRange? = null
+
+    /**
+     * Restricts full candidate views to [window]. Null keeps the previous
+     * behavior and binds every item; an empty range is not used.
+     *
+     * @return positions whose view type changed and must be rebound.
+     */
+    fun updateFullWindow(window: IntRange?): List<Int> {
+        if (fullWindow == window) return emptyList()
+        val previous = fullWindow
+        fullWindow = window
+        if (itemCount == 0) return emptyList()
+        return (0 until itemCount).filter { isFull(it, previous) != isFull(it, window) }
+    }
+
+    private fun isFull(position: Int, window: IntRange?): Boolean = window == null || position in window
+
+    override fun getItemViewType(position: Int, list: List<CandidateProto>): Int = if (isFull(position, fullWindow)) VIEW_TYPE_FULL else VIEW_TYPE_SPACER
 
     fun updateLayoutParams(minWidth: Int, flexGrow: Float) {
         layoutMinWidth = minWidth
@@ -157,6 +180,11 @@ open class CompactCandidateViewAdapter(
         parent: ViewGroup,
         viewType: Int,
     ): CandidateViewHolder {
+        if (viewType == VIEW_TYPE_SPACER) {
+            val spacer = View(context)
+            spacer.layoutParams = FlexboxLayoutManager.LayoutParams(spacer.dip(40), spacer.matchParent)
+            return CandidateViewHolder(spacer)
+        }
         if (LagDiagnostics.enabled) diagnosticCreates++
         val ui = CandidateItemUi(context, scope)
         ui.root.apply {
@@ -172,6 +200,11 @@ open class CompactCandidateViewAdapter(
         item: CandidateProto?,
     ) {
         item ?: return
+        val ui = holder.ui
+        if (ui == null) {
+            bindSpacer(holder, position)
+            return
+        }
         if (LagDiagnostics.enabled) diagnosticBinds++
         val isHighlighted = position == highlightedIdx
         if (position < 12) {
@@ -179,14 +212,14 @@ open class CompactCandidateViewAdapter(
                 "holder=${System.identityHashCode(holder)} position=$position cached_position=${holder.idx} " +
                     "generation=$bindGeneration cached_generation=${holder.bindGeneration} " +
                     "cache_text_match=${holder.text == item.text} cache_comment_match=${holder.comment == item.comment} " +
-                    "ui_text_match=${holder.ui.displayedText == item.text} ui_comment_match=${holder.ui.displayedComment == item.comment}"
+                    "ui_text_match=${ui.displayedText == item.text} ui_comment_match=${ui.displayedComment == item.comment}"
             }
         }
         // Flexbox lays this row out on every key. Skip the text, color and
         // background work when the recycled row already shows this candidate.
         if (holder.bindGeneration != bindGeneration || holder.idx != position || holder.text != item.text || holder.comment != item.comment || holder.highlighted != isHighlighted) {
             if (LagDiagnostics.enabled) diagnosticUpdates++
-            holder.ui.update(item, isHighlighted)
+            ui.update(item, isHighlighted)
             holder.text = item.text
             holder.comment = item.comment
             holder.idx = position
@@ -195,11 +228,11 @@ open class CompactCandidateViewAdapter(
         }
         if (position < 12) {
             trace("bind_end") {
-                "holder=${System.identityHashCode(holder)} position=$position text_match=${holder.ui.displayedText == item.text} " +
-                    "comment_match=${holder.ui.displayedComment == item.comment} highlighted=$isHighlighted"
+                "holder=${System.identityHashCode(holder)} position=$position text_match=${ui.displayedText == item.text} " +
+                    "comment_match=${ui.displayedComment == item.comment} highlighted=$isHighlighted"
             }
         }
-        val root = holder.ui.root
+        val root = ui.root
         val params = root.layoutParams as FlexboxLayoutManager.LayoutParams
         val displayWidth = itemWidths.getOrNull(position)
         val ellipsized = lastItemEllipsized && position == itemWidths.lastIndex
@@ -219,5 +252,30 @@ open class CompactCandidateViewAdapter(
             params.width = width
             root.layoutParams = params
         }
+    }
+
+    private fun bindSpacer(holder: CandidateViewHolder, position: Int) {
+        val root = holder.itemView
+        val params = (root.layoutParams as? FlexboxLayoutManager.LayoutParams)
+            ?: FlexboxLayoutManager.LayoutParams(root.wrapContent, root.matchParent)
+        val width = itemWidths.getOrNull(position)?.coerceAtLeast(1) ?: root.dip(40)
+        if (params.width != width || params.height != root.matchParent || params.flexGrow != 0f || params.flexShrink != 0f) {
+            params.width = width
+            params.height = root.matchParent
+            params.minWidth = 0
+            params.maxWidth = width
+            params.flexGrow = 0f
+            params.flexShrink = 0f
+            root.layoutParams = params
+        }
+        holder.idx = position
+        holder.text = ""
+        holder.comment = ""
+        holder.highlighted = false
+    }
+
+    private companion object {
+        const val VIEW_TYPE_FULL = 0
+        const val VIEW_TYPE_SPACER = 1
     }
 }

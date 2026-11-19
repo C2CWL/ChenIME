@@ -297,7 +297,7 @@ class CompactCandidateDelegate(override val di: DI) :
                     // A queued frame callback must not touch a detached or torn-down view.
                     cancelPendingPublish()
                     cancelWindowUpgrade()
-                    adapter.updateFullWindow(null)
+                    this@CompactCandidateDelegate.adapter.updateFullWindow(null)
                 }
             })
             addOnScrollListener(object : RecyclerView.OnScrollListener() {

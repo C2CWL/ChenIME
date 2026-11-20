@@ -320,6 +320,8 @@ mars:
 #   half_shape 半角标点映射
 #   symbols    Rime 的预设配置是以 '/' 前缀开头输出一系列字符，自定义的 symbols_v.yaml 修改成了 'v' 开头。
 punctuator:
+  # 数字后的 . : 默认只高亮成候选（3.）。直接上屏，26 键句号不再停在候选栏。
+  digit_separator_action: commit
   full_shape:
     __include: default:/punctuator/full_shape  # 从 default.yaml 导入配置
   half_shape:

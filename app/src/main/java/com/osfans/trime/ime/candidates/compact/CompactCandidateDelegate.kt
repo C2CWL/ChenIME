@@ -84,14 +84,6 @@ class CompactCandidateDelegate(override val di: DI) :
     // single apply on the current main-loop turn so the bar rebinds once, with the
     // final candidate list, without waiting for the next frame.
     private var publishScheduled = false
-    private var windowUpgradePosted = false
-    private val windowUpgradeCallback =
-        Choreographer.FrameCallback {
-            windowUpgradePosted = false
-            if (view.isComputingLayout) return@FrameCallback
-            upgradeVisibleWindow()
-        }
-
     private var publishCoalesced = 0
     private val publishHandler = Handler(Looper.getMainLooper())
     private val publishRunner =
@@ -134,8 +126,8 @@ class CompactCandidateDelegate(override val di: DI) :
                 val child = view.getChildAt(index)
                 val holder = view.getChildViewHolder(child) as? com.osfans.trime.ime.candidates.CandidateViewHolder
                 val expected = holder?.let { adapter.items.getOrNull(it.bindingAdapterPosition) }
-                holder == null || expected == null || holder.ui?.displayedText != expected.text ||
-                    holder.ui?.displayedComment != expected.comment
+                holder == null || expected == null || holder.ui.displayedText != expected.text ||
+                    holder.ui.displayedComment != expected.comment
             }
             "layout_seq=$diagnosticLayoutSequence items=${adapter.itemCount} children=${view.childCount} " +
                 "checked=$checked mismatches=$mismatches attached=${view.isAttachedToWindow} " +
@@ -235,8 +227,8 @@ class CompactCandidateDelegate(override val di: DI) :
                         val expected = adapter.items.getOrNull(position)
                         adapter.trace("child") {
                             "child=$i holder=${System.identityHashCode(holder)} position=$position bound_position=${holder.idx} " +
-                                "expected=${expected != null} text_match=${expected != null && holder.ui?.displayedText == expected.text} " +
-                                "comment_match=${expected != null && holder.ui?.displayedComment == expected.comment} " +
+                                "expected=${expected != null} text_match=${expected != null && holder.ui.displayedText == expected.text} " +
+                                "comment_match=${expected != null && holder.ui.displayedComment == expected.comment} " +
                                 "cache_match=${expected != null && holder.text == expected.text && holder.comment == expected.comment} " +
                                 "bounds=${child.left},${child.top},${child.right},${child.bottom} requested=${child.isLayoutRequested}"
                         }
@@ -265,10 +257,6 @@ class CompactCandidateDelegate(override val di: DI) :
                     LagDiagnostics.candidatesLaidOut(getChildAt(0)?.parent as? View)
                     candidateUpdateAt = 0L
                 }
-                // Only correct the window after the user has scrolled. The initial
-                // publish already chose it from measured widths; posting here would
-                // replace that choice with Flexbox's still-unscrolled positions.
-                if (computeHorizontalScrollOffset(RecyclerView.State()) > 0) postWindowUpgrade()
             }
         }
     }
@@ -300,19 +288,6 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onViewDetachedFromWindow(v: View) {
                     // A queued frame callback must not touch a detached or torn-down view.
                     cancelPendingPublish()
-                    cancelWindowUpgrade()
-                    this@CompactCandidateDelegate.adapter.updateFullWindow(null)
-                }
-            })
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    if (newState == RecyclerView.SCROLL_STATE_IDLE) postWindowUpgrade()
-                }
-
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dx != 0 && recyclerView.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
-                        postWindowUpgrade()
-                    }
                 }
             })
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
@@ -398,35 +373,6 @@ class CompactCandidateDelegate(override val di: DI) :
         publishHandler.post(publishRunner)
     }
 
-    private fun postWindowUpgrade() {
-        if (windowUpgradePosted) return
-        windowUpgradePosted = true
-        Choreographer.getInstance().postFrameCallback(windowUpgradeCallback)
-    }
-
-    private fun cancelWindowUpgrade() {
-        if (!windowUpgradePosted) return
-        windowUpgradePosted = false
-        Choreographer.getInstance().removeFrameCallback(windowUpgradeCallback)
-    }
-
-    /**
-     * Promotes items that scrolled into view and demotes items that left it.
-     * Must not notify while RecyclerView is computing a layout.
-     */
-    private fun upgradeVisibleWindow() {
-        val manager = view.layoutManager as? FlexboxLayoutManager ?: return
-        val count = adapter.itemCount
-        if (count == 0) return
-        val first = manager.findFirstVisibleItemPosition()
-        val last = manager.findLastVisibleItemPosition()
-        if (first == RecyclerView.NO_POSITION || last == RecyclerView.NO_POSITION) return
-        val window = compactCandidateFullWindow(first, last, count)
-        val changed = adapter.updateFullWindow(window)
-        if (changed.isEmpty() || view.isComputingLayout) return
-        changed.forEach(adapter::notifyItemChanged)
-    }
-
     private fun cancelPendingPublish() {
         if (!publishScheduled) return
         publishScheduled = false
@@ -500,14 +446,8 @@ class CompactCandidateDelegate(override val di: DI) :
             // horizontally, so nothing has to be packed, shrunk or ellipsized.
             val widths = candidates.map { ceil(measureCandidateWidth(it)).toInt().coerceAtLeast(1) }
             val previousWidths = adapter.itemWidths
-            val separator = separatorDrawable.intrinsicWidth
-            val initialWindow = compactCandidateInitialWindow(widths, barWidth, separator)
-            val windowChanged = adapter.updateFullWindow(initialWindow)
             val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
             val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
-            if (windowChanged.isNotEmpty() && !dataChanged) {
-                windowChanged.forEach(adapter::notifyItemChanged)
-            }
             if (widthsChanged && !dataChanged) {
                 // Same candidates, different widths: rebind only the rows whose width moved.
                 val range = compactCandidateWidthChangeRange(previousWidths, widths)
@@ -524,6 +464,7 @@ class CompactCandidateDelegate(override val di: DI) :
             }
             // The row no longer clips, so "more candidates exist" is the width that
             // does not fit, not a truncated item count. The expand button follows that.
+            val separator = separatorDrawable.intrinsicWidth
             val contentWidth = widths.sum() + separator * (widths.size - 1).coerceAtLeast(0)
             updateUnrollButton(contentWidth > barWidth)
         } finally {

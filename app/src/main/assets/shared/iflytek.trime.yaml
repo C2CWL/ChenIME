@@ -136,6 +136,12 @@ tool_bar:
     action: clipboard_window
   - size: [40, 40]
     foreground:
+      style: "语"
+      normal: candidate_text_color
+      font_size: 18
+    action: quick_phrase_window
+  - size: [40, 40]
+    foreground:
       style: "ic@arrow_all"
       normal: candidate_text_color
     action: Keyboard_editor

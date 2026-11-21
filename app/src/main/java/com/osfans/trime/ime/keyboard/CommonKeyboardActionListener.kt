@@ -206,6 +206,7 @@ class CommonKeyboardActionListener(override val di: DI) : DIAware {
                     "liquid_keyboard" -> handleLiquidKeyboard(arg)
                     "menu_keyboard" -> windowManager.showMore()
                     "clipboard_window" -> handleClipboardWindow(arg)
+                    "quick_phrase_window" -> windowManager.showQuickPhrase()
                     "set_color_scheme" -> handleColorScheme(arg)
                     "set_theme" -> handleTheme(arg)
                     "broadcast" -> service.sendBroadcast(Intent(arg))

@@ -314,4 +314,14 @@
     <string name="lag_diagnostics_cleared">已清除</string>
     <string name="lag_diagnostics_exported">已匯出</string>
     <string name="lag_diagnostics_empty">還沒有記錄。請先開啟「卡頓診斷」並重現卡頓</string>
+    <string name="quick_phrase_title">常用語</string>
+    <string name="quick_phrase_add">新增常用語</string>
+    <string name="quick_phrase_edit">編輯</string>
+    <string name="quick_phrase_delete">刪除</string>
+    <string name="quick_phrase_empty">還沒有常用語，點右上角「新增」建立</string>
+    <string name="quick_phrase_hint">輸入常用語內容</string>
+    <string name="quick_phrase_save">儲存</string>
+    <string name="quick_phrase_cancel">取消</string>
+    <string name="quick_phrase_delete_confirm">刪除這條常用語？</string>
+    <string name="toolbar_button_quick_phrase">常用語</string>
 </resources>

@@ -1062,6 +1062,14 @@ tool_bar:
       style: "ic@clipboard"
     action: clipboard_window
 
+  quick_phrase_button: &quick_phrase_button
+    size: [40, 40]
+    foreground:
+      style: "语"
+      normal: candidate_text_color
+      font_size: 18
+    action: quick_phrase_window
+
   edit_button: &edit_button
     size: [40, 40]
     foreground:
@@ -1092,7 +1100,7 @@ tool_bar:
     action: redo
 
   # 右侧按钮列表（从右向左排列）
-  buttons: [ *hide_button, *voice_button, *emoji_button, *clipboard_button, *edit_button, *ascii_mode_button, *redo_button, *undo_button ]
+  buttons: [ *hide_button, *voice_button, *emoji_button, *clipboard_button, *quick_phrase_button, *edit_button, *ascii_mode_button, *redo_button, *undo_button ]
 
 #键盘布局
 preset_keyboards:
@@ -4143,6 +4151,7 @@ preset_keys:
   liquid_keyboard_emoji: { label: 🙂, send: FUNCTION, command: liquid_keyboard, option: "emoji" }
   menu_keyboard: { label: 菜单, send: FUNCTION, command: menu_keyboard }
   clipboard_window: { label: "剪贴", send: FUNCTION, command: "clipboard_window", option: '0' } #0剪贴板，1收藏夹
+  quick_phrase_window: { label: "常用语", send: FUNCTION, command: "quick_phrase_window" }
   # rime状态
   Mode_switch: {toggle: ascii_mode, functional: false, send: SWITCH_CHARSET, states: [ 中文, 英文 ]}
   Henkan: {toggle: simplification, send: SWITCH_CHARSET, states: [ 漢字, 汉字 ]}

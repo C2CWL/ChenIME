@@ -330,4 +330,14 @@
     <string name="lag_diagnostics_cleared">已清空</string>
     <string name="lag_diagnostics_exported">已导出</string>
     <string name="lag_diagnostics_empty">还没有记录。请先打开“卡顿诊断”并复现卡顿</string>
+    <string name="quick_phrase_title">常用语</string>
+    <string name="quick_phrase_add">添加常用语</string>
+    <string name="quick_phrase_edit">编辑</string>
+    <string name="quick_phrase_delete">删除</string>
+    <string name="quick_phrase_empty">还没有常用语，点右上角「添加」新建</string>
+    <string name="quick_phrase_hint">输入常用语内容</string>
+    <string name="quick_phrase_save">保存</string>
+    <string name="quick_phrase_cancel">取消</string>
+    <string name="quick_phrase_delete_confirm">删除这条常用语？</string>
+    <string name="toolbar_button_quick_phrase">常用语</string>
 </resources>

@@ -120,7 +120,7 @@ class ThemeGoldenTest :
 
                 Then("color schemes and preset keys are decoded") {
                     theme.presetColorSchemes.size shouldBe 37
-                    theme.presetKeys.size shouldBe 105
+                    theme.presetKeys.size shouldBe 106
                     val brightnessDown = theme.presetKeys.getValue("BRIGHTNESS_DOWN")
                     brightnessDown.label shouldBe "亮度-"
                     brightnessDown.send shouldBe "BRIGHTNESS_DOWN"

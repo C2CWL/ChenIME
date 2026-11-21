@@ -17,6 +17,7 @@ fun toolbarButtonLabel(context: Context, action: String, theme: Theme?): String 
         "VOICE_ASSIST" -> R.string.toolbar_button_voice
         "Ifly_symbols", "liquid_keyboard_emoji" -> R.string.toolbar_button_symbols
         "clipboard_window" -> R.string.toolbar_button_clipboard
+        "quick_phrase_window" -> R.string.toolbar_button_quick_phrase
         "Keyboard_editor" -> R.string.toolbar_button_editor
         "redo" -> R.string.toolbar_button_redo
         "undo" -> R.string.toolbar_button_undo

@@ -385,12 +385,16 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     /**
-     * Defers the apply until the current main-loop turn finishes. Posted from the
-     * main thread, that still runs before this frame's traversal, so the bar lays
-     * out in the same frame. A Handler is used instead of the view: a view drops
-     * the runnable until it is attached, which loses the first candidates when
-     * the keyboard is opening. Several callbacks posted before the runnable runs
-     * collapse into one adapter update.
+     * Applies the adapter update ahead of other queued main-loop work. With a plain
+     * [Handler.post] the runnable sits behind the pending choreographer frame, so the
+     * bar misses this frame's traversal and waits a whole frame before it can lay out
+     * (22 ms median / 68 ms worst from `receive` to `publish_frame` in the v3.8 trace,
+     * while the publish and layout work themselves take only 1 ms and 8 ms). Front-of-
+     * queue keeps the update asynchronous (no re-entrancy into an in-flight traversal)
+     * while letting the bar lay out in the same frame. A Handler is used instead of the
+     * view: a view drops the runnable until it is attached, which loses the first
+     * candidates when the keyboard is opening. Several callbacks posted before the
+     * runnable runs collapse into one adapter update.
      */
     private fun schedulePublish() {
         if (publishScheduled) {
@@ -399,7 +403,7 @@ class CompactCandidateDelegate(override val di: DI) :
             return
         }
         publishScheduled = true
-        publishHandler.post(publishRunner)
+        publishHandler.postAtFrontOfQueue(publishRunner)
     }
 
     private fun cancelPendingPublish() {

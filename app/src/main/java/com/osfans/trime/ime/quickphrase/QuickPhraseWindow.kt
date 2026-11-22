@@ -6,10 +6,10 @@
 package com.osfans.trime.ime.quickphrase
 
 import android.app.AlertDialog
+import android.content.Intent
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
-import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -19,6 +19,7 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.core.TrimeInputMethodService
 import com.osfans.trime.ime.window.BoardWindow
 import com.osfans.trime.ime.window.ResidentWindow
+import com.osfans.trime.ui.main.QuickPhraseEditActivity
 import org.kodein.di.DI
 import org.kodein.di.instance
 
@@ -27,6 +28,7 @@ import org.kodein.di.instance
  *
  * 与剪贴板窗口不同，这里直接使用原生 View 和 SharedPreferences，
  * 不依赖 Paging / Room 数据链路，也不改动既有数据库结构。
+ * 编辑走独立 Activity，避免 IME 弹窗无法调起软键盘。
  */
 class QuickPhraseWindow(di: DI) :
     BoardWindow.BarBoardWindow(di),
@@ -47,7 +49,15 @@ class QuickPhraseWindow(di: DI) :
     private val textColor: Int
         get() = scope.colors.keyTextColor
 
+    private val cardColor: Int
+        get() = scope.colors.keyBackColor
+
+    private val buttonTextColor: Int
+        get() = scope.colors.labelColor
+
     private fun dp(value: Int): Int = (value * context.resources.displayMetrics.density).toInt()
+
+    private val changeListener: () -> Unit = { refreshList() }
 
     override fun onCreateView(): View {
         val ctx = context
@@ -84,14 +94,17 @@ class QuickPhraseWindow(di: DI) :
         gravity = Gravity.CENTER
         setTextColor(textColor)
         setPadding(dp(12), dp(6), dp(12), dp(6))
-        setOnClickListener { showEditDialog(-1, "") }
+        setOnClickListener { launchEdit(-1, "") }
     }
 
     override fun onAttached() {
+        QuickPhraseHelper.addChangeListener(changeListener)
         refreshList()
     }
 
-    override fun onDetached() {}
+    override fun onDetached() {
+        QuickPhraseHelper.removeChangeListener(changeListener)
+    }
 
     override fun refreshColors() {
         if (::listContainer.isInitialized) refreshList()
@@ -113,30 +126,47 @@ class QuickPhraseWindow(di: DI) :
         phrase: String,
     ): View {
         val ctx = context
+        val row =
+            LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background =
+                    GradientDrawable().apply {
+                        setColor(cardColor)
+                        cornerRadius = dp(12).toFloat()
+                    }
+                setPadding(dp(14), dp(12), dp(8), dp(12))
+            }
+        val label =
+            TextView(ctx).apply {
+                text = phrase
+                textSize = 15f
+                setTextColor(textColor)
+                setPadding(0, 0, dp(8), 0)
+                setOnClickListener { service.commitText(phrase) }
+            }
+        row.addView(
+            label,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
+        )
+        row.addView(
+            actionButton(ctx.getString(R.string.quick_phrase_edit)) {
+                launchEdit(index, phrase)
+            },
+        )
+        row.addView(
+            actionButton(ctx.getString(R.string.quick_phrase_delete)) {
+                confirmDelete(index)
+            },
+        )
         return LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            val label =
-                TextView(ctx).apply {
-                    text = phrase
-                    textSize = 15f
-                    setTextColor(textColor)
-                    setOnClickListener { service.commitText(phrase) }
-                }
+            orientation = LinearLayout.VERTICAL
             addView(
-                label,
-                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
-            )
-            addView(
-                actionButton(ctx.getString(R.string.quick_phrase_edit)) {
-                    showEditDialog(index, phrase)
-                },
-            )
-            addView(
-                actionButton(ctx.getString(R.string.quick_phrase_delete)) {
-                    confirmDelete(index)
-                },
+                row,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = dp(8) },
             )
         }
     }
@@ -146,53 +176,23 @@ class QuickPhraseWindow(di: DI) :
         onClick: () -> Unit,
     ): TextView = TextView(context).apply {
         text = label
-        textSize = 14f
-        setTextColor(textColor)
+        textSize = 13f
+        setTextColor(buttonTextColor)
         setPadding(dp(10), dp(6), dp(10), dp(6))
         setOnClickListener { onClick() }
     }
 
-    private fun showEditDialog(
+    private fun launchEdit(
         index: Int,
         initial: String,
     ) {
-        val ctx = context
-        val input =
-            EditText(ctx).apply {
-                setText(initial)
-                setSelection(initial.length)
-                hint = ctx.getString(R.string.quick_phrase_hint)
-                maxLines = 5
+        val intent =
+            Intent(service, QuickPhraseEditActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY)
+                putExtra(QuickPhraseEditActivity.EXTRA_INDEX, index)
+                putExtra(QuickPhraseEditActivity.EXTRA_TEXT, initial)
             }
-        val wrapper =
-            FrameLayout(ctx).apply {
-                setPadding(dp(20), dp(8), dp(20), dp(8))
-                addView(
-                    input,
-                    FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.WRAP_CONTENT,
-                    ),
-                )
-            }
-        val dialog =
-            AlertDialog.Builder(ctx)
-                .setTitle(if (index < 0) R.string.quick_phrase_add else R.string.quick_phrase_edit)
-                .setView(wrapper)
-                .setPositiveButton(R.string.quick_phrase_save) { _, _ ->
-                    val value = input.text.toString()
-                    if (value.isNotBlank()) {
-                        if (index < 0) {
-                            QuickPhraseHelper.add(value)
-                        } else {
-                            QuickPhraseHelper.update(index, value)
-                        }
-                        refreshList()
-                    }
-                }
-                .setNegativeButton(R.string.quick_phrase_cancel, null)
-                .create()
-        service.showDialog(dialog)
+        service.startActivity(intent)
     }
 
     private fun confirmDelete(index: Int) {

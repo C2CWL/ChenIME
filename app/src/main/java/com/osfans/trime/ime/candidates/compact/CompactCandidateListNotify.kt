@@ -21,6 +21,42 @@ data class CompactCandidateListNotify(
         get() = changeCount == 0 && insertCount == 0 && removeCount == 0
 }
 
+fun planCompactCandidateListNotify(
+    oldItems: List<CandidateProto>,
+    newItems: List<CandidateProto>,
+    oldHighlight: Int,
+    newHighlight: Int,
+): CompactCandidateListNotify {
+    val oldSize = oldItems.size
+    val newSize = newItems.size
+    require(oldSize >= 0 && newSize >= 0)
+    val common = minOf(oldSize, newSize)
+    val insertCount = (newSize - oldSize).coerceAtLeast(0)
+    val removeCount = (oldSize - newSize).coerceAtLeast(0)
+    // A keystroke rewrites the page, but only the prefix whose text or highlight
+    // actually moved needs a rebind. Notifying the unchanged tail remeasures every spacer.
+    var changed = 0
+    for (index in 0 until common) {
+        val oldItem = oldItems[index]
+        val newItem = newItems[index]
+        if (
+            oldItem.text != newItem.text ||
+            oldItem.comment != newItem.comment ||
+            (index == oldHighlight) != (index == newHighlight)
+        ) {
+            changed = index + 1
+        }
+    }
+    return CompactCandidateListNotify(
+        changeCount = changed,
+        insertStart = if (insertCount > 0) common else 0,
+        insertCount = insertCount,
+        removeStart = if (removeCount > 0) newSize else 0,
+        removeCount = removeCount,
+    )
+}
+
+/** Size-only plan. The whole shared prefix is rebound because content is unknown. */
 fun planCompactCandidateListNotify(oldSize: Int, newSize: Int): CompactCandidateListNotify {
     require(oldSize >= 0 && newSize >= 0)
     val common = minOf(oldSize, newSize)
@@ -28,7 +64,6 @@ fun planCompactCandidateListNotify(oldSize: Int, newSize: Int): CompactCandidate
     val removeCount = (oldSize - newSize).coerceAtLeast(0)
     return CompactCandidateListNotify(
         changeCount = common,
-        // Unused starts stay at 0 so the plan matches equality checks.
         insertStart = if (insertCount > 0) oldSize else 0,
         insertCount = insertCount,
         removeStart = if (removeCount > 0) newSize else 0,

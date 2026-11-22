@@ -66,8 +66,25 @@ open class CompactCandidateViewAdapter(
      */
     fun updateFullWindow(window: IntRange?): Boolean {
         if (fullWindow == window) return false
+        val previous = fullWindow
         fullWindow = window
-        return itemCount > 0
+        if (itemCount == 0) return false
+        notifyWindowMembershipChange(previous, window)
+        return true
+    }
+
+    /** Only positions that switched between a real view and a spacer need a rebind. */
+    private fun notifyWindowMembershipChange(previous: IntRange?, next: IntRange?) {
+        var start = -1
+        var end = -1
+        for (position in 0 until itemCount) {
+            val wasFull = previous == null || position in previous
+            val isFull = next == null || position in next
+            if (wasFull == isFull) continue
+            if (start < 0) start = position
+            end = position
+        }
+        if (start >= 0) notifyItemRangeChanged(start, end - start + 1)
     }
 
     fun updateLayoutParams(minWidth: Int, flexGrow: Float) {
@@ -150,7 +167,7 @@ open class CompactCandidateViewAdapter(
         // Size plan: rebind only the changed prefix and only insert/remove the delta.
         // The differ-less BaseQuickAdapter.submitList() ends in notifyDataSetChanged(),
         // which rebound all 16 rows on every key even when nothing but the highlight moved.
-        val plan = planCompactCandidateListNotify(itemCount, newItems.size)
+        val plan = planCompactCandidateListNotify(items, newItems, highlightedIdx, highlightedIndex)
         trace("submit_begin") {
             "old=$itemCount new=${newItems.size} change=${plan.changeCount} insert=${plan.insertCount} remove=${plan.removeCount} " +
                 "fp=${CompactCandidateTrace.fingerprint(newItems)} total=$total highlight=$highlightedIndex"

@@ -42,8 +42,7 @@ fun planCompactCandidateListNotify(
         if (
             oldItem.text != newItem.text ||
             oldItem.comment != newItem.comment ||
-            index == oldHighlight ||
-            index == newHighlight
+            (index == oldHighlight) != (index == newHighlight)
         ) {
             changed = index + 1
         }
@@ -57,11 +56,19 @@ fun planCompactCandidateListNotify(
     )
 }
 
-/** Size-only plan. Callers without item identity rebind the whole shared prefix. */
+/** Size-only plan. The whole shared prefix is rebound because content is unknown. */
 fun planCompactCandidateListNotify(oldSize: Int, newSize: Int): CompactCandidateListNotify {
-    val oldItems = List(oldSize) { index -> CandidateProto("#$index", "", "") }
-    val newItems = List(newSize) { index -> CandidateProto("#$index", "", "") }
-    return planCompactCandidateListNotify(oldItems, newItems, oldHighlight = -1, newHighlight = -1)
+    require(oldSize >= 0 && newSize >= 0)
+    val common = minOf(oldSize, newSize)
+    val insertCount = (newSize - oldSize).coerceAtLeast(0)
+    val removeCount = (oldSize - newSize).coerceAtLeast(0)
+    return CompactCandidateListNotify(
+        changeCount = common,
+        insertStart = if (insertCount > 0) oldSize else 0,
+        insertCount = insertCount,
+        removeStart = if (removeCount > 0) newSize else 0,
+        removeCount = removeCount,
+    )
 }
 
 /**

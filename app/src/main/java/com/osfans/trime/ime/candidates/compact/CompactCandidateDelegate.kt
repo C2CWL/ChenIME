@@ -378,32 +378,33 @@ class CompactCandidateDelegate(override val di: DI) :
         }
         if (!LagDiagnostics.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
+        val firstBatch = pendingCandidates.isEmpty()
         pendingCandidates = candidates
         pendingTotal = total
         pendingHighlighted = highlighted
-        schedulePublish()
+        schedulePublish(firstBatch)
     }
 
     /**
-     * Applies the adapter update ahead of other queued main-loop work. With a plain
-     * [Handler.post] the runnable sits behind the pending choreographer frame, so the
-     * bar misses this frame's traversal and waits a whole frame before it can lay out
-     * (22 ms median / 68 ms worst from `receive` to `publish_frame` in the v3.8 trace,
-     * while the publish and layout work themselves take only 1 ms and 8 ms). Front-of-
-     * queue keeps the update asynchronous (no re-entrancy into an in-flight traversal)
-     * while letting the bar lay out in the same frame. A Handler is used instead of the
-     * view: a view drops the runnable until it is attached, which loses the first
-     * candidates when the keyboard is opening. Several callbacks posted before the
-     * runnable runs collapse into one adapter update.
+     * Applies the first candidate batch ahead of queued main-loop work so the keyboard
+     * does not open with an empty bar, then uses a normal post for every later batch.
+     * Front-of-queue jumps ahead of pending input events; with a 10 ms p50 candidate
+     * layout that makes key-up / the next touch stutter intermittently. A Handler is
+     * used instead of the view because a view drops the runnable until it is attached.
+     * Several callbacks posted before the runnable runs collapse into one adapter update.
      */
-    private fun schedulePublish() {
+    private fun schedulePublish(frontOfQueue: Boolean) {
         if (publishScheduled) {
             publishCoalesced++
             adapter.trace("publish_coalesce") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
             return
         }
         publishScheduled = true
-        publishHandler.postAtFrontOfQueue(publishRunner)
+        if (frontOfQueue) {
+            publishHandler.postAtFrontOfQueue(publishRunner)
+        } else {
+            publishHandler.post(publishRunner)
+        }
     }
 
     private fun cancelPendingPublish() {

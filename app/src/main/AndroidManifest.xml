@@ -121,6 +121,16 @@ SPDX-License-Identifier: GPL-3.0-or-later
             android:windowSoftInputMode="stateAlwaysVisible|adjustPan" />
 
         <activity
+            android:name="com.osfans.trime.ui.main.QuickPhraseEditActivity"
+            android:autoRemoveFromRecents="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/quick_phrase_title"
+            android:taskAffinity=".ui.main.QuickPhraseEditActivity"
+            android:theme="@style/Theme.DialogTheme"
+            android:windowSoftInputMode="stateAlwaysVisible|adjustResize" />
+
+        <activity
             android:name="com.osfans.trime.ui.main.CustomPhraseEditActivity"
             android:autoRemoveFromRecents="true"
             android:excludeFromRecents="true"

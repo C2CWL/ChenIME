@@ -15,6 +15,7 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.candidates.CandidateItemUi
 import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.util.diagnostics.LagDiagnostics
+import splitties.dimensions.dp
 import splitties.views.dsl.core.matchParent
 import splitties.views.dsl.core.wrapContent
 
@@ -276,7 +277,7 @@ open class CompactCandidateViewAdapter(
         holder.comment = item.comment
     }
 
-    private fun spacerLayoutParams(context: Context, width: Int) = FlexboxLayoutManager.LayoutParams(width, matchParent).apply {
+    private fun spacerLayoutParams(context: Context, width: Int) = FlexboxLayoutManager.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT).apply {
         flexShrink = 0f
         flexGrow = 0f
     }

@@ -74,5 +74,34 @@ class CompactCandidateListUpdateTest :
             then("a highlight-only change is not skipped") {
                 shouldSkipCompactCandidateUpdate(ma, ma, 6, 6, 0, 1) shouldBe false
             }
+
+            then("only the changed prefix is notified, not the whole page") {
+                val sharedTail = listOf(
+                    CandidateProto("打", "", ""),
+                    CandidateProto("大", "", ""),
+                    CandidateProto("答", "", ""),
+                    CandidateProto("达", "", ""),
+                )
+                val before = listOf(CandidateProto("吗", "", "")) + sharedTail
+                val after = listOf(CandidateProto("慢", "", "")) + sharedTail
+                planCompactCandidateListNotify(before, after, oldHighlight = 0, newHighlight = 0) shouldBe
+                    CompactCandidateListNotify(changeCount = 1)
+            }
+
+            then("an unchanged tail stays bound when a later item moves") {
+                val before = (0 until 16).map { CandidateProto("a$it", "", "") }
+                val after = before.toMutableList().also { it[4] = CandidateProto("changed", "", "") }
+                planCompactCandidateListNotify(before, after, oldHighlight = -1, newHighlight = -1) shouldBe
+                    CompactCandidateListNotify(changeCount = 5)
+            }
+
+            then("identical content notifies nothing") {
+                planCompactCandidateListNotify(ma, ma, oldHighlight = 0, newHighlight = 0).isNoOp shouldBe true
+            }
+
+            then("moving the highlight rebinds through the new highlighted index") {
+                planCompactCandidateListNotify(ma, ma, oldHighlight = 0, newHighlight = 3) shouldBe
+                    CompactCandidateListNotify(changeCount = 4)
+            }
         }
     })

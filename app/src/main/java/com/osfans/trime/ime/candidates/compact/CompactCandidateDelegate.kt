@@ -266,8 +266,8 @@ class CompactCandidateDelegate(override val di: DI) :
                     candidateUpdateAt = 0L
                 }
                 // A scroll can move spacers into view before the scroll callback runs.
-                // Correct them as soon as this layout pass finishes, not after the fling settles.
-                if (this@CompactCandidateDelegate.adapter.scrolling) postWindowUpgrade()
+                // Keep correcting only while the gesture is live and the window would move.
+                if (this@CompactCandidateDelegate.adapter.scrolling && windowWouldChange()) postWindowUpgrade()
             }
         }
     }
@@ -307,13 +307,16 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     val scrolling = newState != RecyclerView.SCROLL_STATE_IDLE
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
-                    // Promote at the start of the gesture. Waiting for idle is what left
-                    // fixed-width spacers on screen while the row was still moving.
-                    if (scrolling || recyclerView.computeHorizontalScrollOffset() > 0) postWindowUpgrade()
+                    // Promote at the start of the gesture, and once more when it stops so a
+                    // spacer that landed on screen is not left there. Skip frames where the
+                    // window would not move.
+                    if ((scrolling || recyclerView.computeHorizontalScrollOffset() > 0) && windowWouldChange()) {
+                        postWindowUpgrade()
+                    }
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dx != 0) postWindowUpgrade()
+                    if (dx != 0 && windowWouldChange()) postWindowUpgrade()
                 }
             })
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
@@ -482,10 +485,9 @@ class CompactCandidateDelegate(override val di: DI) :
             } else {
                 compactCandidateInitialWindow(widths, barWidth, separator)
             }
-            val windowChanged = adapter.updateFullWindow(window)
+            adapter.updateFullWindow(window)
             val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
             val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
-            if (windowChanged && !dataChanged) notifyFullWindowChange()
             if (widthsChanged && !dataChanged) {
                 // Same candidates, different widths: rebind only the rows whose width moved.
                 val range = compactCandidateWidthChangeRange(previousWidths, widths)
@@ -521,6 +523,19 @@ class CompactCandidateDelegate(override val di: DI) :
         }
     }
 
+    /** True when the current scroll offset would promote a different set of real views. */
+    private fun windowWouldChange(): Boolean {
+        val widths = adapter.itemWidths
+        if (widths.size != adapter.itemCount || view.width <= 0) return false
+        val window = compactCandidateScrollWindow(
+            widths,
+            view.computeHorizontalScrollOffset(),
+            view.width,
+            separatorDrawable.intrinsicWidth,
+        )
+        return adapter.fullWindow != window
+    }
+
     private fun postWindowUpgrade() {
         if (windowUpgradePosted || !view.isAttachedToWindow) return
         windowUpgradePosted = true
@@ -549,12 +564,6 @@ class CompactCandidateDelegate(override val di: DI) :
             barWidth,
             separatorDrawable.intrinsicWidth,
         )
-        if (!adapter.updateFullWindow(window)) return
-        notifyFullWindowChange()
-    }
-
-    private fun notifyFullWindowChange() {
-        if (view.isComputingLayout) return
-        adapter.notifyItemRangeChanged(0, adapter.itemCount)
+        adapter.updateFullWindow(window)
     }
 }

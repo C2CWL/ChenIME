@@ -85,6 +85,13 @@ class CompactCandidateDelegate(override val di: DI) :
     // final candidate list, without waiting for the next frame.
     private var publishScheduled = false
     private var publishCoalesced = 0
+    private var windowUpgradePosted = false
+    private val windowUpgradeCallback =
+        Choreographer.FrameCallback {
+            windowUpgradePosted = false
+            if (!view.isAttachedToWindow || view.isComputingLayout) return@FrameCallback
+            upgradeVisibleWindow()
+        }
     private val publishHandler = Handler(Looper.getMainLooper())
     private val publishRunner =
         Runnable {
@@ -126,8 +133,9 @@ class CompactCandidateDelegate(override val di: DI) :
                 val child = view.getChildAt(index)
                 val holder = view.getChildViewHolder(child) as? com.osfans.trime.ime.candidates.CandidateViewHolder
                 val expected = holder?.let { adapter.items.getOrNull(it.bindingAdapterPosition) }
-                holder == null || expected == null || holder.ui.displayedText != expected.text ||
-                    holder.ui.displayedComment != expected.comment
+                val ui = holder?.ui
+                holder == null || expected == null || ui == null || ui.displayedText != expected.text ||
+                    ui.displayedComment != expected.comment
             }
             "layout_seq=$diagnosticLayoutSequence items=${adapter.itemCount} children=${view.childCount} " +
                 "checked=$checked mismatches=$mismatches attached=${view.isAttachedToWindow} " +
@@ -227,8 +235,8 @@ class CompactCandidateDelegate(override val di: DI) :
                         val expected = adapter.items.getOrNull(position)
                         adapter.trace("child") {
                             "child=$i holder=${System.identityHashCode(holder)} position=$position bound_position=${holder.idx} " +
-                                "expected=${expected != null} text_match=${expected != null && holder.ui.displayedText == expected.text} " +
-                                "comment_match=${expected != null && holder.ui.displayedComment == expected.comment} " +
+                                "expected=${expected != null} text_match=${expected != null && holder.ui?.displayedText == expected.text} " +
+                                "comment_match=${expected != null && holder.ui?.displayedComment == expected.comment} " +
                                 "cache_match=${expected != null && holder.text == expected.text && holder.comment == expected.comment} " +
                                 "bounds=${child.left},${child.top},${child.right},${child.bottom} requested=${child.isLayoutRequested}"
                         }
@@ -257,6 +265,9 @@ class CompactCandidateDelegate(override val di: DI) :
                     LagDiagnostics.candidatesLaidOut(getChildAt(0)?.parent as? View)
                     candidateUpdateAt = 0L
                 }
+                // A scroll can move spacers into view before the scroll callback runs.
+                // Correct them as soon as this layout pass finishes, not after the fling settles.
+                if (this@CompactCandidateDelegate.adapter.scrolling) postWindowUpgrade()
             }
         }
     }
@@ -288,6 +299,21 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onViewDetachedFromWindow(v: View) {
                     // A queued frame callback must not touch a detached or torn-down view.
                     cancelPendingPublish()
+                    cancelWindowUpgrade()
+                    this@CompactCandidateDelegate.adapter.updateFullWindow(null)
+                }
+            })
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    val scrolling = newState != RecyclerView.SCROLL_STATE_IDLE
+                    this@CompactCandidateDelegate.adapter.scrolling = scrolling
+                    // Promote at the start of the gesture. Waiting for idle is what left
+                    // fixed-width spacers on screen while the row was still moving.
+                    if (scrolling || recyclerView.computeHorizontalScrollOffset() > 0) postWindowUpgrade()
+                }
+
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    if (dx != 0) postWindowUpgrade()
                 }
             })
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
@@ -431,6 +457,7 @@ class CompactCandidateDelegate(override val di: DI) :
             val candidates = pendingCandidates
             if (candidates.isEmpty()) {
                 adapter.updateItemWidths(emptyList())
+                adapter.updateFullWindow(null)
                 adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
                 refreshUnrolled(0)
                 updateUnrollButton(overflows = false)
@@ -439,6 +466,7 @@ class CompactCandidateDelegate(override val di: DI) :
             val barWidth = view.width
             if (barWidth <= 0) {
                 adapter.updateItemWidths(emptyList())
+                adapter.updateFullWindow(null)
                 adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
                 return
             }
@@ -446,8 +474,18 @@ class CompactCandidateDelegate(override val di: DI) :
             // horizontally, so nothing has to be packed, shrunk or ellipsized.
             val widths = candidates.map { ceil(measureCandidateWidth(it)).toInt().coerceAtLeast(1) }
             val previousWidths = adapter.itemWidths
+            val separator = separatorDrawable.intrinsicWidth
+            // Typing rebinds the first screen only. A live scroll keeps one extra bar of
+            // real views on each side, so the next items are already bound before they enter.
+            val window = if (adapter.scrolling && view.computeHorizontalScrollOffset() > 0) {
+                compactCandidateScrollWindow(widths, view.computeHorizontalScrollOffset(), barWidth, separator)
+            } else {
+                compactCandidateInitialWindow(widths, barWidth, separator)
+            }
+            val windowChanged = adapter.updateFullWindow(window)
             val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
             val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
+            if (windowChanged && !dataChanged) notifyFullWindowChange()
             if (widthsChanged && !dataChanged) {
                 // Same candidates, different widths: rebind only the rows whose width moved.
                 val range = compactCandidateWidthChangeRange(previousWidths, widths)
@@ -464,7 +502,6 @@ class CompactCandidateDelegate(override val di: DI) :
             }
             // The row no longer clips, so "more candidates exist" is the width that
             // does not fit, not a truncated item count. The expand button follows that.
-            val separator = separatorDrawable.intrinsicWidth
             val contentWidth = widths.sum() + separator * (widths.size - 1).coerceAtLeast(0)
             updateUnrollButton(contentWidth > barWidth)
         } finally {
@@ -482,5 +519,42 @@ class CompactCandidateDelegate(override val di: DI) :
                 )
             }
         }
+    }
+
+    private fun postWindowUpgrade() {
+        if (windowUpgradePosted || !view.isAttachedToWindow) return
+        windowUpgradePosted = true
+        Choreographer.getInstance().postFrameCallback(windowUpgradeCallback)
+    }
+
+    private fun cancelWindowUpgrade() {
+        if (!windowUpgradePosted) return
+        windowUpgradePosted = false
+        Choreographer.getInstance().removeFrameCallback(windowUpgradeCallback)
+    }
+
+    /**
+     * Promotes items about to enter the viewport and keeps one bar of real views behind it.
+     * Runs outside layout, so the view-type change cannot re-enter Flexbox.
+     */
+    private fun upgradeVisibleWindow() {
+        if (!view.isAttachedToWindow || view.isComputingLayout || adapter.itemCount == 0) return
+        val widths = adapter.itemWidths
+        if (widths.size != adapter.itemCount) return
+        val barWidth = view.width
+        if (barWidth <= 0) return
+        val window = compactCandidateScrollWindow(
+            widths,
+            view.computeHorizontalScrollOffset(),
+            barWidth,
+            separatorDrawable.intrinsicWidth,
+        )
+        if (!adapter.updateFullWindow(window)) return
+        notifyFullWindowChange()
+    }
+
+    private fun notifyFullWindowChange() {
+        if (view.isComputingLayout) return
+        adapter.notifyItemRangeChanged(0, adapter.itemCount)
     }
 }

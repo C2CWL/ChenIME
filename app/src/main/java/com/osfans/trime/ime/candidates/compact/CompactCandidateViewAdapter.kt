@@ -6,6 +6,7 @@
 package com.osfans.trime.ime.candidates.compact
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import com.chad.library.adapter4.BaseQuickAdapter
 import com.google.android.flexbox.FlexboxLayoutManager
@@ -14,7 +15,6 @@ import com.osfans.trime.data.theme.ThemeScope
 import com.osfans.trime.ime.candidates.CandidateItemUi
 import com.osfans.trime.ime.candidates.CandidateViewHolder
 import com.osfans.trime.util.diagnostics.LagDiagnostics
-import splitties.dimensions.dp
 import splitties.views.dsl.core.matchParent
 import splitties.views.dsl.core.wrapContent
 
@@ -41,6 +41,33 @@ open class CompactCandidateViewAdapter(
 
     var lastItemEllipsized: Boolean = false
         private set
+
+    /**
+     * Inclusive range that gets a real candidate view. Positions outside it keep a
+     * fixed-width spacer, so Flexbox does not measure a ConstraintLayout for every
+     * off-screen candidate. Null means every item is real: before the first window,
+     * or while the row still fits the bar.
+     */
+    var fullWindow: IntRange? = null
+        private set
+
+    /** True while the bar is being dragged or flung, including the layout that scroll causes. */
+    var scrolling: Boolean = false
+
+    fun showsFullCandidate(position: Int): Boolean {
+        val window = fullWindow
+        return window == null || position in window
+    }
+
+    /**
+     * @return true when some position changed between a real view and a spacer.
+     * The caller notifies that change outside layout. Equal ranges compare by value.
+     */
+    fun updateFullWindow(window: IntRange?): Boolean {
+        if (fullWindow == window) return false
+        fullWindow = window
+        return itemCount > 0
+    }
 
     fun updateLayoutParams(minWidth: Int, flexGrow: Float) {
         layoutMinWidth = minWidth
@@ -152,11 +179,19 @@ open class CompactCandidateViewAdapter(
         if (plan.removeCount > 0) notifyItemRangeRemoved(plan.removeStart, plan.removeCount)
     }
 
+    override fun getItemViewType(position: Int, list: List<CandidateProto>): Int = if (showsFullCandidate(position)) VIEW_TYPE_FULL else VIEW_TYPE_SPACER
+
     override fun onCreateViewHolder(
         context: Context,
         parent: ViewGroup,
         viewType: Int,
     ): CandidateViewHolder {
+        if (viewType == VIEW_TYPE_SPACER) {
+            val spacer = View(context)
+            spacer.isClickable = true
+            spacer.layoutParams = spacerLayoutParams(context, 1)
+            return CandidateViewHolder(spacer)
+        }
         if (LagDiagnostics.enabled) diagnosticCreates++
         val ui = CandidateItemUi(context, scope)
         ui.root.apply {
@@ -172,6 +207,11 @@ open class CompactCandidateViewAdapter(
         item: CandidateProto?,
     ) {
         item ?: return
+        val ui = holder.ui
+        if (ui == null) {
+            bindSpacer(holder, position, item)
+            return
+        }
         if (LagDiagnostics.enabled) diagnosticBinds++
         val isHighlighted = position == highlightedIdx
         if (position < 12) {
@@ -179,14 +219,14 @@ open class CompactCandidateViewAdapter(
                 "holder=${System.identityHashCode(holder)} position=$position cached_position=${holder.idx} " +
                     "generation=$bindGeneration cached_generation=${holder.bindGeneration} " +
                     "cache_text_match=${holder.text == item.text} cache_comment_match=${holder.comment == item.comment} " +
-                    "ui_text_match=${holder.ui.displayedText == item.text} ui_comment_match=${holder.ui.displayedComment == item.comment}"
+                    "ui_text_match=${ui.displayedText == item.text} ui_comment_match=${ui.displayedComment == item.comment}"
             }
         }
         // Flexbox lays this row out on every key. Skip the text, color and
         // background work when the recycled row already shows this candidate.
         if (holder.bindGeneration != bindGeneration || holder.idx != position || holder.text != item.text || holder.comment != item.comment || holder.highlighted != isHighlighted) {
             if (LagDiagnostics.enabled) diagnosticUpdates++
-            holder.ui.update(item, isHighlighted)
+            ui.update(item, isHighlighted)
             holder.text = item.text
             holder.comment = item.comment
             holder.idx = position
@@ -195,11 +235,11 @@ open class CompactCandidateViewAdapter(
         }
         if (position < 12) {
             trace("bind_end") {
-                "holder=${System.identityHashCode(holder)} position=$position text_match=${holder.ui.displayedText == item.text} " +
-                    "comment_match=${holder.ui.displayedComment == item.comment} highlighted=$isHighlighted"
+                "holder=${System.identityHashCode(holder)} position=$position text_match=${ui.displayedText == item.text} " +
+                    "comment_match=${ui.displayedComment == item.comment} highlighted=$isHighlighted"
             }
         }
-        val root = holder.ui.root
+        val root = ui.root
         val params = root.layoutParams as FlexboxLayoutManager.LayoutParams
         val displayWidth = itemWidths.getOrNull(position)
         val ellipsized = lastItemEllipsized && position == itemWidths.lastIndex
@@ -219,5 +259,30 @@ open class CompactCandidateViewAdapter(
             params.width = width
             root.layoutParams = params
         }
+    }
+
+    private fun bindSpacer(holder: CandidateViewHolder, position: Int, item: CandidateProto) {
+        val view = holder.itemView
+        val width = itemWidths.getOrNull(position)?.takeIf { it > 0 } ?: 1
+        val params = view.layoutParams as? FlexboxLayoutManager.LayoutParams ?: spacerLayoutParams(view.context, width)
+        if (params.width != width || params.flexShrink != 0f || params.flexGrow != 0f) {
+            params.width = width
+            params.flexShrink = 0f
+            params.flexGrow = 0f
+            view.layoutParams = params
+        }
+        holder.idx = position
+        holder.text = item.text
+        holder.comment = item.comment
+    }
+
+    private fun spacerLayoutParams(context: Context, width: Int) = FlexboxLayoutManager.LayoutParams(width, matchParent).apply {
+        flexShrink = 0f
+        flexGrow = 0f
+    }
+
+    private companion object {
+        const val VIEW_TYPE_FULL = 0
+        const val VIEW_TYPE_SPACER = 1
     }
 }

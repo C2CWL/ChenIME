@@ -1,1 +1,606 @@
-PLACEHOLDER
+/*
+ * SPDX-FileCopyrightText: 2015 - 2025 Rime community
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+package com.osfans.trime.ime.candidates.compact
+
+import android.content.res.Configuration
+import android.graphics.Paint
+import android.graphics.drawable.ShapeDrawable
+import android.graphics.drawable.shapes.RectShape
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.text.TextPaint
+import android.view.Choreographer
+import android.view.ContextThemeWrapper
+import android.view.View
+import androidx.core.view.updateLayoutParams
+import androidx.recyclerview.widget.RecyclerView
+import com.c2cwl.chenime.R
+import com.google.android.flexbox.FlexWrap
+import com.google.android.flexbox.FlexboxLayoutManager
+import com.osfans.trime.core.CandidateProto
+import com.osfans.trime.core.Candidates
+import com.osfans.trime.core.CompositionProto
+import com.osfans.trime.daemon.RimeSession
+import com.osfans.trime.daemon.launchOnReady
+import com.osfans.trime.data.prefs.AppPrefs
+import com.osfans.trime.data.theme.Theme
+import com.osfans.trime.data.theme.ThemeScope
+import com.osfans.trime.data.theme.model.GeneralStyle
+import com.osfans.trime.ime.bar.InputBarDelegate
+import com.osfans.trime.ime.bar.UnrollButtonStateMachine
+import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
+import com.osfans.trime.ime.candidates.CANDIDATE_COMMENT_GAP_DP
+import com.osfans.trime.ime.candidates.unrolled.decoration.FlexboxVerticalDecoration
+import com.osfans.trime.ime.core.InputView
+import com.osfans.trime.util.InputLatency
+import com.osfans.trime.util.diagnostics.LagDiagnostics
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import org.kodein.di.DI
+import org.kodein.di.DIAware
+import org.kodein.di.instance
+import splitties.dimensions.dp
+import splitties.views.dsl.recyclerview.recyclerView
+import kotlin.math.ceil
+import kotlin.math.max
+
+class CompactCandidateDelegate(override val di: DI) :
+    DIAware,
+    InputBroadcastReceiver {
+    private val context: ContextThemeWrapper by instance()
+    private val rime: RimeSession by instance()
+    private val scope: ThemeScope by instance()
+    private val inputView: InputView by instance()
+    private val bar: InputBarDelegate by instance()
+
+    private val theme: Theme
+        get() = scope.theme
+
+    private val fillStyle by AppPrefs.defaultInstance().keyboard.horizontalCandidateMode
+
+    private val maxSpanCountPref by lazy {
+        AppPrefs.defaultInstance().keyboard.run {
+            if (context.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                maxSpanCount
+            } else {
+                maxSpanCountLandscape
+            }
+        }
+    }
+
+    private var layoutMinWidth = 0
+    private var layoutFlexGrow = 0f
+    private var pendingCandidates: Array<CandidateProto> = emptyArray()
+    private var pendingTotal = -1
+    private var pendingHighlighted = -1
+    private var compositionLength = 0
+
+    // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
+    // single apply before the next traversal so the bar rebinds once, with the final
+    // candidate list, in that same frame.
+    private var publishScheduled = false
+    private var publishCoalesced = 0
+    // Bumped by every schedule and cancel. A queued callback belongs to the generation
+    // that posted it and does nothing once a newer one has taken over.
+    private var publishGeneration = 0
+    private val postFrameCallback = Runnable {
+        val generation = publishGeneration
+        if (!publishScheduled || generation == 0) return@Runnable
+        Choreographer.getInstance().postFrameCallback {
+            if (generation != publishGeneration) return@postFrameCallback
+            publishRunner.run()
+        }
+    }
+    private var windowUpgradePosted = false
+    private val windowUpgradeCallback =
+        Choreographer.FrameCallback {
+            windowUpgradePosted = false
+            if (!view.isAttachedToWindow || view.isComputingLayout) return@FrameCallback
+            upgradeVisibleWindow()
+        }
+    private val publishHandler = Handler(Looper.getMainLooper())
+    private val publishRunner =
+        Runnable {
+            publishScheduled = false
+            adapter.trace("publish_frame") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
+            publishCompactCandidates()
+        }
+
+    private val textPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = theme.style.candidateTextSize * context.resources.displayMetrics.scaledDensity
+            typeface = theme.fonts.candidate
+        }
+    }
+    private val commentPaint by lazy {
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = theme.style.commentTextSize * context.resources.displayMetrics.scaledDensity
+            typeface = theme.fonts.comment
+        }
+    }
+    private val widthCache = CandidateWidthCache()
+
+    /**
+     * (for [CompactCandidateMode.AUTO_FILL] only)
+     * Second layout pass is needed when:
+     * [^1] total candidates count < maxSpanCount && [^2] RecyclerView cannot display all of them
+     * In that case, displayed candidates should be stretched evenly (by setting flexGrow to 1.0f).
+     */
+    private var secondLayoutPassNeeded = false
+    private var secondLayoutPassDone = false
+
+    // This is a batched layout delay, not a per-key or screen-presentation timestamp.
+    private var candidateUpdateAt = 0L
+    private var diagnosticLayoutSequence = -1L
+    private val diagnosticSnapshot: Runnable = Runnable {
+        adapter.trace("settled") {
+            val checked = minOf(view.childCount, 12)
+            val mismatches = (0 until checked).count { index ->
+                val child = view.getChildAt(index)
+                val holder = view.getChildViewHolder(child) as? com.osfans.trime.ime.candidates.CandidateViewHolder
+                val expected = holder?.let { adapter.items.getOrNull(it.bindingAdapterPosition) }
+                val ui = holder?.ui
+                holder == null || expected == null || ui == null || ui.displayedText != expected.text ||
+                    ui.displayedComment != expected.comment
+            }
+            "layout_seq=$diagnosticLayoutSequence items=${adapter.itemCount} children=${view.childCount} " +
+                "checked=$checked mismatches=$mismatches attached=${view.isAttachedToWindow} " +
+                "shown=${view.isShown} requested=${view.isLayoutRequested} " +
+                "binds=${adapter.diagnosticBinds} updates=${adapter.diagnosticUpdates}"
+        }
+    }
+
+    private val _unrolledCandidateOffset =
+        MutableSharedFlow<Int>(
+            replay = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
+
+    val unrolledCandidateOffset = _unrolledCandidateOffset.asSharedFlow()
+
+    fun refreshUnrolled(childCount: Int) {
+        val emitted = _unrolledCandidateOffset.tryEmit(childCount)
+        adapter.trace("unrolled_offset") { "offset=$childCount emitted=$emitted" }
+    }
+
+    private fun updateUnrollButton(overflows: Boolean) {
+        adapter.trace("unroll_button") { "overflows=$overflows" }
+        bar.unrollButtonStateMachine.push(
+            UnrollButtonStateMachine.TransitionEvent.UnrolledCandidatesUpdated,
+            UnrollButtonStateMachine.BooleanKey.UnrolledCandidatesEmpty to !overflows,
+        )
+    }
+
+    /** Restyles the compact list after a scheme switch; visible rows re-bind. */
+    fun refreshColors() {
+        separatorDrawable.paint.color = scope.colors.candidateSeparatorColor
+        // Drop the bind cache so a scheme switch repaints text that did not change.
+        adapter.invalidateBindCache()
+        adapter.notifyDataSetChanged()
+    }
+
+    val adapter by lazy {
+        CompactCandidateViewAdapter(scope).apply {
+            setOnItemClickListener { _, _, position ->
+                rime.launchOnReady { it.selectCandidate(position, global = true) }
+            }
+            setOnItemLongClickListener { _, view, position ->
+                inputView.showCandidateActionMenu(position, items[position].text, view, global = true)
+                true
+            }
+        }
+    }
+
+    fun updateLayoutParams(minWidth: Int, flexGrow: Float) {
+        layoutMinWidth = minWidth
+        layoutFlexGrow = flexGrow
+    }
+
+    val layoutManager by lazy {
+        object : FlexboxLayoutManager(context) {
+            init {
+                // One scrolling row: candidates keep their natural width instead of
+                // being packed into the bar and ellipsized at the end.
+                flexWrap = FlexWrap.NOWRAP
+            }
+
+            override fun canScrollVertically(): Boolean = false
+
+            override fun onLayoutChildren(recycler: RecyclerView.Recycler, state: RecyclerView.State) {
+                val startedAt = LagDiagnostics.start()
+                adapter.trace("layout_begin") {
+                    "state_items=${state.itemCount} adapter_items=${adapter.itemCount} children=$childCount pre_layout=${state.isPreLayout} structure_changed=${state.didStructureChange()}"
+                }
+                try {
+                    super.onLayoutChildren(recycler, state)
+                } finally {
+                    if (startedAt != 0L) {
+                        LagDiagnostics.duration(
+                            "candidate_layout_work",
+                            startedAt,
+                            extra = "work_us=${(System.nanoTime() - startedAt) / 1_000} " +
+                                "items=${adapter.itemCount} children=$childCount pre_layout=${state.isPreLayout} " +
+                                "binds_total=${adapter.diagnosticBinds} updates_total=${adapter.diagnosticUpdates} " +
+                                "creates_total=${adapter.diagnosticCreates} invalidations_total=${adapter.diagnosticInvalidations}",
+                        )
+                    }
+                }
+            }
+
+            override fun onLayoutCompleted(state: RecyclerView.State?) {
+                super.onLayoutCompleted(state)
+                val cnt = this.childCount
+                if (LagDiagnostics.enabled) diagnosticLayoutSequence = adapter.diagnosticSequence
+                adapter.trace("layout_complete") { "children=$cnt items=${adapter.itemCount} pre_layout=${state?.isPreLayout}" }
+                if (LagDiagnostics.enabled) {
+                    for (i in 0 until minOf(cnt, 12)) {
+                        val child = getChildAt(i) ?: continue
+                        val holder = (child.parent as? RecyclerView)?.getChildViewHolder(child)
+                            as? com.osfans.trime.ime.candidates.CandidateViewHolder ?: continue
+                        val position = holder.bindingAdapterPosition
+                        val expected = adapter.items.getOrNull(position)
+                        adapter.trace("child") {
+                            "child=$i holder=${System.identityHashCode(holder)} position=$position bound_position=${holder.idx} " +
+                                "expected=${expected != null} text_match=${expected != null && holder.ui?.displayedText == expected.text} " +
+                                "comment_match=${expected != null && holder.ui?.displayedComment == expected.comment} " +
+                                "cache_match=${expected != null && holder.text == expected.text && holder.comment == expected.comment} " +
+                                "bounds=${child.left},${child.top},${child.right},${child.bottom} requested=${child.isLayoutRequested}"
+                        }
+                    }
+                }
+                if (secondLayoutPassNeeded) {
+                    if (cnt < adapter.itemCount) {
+                        // [^2] RecyclerView can't display all candidates
+                        // update LayoutParams in onLayoutCompleted would trigger another
+                        // onLayoutCompleted, skip the second one to avoid infinite loop
+                        if (secondLayoutPassDone) return
+                        secondLayoutPassDone = true
+                        for (i in 0 until cnt) {
+                            getChildAt(i)!!.updateLayoutParams<LayoutParams> {
+                                flexGrow = 1f
+                            }
+                        }
+                    } else {
+                        secondLayoutPassNeeded = false
+                    }
+                }
+                refreshUnrolled(cnt)
+                if (candidateUpdateAt != 0L) {
+                    InputLatency.log("candidate_batch_layout_us=%d", (System.nanoTime() - candidateUpdateAt) / 1_000)
+                    LagDiagnostics.duration("candidate_layout", candidateUpdateAt, minMs = 16)
+                    LagDiagnostics.candidatesLaidOut(getChildAt(0)?.parent as? View)
+                    candidateUpdateAt = 0L
+                }
+                // A scroll can move spacers into view before the scroll callback runs.
+                // Keep correcting only while the gesture is live and the window would move.
+                if (this@CompactCandidateDelegate.adapter.scrolling && windowWouldChange()) postWindowUpgrade()
+            }
+        }
+    }
+
+    private val separatorDrawable by lazy {
+        ShapeDrawable(RectShape()).apply {
+            val spacing = theme.style.candidateSpacing
+            val intrinsicSize = max(spacing, context.dp(spacing)).toInt()
+            intrinsicWidth = intrinsicSize
+            intrinsicHeight = intrinsicSize
+            paint.color = scope.colors.candidateSeparatorColor
+        }
+    }
+
+    val view by lazy {
+        context.recyclerView(R.id.candidate_view) {
+            itemAnimator = null
+            isFocusable = false
+            isFocusableInTouchMode = false
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                defaultFocusHighlightEnabled = false
+            }
+            adapter = this@CompactCandidateDelegate.adapter
+            layoutManager = this@CompactCandidateDelegate.layoutManager
+            addItemDecoration(FlexboxVerticalDecoration(separatorDrawable))
+            addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) = Unit
+
+                override fun onViewDetachedFromWindow(v: View) {
+                    // A queued frame callback must not touch a detached or torn-down view.
+                    cancelPendingPublish()
+                    cancelWindowUpgrade()
+                    this@CompactCandidateDelegate.adapter.updateFullWindow(null)
+                }
+            })
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    val scrolling = newState != RecyclerView.SCROLL_STATE_IDLE
+                    this@CompactCandidateDelegate.adapter.scrolling = scrolling
+                    // Promote at the start of the gesture, and once more when it stops so a
+                    // spacer that landed on screen is not left there. Skip frames where the
+                    // window would not move.
+                    if ((scrolling || recyclerView.computeHorizontalScrollOffset() > 0) && windowWouldChange()) {
+                        postWindowUpgrade()
+                    }
+                }
+
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    if (dx != 0 && windowWouldChange()) postWindowUpgrade()
+                }
+            })
+            addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+                val w = right - left
+                val oldw = oldRight - oldLeft
+                if (fillStyle == CompactCandidateMode.AUTO_FILL && w > 0) {
+                    val maxSpanCount = maxSpanCountPref.getValue()
+                    layoutMinWidth = w / maxSpanCount - separatorDrawable.intrinsicWidth
+                    this@CompactCandidateDelegate.adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
+                }
+                if (pendingCandidates.isNotEmpty() && w != oldw) {
+                    publishCompactCandidates()
+                }
+            }
+        }
+    }
+
+    override fun onCompositionUpdate(data: CompositionProto) {
+        compositionLength = data.length
+    }
+
+    override fun onCandidateListUpdate(data: Candidates.Bulk) {
+        val (total, prepared, highlighted, candidates) = data
+        if (LagDiagnostics.enabled) {
+            adapter.diagnosticSequence++
+            adapter.trace("receive") {
+                "count=${candidates.size} total=$total prepared=$prepared highlight=$highlighted " +
+                    "composition=$compositionLength " +
+                    "fp=${CompactCandidateTrace.fingerprint(candidates.toList())}"
+            }
+        }
+
+        val maxSpanCount = maxSpanCountPref.getValue()
+
+        when (fillStyle) {
+            CompactCandidateMode.NEVER_FILL -> {
+                layoutMinWidth = 0
+                layoutFlexGrow = 0f
+                secondLayoutPassNeeded = false
+            }
+
+            CompactCandidateMode.AUTO_FILL -> {
+                layoutMinWidth = view.width / maxSpanCount - separatorDrawable.intrinsicWidth
+                layoutFlexGrow = if (candidates.size < maxSpanCount) 0f else 1f
+                // [^1] total candidates count < maxSpanCount
+                secondLayoutPassNeeded = candidates.size < maxSpanCount
+                secondLayoutPassDone = false
+            }
+
+            CompactCandidateMode.ALWAYS_FILL -> {
+                layoutMinWidth = 0
+                layoutFlexGrow = 1f
+                secondLayoutPassNeeded = false
+            }
+        }
+
+        if (LagDiagnostics.enabled && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
+            candidateUpdateAt = System.nanoTime()
+        }
+        if (!LagDiagnostics.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
+        adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
+        val firstBatch = pendingCandidates.isEmpty()
+        pendingCandidates = candidates
+        pendingTotal = total
+        pendingHighlighted = highlighted
+        schedulePublish(firstBatch)
+    }
+
+    /**
+     * Publishes in the next frame's animation phase, after input and before traversal.
+     *
+     * A normal [Handler.post] does not get there. Once a traversal is scheduled the main
+     * looper has a sync barrier up, so the publish sits behind that frame (15 ms p50 /
+     * 36 ms p90 from `receive` to `publish_frame` in the v4.0 trace) and its
+     * [View.requestLayout] then misses the traversal it just waited for. `main_to_layout`
+     * was 38–48 ms p50 while the publish and Flexbox work themselves were about 1 ms and
+     * 7 ms. Front-of-queue skips the barrier but also skips input events already queued,
+     * and the following layout made key-up stutter. An animation-phase callback joins the
+     * upcoming frame without reordering those events. Callbacks posted before it runs
+     * still collapse into one adapter update. The view itself is not used to post: it
+     * drops the runnable until attached, which loses the first candidates while the
+     * keyboard is opening.
+     *
+     * This callback arrives on the rime thread. [Choreographer] is thread-local and its
+     * frame callbacks run on the thread that posted them, so the main-thread instance has
+     * to be reached through [publishHandler]. Each post carries a generation: cancelling
+     * or scheduling again retires the previous callback without removing a newer one.
+     */
+    private fun schedulePublish(frontOfQueue: Boolean) {
+        if (publishScheduled) {
+            publishCoalesced++
+            adapter.trace("publish_coalesce") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
+            return
+        }
+        publishGeneration++
+        publishScheduled = true
+        if (frontOfQueue) {
+            publishHandler.postAtFrontOfQueue(publishRunner)
+        } else if (Looper.myLooper() == publishHandler.looper) {
+            val generation = publishGeneration
+            Choreographer.getInstance().postFrameCallback {
+                if (generation != publishGeneration) return@postFrameCallback
+                publishRunner.run()
+            }
+        } else {
+            publishHandler.post(postFrameCallback)
+        }
+    }
+
+    private fun cancelPendingPublish() {
+        if (!publishScheduled) return
+        publishGeneration++
+        publishScheduled = false
+        publishCoalesced = 0
+        publishHandler.removeCallbacks(publishRunner)
+        publishHandler.removeCallbacks(postFrameCallback)
+        adapter.trace("publish_cancel") { "pending=${pendingCandidates.size}" }
+    }
+
+    private fun measureCandidateWidth(candidate: CandidateProto): Float {
+        val padding = context.dp(theme.style.candidatePadding * 2).toFloat()
+        val commentOnRight = theme.style.commentPosition == GeneralStyle.CommentPosition.RIGHT
+        val commentGap = if (commentOnRight && candidate.comment.isNotEmpty()) {
+            context.dp(CANDIDATE_COMMENT_GAP_DP).toFloat()
+        } else {
+            0f
+        }
+        return widthCache.getOrMeasure(
+            candidate.text,
+            candidate.comment,
+            textPaint.textSize,
+            commentPaint.textSize,
+            padding,
+            commentOnRight,
+            (textPaint.typeface?.hashCode() ?: 0) xor (commentPaint.typeface?.hashCode() ?: 0),
+        ) {
+            compactCandidateContentWidth(
+                textPaint.measureText(candidate.text),
+                candidate.comment,
+                commentPaint.measureText(candidate.comment),
+                commentOnRight,
+                commentGap,
+            ) + padding
+        }
+    }
+
+    /**
+     * RecyclerView skips its own requestLayout while adapter updates are still
+     * pending, and never lays out again if that pass was lost. Ask explicitly.
+     */
+    private fun ensureLayoutRequested() {
+        val suppressed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed
+        adapter.trace("layout_request") {
+            "pending_updates=${view.hasPendingAdapterUpdates()} requested=${view.isLayoutRequested} suppressed=$suppressed"
+        }
+        if (suppressed) view.suppressLayout(false)
+        if (!view.isLayoutRequested) view.requestLayout()
+    }
+
+    private fun publishCompactCandidates() {
+        val startedAt = LagDiagnostics.start()
+        try {
+            adapter.trace("publish_begin") {
+                "incoming=${pendingCandidates.size} coalesced=$publishCoalesced width=${view.width} attached=${view.isAttachedToWindow} visibility=${view.visibility} requested=${view.isLayoutRequested} computing=${view.isComputingLayout} " +
+                    "suppressed=${Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed}"
+            }
+            val candidates = pendingCandidates
+            if (candidates.isEmpty()) {
+                adapter.updateItemWidths(emptyList())
+                adapter.updateFullWindow(null)
+                adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
+                refreshUnrolled(0)
+                updateUnrollButton(overflows = false)
+                return
+            }
+            val barWidth = view.width
+            if (barWidth <= 0) {
+                adapter.updateItemWidths(emptyList())
+                adapter.updateFullWindow(null)
+                adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
+                return
+            }
+            // Every candidate stays in the bar at its natural width: the row scrolls
+            // horizontally, so nothing has to be packed, shrunk or ellipsized.
+            val widths = candidates.map { ceil(measureCandidateWidth(it)).toInt().coerceAtLeast(1) }
+            val previousWidths = adapter.itemWidths
+            val separator = separatorDrawable.intrinsicWidth
+            // Typing rebinds the first screen only. A live scroll keeps one extra bar of
+            // real views on each side, so the next items are already bound before they enter.
+            val window = if (adapter.scrolling && view.computeHorizontalScrollOffset() > 0) {
+                compactCandidateScrollWindow(widths, view.computeHorizontalScrollOffset(), barWidth, separator)
+            } else {
+                compactCandidateInitialWindow(widths, barWidth, separator)
+            }
+            adapter.updateFullWindow(window)
+            val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
+            val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
+            if (widthsChanged && !dataChanged) {
+                // Same candidates, different widths: rebind only the rows whose width moved.
+                val range = compactCandidateWidthChangeRange(previousWidths, widths)
+                if (range != null) {
+                    adapter.trace("notify_width") { "start=${range.first} count=${range.last - range.first + 1}" }
+                    adapter.notifyItemRangeChanged(range.first, range.last - range.first + 1)
+                }
+            }
+            if (dataChanged || widthsChanged) ensureLayoutRequested()
+            // The bar now scrolls instead of packing, so the unrolled panel can no
+            // longer learn its size from the packed layout: refresh it from the data.
+            if (dataChanged || widthsChanged) {
+                refreshUnrolled(candidates.size)
+            }
+            // The row no longer clips, so "more candidates exist" is the width that
+            // does not fit, not a truncated item count. The expand button follows that.
+            val contentWidth = widths.sum() + separator * (widths.size - 1).coerceAtLeast(0)
+            updateUnrollButton(contentWidth > barWidth)
+        } finally {
+            publishCoalesced = 0
+            if (LagDiagnostics.enabled) {
+                view.removeCallbacks(diagnosticSnapshot)
+                view.postDelayed(diagnosticSnapshot, 250)
+            }
+            if (startedAt != 0L) {
+                LagDiagnostics.duration(
+                    "candidate_publish",
+                    startedAt,
+                    extra = "work_us=${(System.nanoTime() - startedAt) / 1_000} " +
+                        "incoming=${pendingCandidates.size} shown=${adapter.itemCount} bar_width=${view.width}",
+                )
+            }
+        }
+    }
+
+    /** True when the current scroll offset would promote a different set of real views. */
+    private fun windowWouldChange(): Boolean {
+        val widths = adapter.itemWidths
+        if (widths.size != adapter.itemCount || view.width <= 0) return false
+        val window = compactCandidateScrollWindow(
+            widths,
+            view.computeHorizontalScrollOffset(),
+            view.width,
+            separatorDrawable.intrinsicWidth,
+        )
+        return adapter.fullWindow != window
+    }
+
+    private fun postWindowUpgrade() {
+        if (windowUpgradePosted || !view.isAttachedToWindow) return
+        windowUpgradePosted = true
+        Choreographer.getInstance().postFrameCallback(windowUpgradeCallback)
+    }
+
+    private fun cancelWindowUpgrade() {
+        if (!windowUpgradePosted) return
+        windowUpgradePosted = false
+        Choreographer.getInstance().removeFrameCallback(windowUpgradeCallback)
+    }
+
+    /**
+     * Promotes items about to enter the viewport and keeps one bar of real views behind it.
+     * Runs outside layout, so the view-type change cannot re-enter Flexbox.
+     */
+    private fun upgradeVisibleWindow() {
+        if (!view.isAttachedToWindow || view.isComputingLayout || adapter.itemCount == 0) return
+        val widths = adapter.itemWidths
+        if (widths.size != adapter.itemCount) return
+        val barWidth = view.width
+        if (barWidth <= 0) return
+        val window = compactCandidateScrollWindow(
+            widths,
+            view.computeHorizontalScrollOffset(),
+            barWidth,
+            separatorDrawable.intrinsicWidth,
+        )
+        adapter.updateFullWindow(window)
+    }
+}

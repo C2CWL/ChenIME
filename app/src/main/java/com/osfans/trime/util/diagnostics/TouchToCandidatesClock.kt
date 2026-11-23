@@ -7,17 +7,18 @@ package com.osfans.trime.util.diagnostics
  * Pairs a key touch with the candidate update that touch caused, and records
  * the stages in between so a later log can show where time went.
  *
- * The clock starts on a key-down, records dispatch / rime / main / layout /
- * draw as they happen, and yields a duration when that list is laid out. A
- * later touch replaces an unused stamp, so idle time between taps is never
- * counted. Hide/show clears any in-flight stamp so a layout after the window
- * comes back cannot inherit a touch from the previous session.
+ * The clock starts on a key-down, records key-up / dispatch / rime / main /
+ * layout / draw as they happen, and yields a duration when that list is laid
+ * out. A later touch replaces an unused stamp, so idle time between taps is
+ * never counted. Hide/show clears any in-flight stamp so a layout after the
+ * window comes back cannot inherit a touch from the previous session.
  *
  * All timestamps are [android.os.SystemClock.uptimeMillis] values. A stage
  * that was not marked is reported as -1 and omitted from [PathTiming.details].
  */
 class TouchToCandidatesClock {
     private var touchAt = 0L
+    private var touchUpAt = 0L
     private var dispatchAt = 0L
     private var rimeStartAt = 0L
     private var rimeDoneAt = 0L
@@ -32,6 +33,12 @@ class TouchToCandidatesClock {
         clearLocked()
         touchAt = uptimeMs
         awaitingCandidateUpdate = true
+    }
+
+    @Synchronized
+    fun onTouchUp(uptimeMs: Long) {
+        if (touchAt == 0L) return
+        touchUpAt = uptimeMs
     }
 
     @Synchronized
@@ -101,6 +108,8 @@ class TouchToCandidatesClock {
         return PathTiming(
             totalMs = (layoutAt - touch).coerceAtLeast(0L),
             touchToDispatchMs = stage(touch, dispatchAt),
+            downToUpMs = stage(touch, touchUpAt),
+            upToDispatchMs = stage(touchUpAt, dispatchAt),
             dispatchToRimeMs = stage(dispatchAt, rimeStartAt),
             rimeMs = stage(rimeStartAt, rimeDoneAt),
             rimeToMainMs = stage(rimeDoneAt, mainReceiveAt),
@@ -111,6 +120,7 @@ class TouchToCandidatesClock {
 
     private fun clearLocked() {
         touchAt = 0L
+        touchUpAt = 0L
         dispatchAt = 0L
         rimeStartAt = 0L
         rimeDoneAt = 0L
@@ -134,6 +144,8 @@ class TouchToCandidatesClock {
 internal data class PathTiming(
     val totalMs: Long,
     val touchToDispatchMs: Long = -1L,
+    val downToUpMs: Long = -1L,
+    val upToDispatchMs: Long = -1L,
     val dispatchToRimeMs: Long = -1L,
     val rimeMs: Long = -1L,
     val rimeToMainMs: Long = -1L,
@@ -142,6 +154,8 @@ internal data class PathTiming(
 ) {
     fun details(): String = buildString {
         appendStage("touch_to_dispatch_ms", touchToDispatchMs)
+        appendStage("down_to_up_ms", downToUpMs)
+        appendStage("up_to_dispatch_ms", upToDispatchMs)
         appendStage("dispatch_to_rime_ms", dispatchToRimeMs)
         appendStage("rime_ms", rimeMs)
         appendStage("rime_to_main_ms", rimeToMainMs)

@@ -68,6 +68,8 @@ object LagDiagnostics {
     private val keyStats = DurationStats()
     private val touchToCandidates = DurationStats()
     private val touchToDispatch = DurationStats()
+    private val downToUp = DurationStats()
+    private val upToDispatch = DurationStats()
     private val dispatchToRime = DurationStats()
     private val rimeStage = DurationStats()
     private val rimeToMain = DurationStats()
@@ -218,6 +220,11 @@ object LagDiagnostics {
         if (age >= SLOW_MS) writeLine("touch_dispatch", LagLine.durationDetails(age, SLOW_MS, "note=touch_reached_keyboard_late"))
     }
 
+    fun touchUp(eventUptimeMs: Long) {
+        if (!enabled) return
+        touchToCandidatesClock.onTouchUp(eventUptimeMs)
+    }
+
     fun keyDispatched() {
         if (!enabled) return
         touchToCandidatesClock.onDispatched(SystemClock.uptimeMillis())
@@ -254,6 +261,8 @@ object LagDiagnostics {
     private fun recordPathStages(timing: PathTiming) {
         touchToCandidates.add(timing.totalMs)
         if (timing.touchToDispatchMs >= 0) touchToDispatch.add(timing.touchToDispatchMs)
+        if (timing.downToUpMs >= 0) downToUp.add(timing.downToUpMs)
+        if (timing.upToDispatchMs >= 0) upToDispatch.add(timing.upToDispatchMs)
         if (timing.dispatchToRimeMs >= 0) dispatchToRime.add(timing.dispatchToRimeMs)
         if (timing.rimeMs >= 0) rimeStage.add(timing.rimeMs)
         if (timing.rimeToMainMs >= 0) rimeToMain.add(timing.rimeToMainMs)
@@ -337,6 +346,8 @@ object LagDiagnostics {
         keyStats.reset()
         touchToCandidates.reset()
         touchToDispatch.reset()
+        downToUp.reset()
+        upToDispatch.reset()
         dispatchToRime.reset()
         rimeStage.reset()
         rimeToMain.reset()
@@ -370,6 +381,7 @@ object LagDiagnostics {
             "session",
             "shown_s=${wallMs / 1_000} cpu_ms=$cpuMs cpu_pct=$cpuPercent ${keyStats.describe("keys")} " +
                 "${touchToCandidates.describe("touch_to_cand")} ${touchToDispatch.describe("touch_to_dispatch")} " +
+                "${downToUp.describe("down_to_up")} ${upToDispatch.describe("up_to_dispatch")} " +
                 "${dispatchToRime.describe("dispatch_to_rime")} ${rimeStage.describe("rime")} " +
                 "${rimeToMain.describe("rime_to_main")} ${mainToLayout.describe("main_to_layout")} " +
                 "${layoutToDraw.describe("layout_to_draw")} ${rimeTranslators.describe("rime_translators")} " +

@@ -84,6 +84,23 @@ class TouchToCandidatesClockTest :
                 clock.onFrameDrawn(1130L) shouldBe null
             }
 
+            then("key-up splits touch_to_dispatch into press hold and gesture wait") {
+                val clock = TouchToCandidatesClock()
+                clock.onTouchDown(1000L)
+                clock.onTouchUp(1062L)
+                clock.onDispatched(1070L)
+                clock.onRimeStarted(1074L)
+                clock.onRimeFinished(1086L)
+                clock.onCandidateUpdate(empty = false, uptimeMs = 1094L)
+                val laidOut = clock.onCandidatesLaidOut(1116L)!!
+                laidOut.touchToDispatchMs shouldBe 70L
+                laidOut.downToUpMs shouldBe 62L
+                laidOut.upToDispatchMs shouldBe 8L
+                laidOut.details() shouldBe
+                    "touch_to_dispatch_ms=70 down_to_up_ms=62 up_to_dispatch_ms=8 " +
+                        "dispatch_to_rime_ms=4 rime_ms=12 rime_to_main_ms=8 main_to_layout_ms=22"
+            }
+
             then("a missing dispatch is left out of the details, not reported as zero") {
                 val clock = TouchToCandidatesClock()
                 clock.onTouchDown(1000L)

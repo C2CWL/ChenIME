@@ -85,6 +85,7 @@ class CompactCandidateDelegate(override val di: DI) :
     // candidate list, in that same frame.
     private var publishScheduled = false
     private var publishCoalesced = 0
+
     // Bumped by every schedule and cancel. A queued callback belongs to the generation
     // that posted it and does nothing once a newer one has taken over.
     private var publishGeneration = 0

@@ -81,8 +81,8 @@ class CompactCandidateDelegate(override val di: DI) :
     private var compositionLength = 0
 
     // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
-    // single apply on the current main-loop turn so the bar rebinds once, with the
-    // final candidate list, without waiting for the next frame.
+    // single apply before the next traversal so the bar rebinds once, with the final
+    // candidate list, in that same frame.
     private var publishScheduled = false
     private var publishCoalesced = 0
     private var windowUpgradePosted = false
@@ -99,6 +99,9 @@ class CompactCandidateDelegate(override val di: DI) :
             adapter.trace("publish_frame") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
             publishCompactCandidates()
         }
+
+    /** Animation phase: after this frame's input, before its traversal. */
+    private val publishFrameCallback = Choreographer.FrameCallback { publishRunner.run() }
 
     private val textPaint by lazy {
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -387,11 +390,19 @@ class CompactCandidateDelegate(override val di: DI) :
 
     /**
      * Applies the first candidate batch ahead of queued main-loop work so the keyboard
-     * does not open with an empty bar, then uses a normal post for every later batch.
-     * Front-of-queue jumps ahead of pending input events; with a 10 ms p50 candidate
-     * layout that makes key-up / the next touch stutter intermittently. A Handler is
-     * used instead of the view because a view drops the runnable until it is attached.
-     * Several callbacks posted before the runnable runs collapse into one adapter update.
+     * does not open with an empty bar. Later batches wait for the next frame's animation
+     * phase, which runs after input and before traversal.
+     *
+     * A normal [Handler.post] does not. Once a traversal is scheduled the main looper has
+     * a sync barrier up, so the publish sits behind that frame (15 ms p50 / 36 ms p90 from
+     * `receive` to `publish_frame` in the v4.0 trace) and its [View.requestLayout] then
+     * misses the traversal it just waited for. `main_to_layout` was 38–48 ms p50 while the
+     * publish and Flexbox work themselves were about 1 ms and 7 ms. Front-of-queue skips
+     * the barrier but also skips input events already queued, and the following layout
+     * made key-up stutter. An animation-phase callback joins the upcoming frame without
+     * reordering those events. Callbacks posted before it runs still collapse into one
+     * adapter update. The view itself is not used to post: it drops the runnable until
+     * attached, which loses the first candidates while the keyboard is opening.
      */
     private fun schedulePublish(frontOfQueue: Boolean) {
         if (publishScheduled) {
@@ -403,7 +414,7 @@ class CompactCandidateDelegate(override val di: DI) :
         if (frontOfQueue) {
             publishHandler.postAtFrontOfQueue(publishRunner)
         } else {
-            publishHandler.post(publishRunner)
+            Choreographer.getInstance().postFrameCallback(publishFrameCallback)
         }
     }
 
@@ -412,6 +423,7 @@ class CompactCandidateDelegate(override val di: DI) :
         publishScheduled = false
         publishCoalesced = 0
         publishHandler.removeCallbacks(publishRunner)
+        Choreographer.getInstance().removeFrameCallback(publishFrameCallback)
         adapter.trace("publish_cancel") { "pending=${pendingCandidates.size}" }
     }
 

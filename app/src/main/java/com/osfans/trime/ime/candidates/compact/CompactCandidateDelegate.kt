@@ -85,6 +85,10 @@ class CompactCandidateDelegate(override val di: DI) :
     // candidate list, in that same frame.
     private var publishScheduled = false
     private var publishCoalesced = 0
+    private val postFrameCallback = Runnable {
+        if (!publishScheduled) return@Runnable
+        Choreographer.getInstance().postFrameCallback(publishFrameCallback)
+    }
     private var windowUpgradePosted = false
     private val windowUpgradeCallback =
         Choreographer.FrameCallback {
@@ -389,20 +393,23 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     /**
-     * Applies the first candidate batch ahead of queued main-loop work so the keyboard
-     * does not open with an empty bar. Later batches wait for the next frame's animation
-     * phase, which runs after input and before traversal.
+     * Publishes in the next frame's animation phase, after input and before traversal.
      *
-     * A normal [Handler.post] does not. Once a traversal is scheduled the main looper has
-     * a sync barrier up, so the publish sits behind that frame (15 ms p50 / 36 ms p90 from
-     * `receive` to `publish_frame` in the v4.0 trace) and its [View.requestLayout] then
-     * misses the traversal it just waited for. `main_to_layout` was 38–48 ms p50 while the
-     * publish and Flexbox work themselves were about 1 ms and 7 ms. Front-of-queue skips
-     * the barrier but also skips input events already queued, and the following layout
-     * made key-up stutter. An animation-phase callback joins the upcoming frame without
-     * reordering those events. Callbacks posted before it runs still collapse into one
-     * adapter update. The view itself is not used to post: it drops the runnable until
-     * attached, which loses the first candidates while the keyboard is opening.
+     * A normal [Handler.post] does not get there. Once a traversal is scheduled the main
+     * looper has a sync barrier up, so the publish sits behind that frame (15 ms p50 /
+     * 36 ms p90 from `receive` to `publish_frame` in the v4.0 trace) and its
+     * [View.requestLayout] then misses the traversal it just waited for. `main_to_layout`
+     * was 38–48 ms p50 while the publish and Flexbox work themselves were about 1 ms and
+     * 7 ms. Front-of-queue skips the barrier but also skips input events already queued,
+     * and the following layout made key-up stutter. An animation-phase callback joins the
+     * upcoming frame without reordering those events. Callbacks posted before it runs
+     * still collapse into one adapter update. The view itself is not used to post: it
+     * drops the runnable until attached, which loses the first candidates while the
+     * keyboard is opening.
+     *
+     * This callback arrives on the rime thread. [Choreographer] is thread-local and its
+     * frame callbacks run on the thread that posted them, so the main-thread instance has
+     * to be reached through [publishHandler].
      */
     private fun schedulePublish(frontOfQueue: Boolean) {
         if (publishScheduled) {
@@ -413,8 +420,10 @@ class CompactCandidateDelegate(override val di: DI) :
         publishScheduled = true
         if (frontOfQueue) {
             publishHandler.postAtFrontOfQueue(publishRunner)
-        } else {
+        } else if (Looper.myLooper() == publishHandler.looper) {
             Choreographer.getInstance().postFrameCallback(publishFrameCallback)
+        } else {
+            publishHandler.post(postFrameCallback)
         }
     }
 
@@ -423,7 +432,12 @@ class CompactCandidateDelegate(override val di: DI) :
         publishScheduled = false
         publishCoalesced = 0
         publishHandler.removeCallbacks(publishRunner)
-        Choreographer.getInstance().removeFrameCallback(publishFrameCallback)
+        publishHandler.removeCallbacks(postFrameCallback)
+        if (Looper.myLooper() == publishHandler.looper) {
+            Choreographer.getInstance().removeFrameCallback(publishFrameCallback)
+        } else {
+            publishHandler.post { Choreographer.getInstance().removeFrameCallback(publishFrameCallback) }
+        }
         adapter.trace("publish_cancel") { "pending=${pendingCandidates.size}" }
     }
 

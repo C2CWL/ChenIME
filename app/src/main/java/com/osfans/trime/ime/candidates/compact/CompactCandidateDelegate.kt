@@ -81,10 +81,22 @@ class CompactCandidateDelegate(override val di: DI) :
     private var compositionLength = 0
 
     // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
-    // single apply on the current main-loop turn so the bar rebinds once, with the
-    // final candidate list, without waiting for the next frame.
+    // single apply before the next traversal so the bar rebinds once, with the final
+    // candidate list, in that same frame.
     private var publishScheduled = false
     private var publishCoalesced = 0
+
+    // Bumped by every schedule and cancel. A queued callback belongs to the generation
+    // that posted it and does nothing once a newer one has taken over.
+    private var publishGeneration = 0
+    private val postFrameCallback = Runnable {
+        val generation = publishGeneration
+        if (!publishScheduled || generation == 0) return@Runnable
+        Choreographer.getInstance().postFrameCallback {
+            if (generation != publishGeneration) return@postFrameCallback
+            publishRunner.run()
+        }
+    }
     private var windowUpgradePosted = false
     private val windowUpgradeCallback =
         Choreographer.FrameCallback {
@@ -386,12 +398,24 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     /**
-     * Applies the first candidate batch ahead of queued main-loop work so the keyboard
-     * does not open with an empty bar, then uses a normal post for every later batch.
-     * Front-of-queue jumps ahead of pending input events; with a 10 ms p50 candidate
-     * layout that makes key-up / the next touch stutter intermittently. A Handler is
-     * used instead of the view because a view drops the runnable until it is attached.
-     * Several callbacks posted before the runnable runs collapse into one adapter update.
+     * Publishes in the next frame's animation phase, after input and before traversal.
+     *
+     * A normal [Handler.post] does not get there. Once a traversal is scheduled the main
+     * looper has a sync barrier up, so the publish sits behind that frame (15 ms p50 /
+     * 36 ms p90 from `receive` to `publish_frame` in the v4.0 trace) and its
+     * [View.requestLayout] then misses the traversal it just waited for. `main_to_layout`
+     * was 38–48 ms p50 while the publish and Flexbox work themselves were about 1 ms and
+     * 7 ms. Front-of-queue skips the barrier but also skips input events already queued,
+     * and the following layout made key-up stutter. An animation-phase callback joins the
+     * upcoming frame without reordering those events. Callbacks posted before it runs
+     * still collapse into one adapter update. The view itself is not used to post: it
+     * drops the runnable until attached, which loses the first candidates while the
+     * keyboard is opening.
+     *
+     * This callback arrives on the rime thread. [Choreographer] is thread-local and its
+     * frame callbacks run on the thread that posted them, so the main-thread instance has
+     * to be reached through [publishHandler]. Each post carries a generation: cancelling
+     * or scheduling again retires the previous callback without removing a newer one.
      */
     private fun schedulePublish(frontOfQueue: Boolean) {
         if (publishScheduled) {
@@ -399,19 +423,28 @@ class CompactCandidateDelegate(override val di: DI) :
             adapter.trace("publish_coalesce") { "coalesced=$publishCoalesced pending=${pendingCandidates.size}" }
             return
         }
+        publishGeneration++
         publishScheduled = true
         if (frontOfQueue) {
             publishHandler.postAtFrontOfQueue(publishRunner)
+        } else if (Looper.myLooper() == publishHandler.looper) {
+            val generation = publishGeneration
+            Choreographer.getInstance().postFrameCallback {
+                if (generation != publishGeneration) return@postFrameCallback
+                publishRunner.run()
+            }
         } else {
-            publishHandler.post(publishRunner)
+            publishHandler.post(postFrameCallback)
         }
     }
 
     private fun cancelPendingPublish() {
         if (!publishScheduled) return
+        publishGeneration++
         publishScheduled = false
         publishCoalesced = 0
         publishHandler.removeCallbacks(publishRunner)
+        publishHandler.removeCallbacks(postFrameCallback)
         adapter.trace("publish_cancel") { "pending=${pendingCandidates.size}" }
     }
 

@@ -193,6 +193,7 @@ open class GestureFrame(context: Context) : FrameLayout(context) {
                         SystemClock.uptimeMillis() - event.eventTime,
                     )
                 }
+                LagDiagnostics.touchUp(event.eventTime)
                 val started = gestureStarted
                 gestureStarted = false
                 val dx = x - startX

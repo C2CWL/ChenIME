@@ -23,6 +23,31 @@ fun compactCandidateInitialWindow(
 }
 
 /**
+ * Chooses the window for a fresh publish. A scroll window is only meaningful while the bar
+ * is actually scrolling and the offset still belongs to the current content. After a clear
+ * gesture the scroll listener can leave [scrolling] set and the RecyclerView can keep the
+ * previous composition's offset; binding at that stale offset would turn the new candidates
+ * into spacers and make the bar look blank. In that case bind from the start.
+ */
+fun compactCandidatePublishWindow(
+    widths: List<Int>,
+    scrolling: Boolean,
+    scrollOffset: Int,
+    barWidth: Int,
+    separatorWidth: Int,
+): IntRange? {
+    if (widths.isEmpty() || barWidth <= 0) return null
+    val contentWidth = widths.sum() + separatorWidth * (widths.size - 1).coerceAtLeast(0)
+    val maxScroll = (contentWidth - barWidth).coerceAtLeast(0)
+    val staleOffset = scrollOffset > maxScroll
+    return if (scrolling && scrollOffset > 0 && !staleOffset) {
+        compactCandidateScrollWindow(widths, scrollOffset, barWidth, separatorWidth)
+    } else {
+        compactCandidateInitialWindow(widths, barWidth, separatorWidth)
+    }
+}
+
+/**
  * Real views cover the current viewport plus one bar of prefetch on each side. The prefetch
  * is bound while the row is moving, so a fling does not reveal an unbound spacer.
  */

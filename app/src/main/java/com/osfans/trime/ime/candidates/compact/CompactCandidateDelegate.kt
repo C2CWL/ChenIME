@@ -355,7 +355,12 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     override fun onCompositionUpdate(data: CompositionProto) {
+        val previousLength = compositionLength
         compositionLength = data.length
+        // A clear gesture deletes committed text, so the candidate row is already empty and
+        // emits no empty batch to arm resetScrollOnNextPublish. The next composition starting
+        // from zero is the reliable signal to drop the previous scroll state.
+        if (previousLength == 0 && data.length > 0) resetScrollOnNextPublish = true
     }
 
     override fun onCandidateListUpdate(data: Candidates.Bulk) {
@@ -508,7 +513,11 @@ class CompactCandidateDelegate(override val di: DI) :
             if (resetScrollOnNextPublish) {
                 resetScrollOnNextPublish = false
                 adapter.scrolling = false
-                if (!view.isComputingLayout) view.scrollToPosition(0)
+                if (!view.isComputingLayout) {
+                    view.scrollToPosition(0)
+                } else {
+                    view.post { view.scrollToPosition(0) }
+                }
             }
             if (candidates.isEmpty()) {
                 adapter.updateItemWidths(emptyList())
@@ -581,8 +590,9 @@ class CompactCandidateDelegate(override val di: DI) :
     private fun windowWouldChange(): Boolean {
         val widths = adapter.itemWidths
         if (widths.size != adapter.itemCount || view.width <= 0) return false
-        val window = compactCandidateScrollWindow(
+        val window = compactCandidatePublishWindow(
             widths,
+            adapter.scrolling,
             view.computeHorizontalScrollOffset(),
             view.width,
             separatorDrawable.intrinsicWidth,
@@ -612,8 +622,9 @@ class CompactCandidateDelegate(override val di: DI) :
         if (widths.size != adapter.itemCount) return
         val barWidth = view.width
         if (barWidth <= 0) return
-        val window = compactCandidateScrollWindow(
+        val window = compactCandidatePublishWindow(
             widths,
+            adapter.scrolling,
             view.computeHorizontalScrollOffset(),
             barWidth,
             separatorDrawable.intrinsicWidth,

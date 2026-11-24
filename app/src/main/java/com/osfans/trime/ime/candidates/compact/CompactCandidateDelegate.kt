@@ -80,6 +80,14 @@ class CompactCandidateDelegate(override val di: DI) :
     private var pendingHighlighted = -1
     private var compositionLength = 0
 
+    /**
+     * A clear gesture empties the row on the rime thread, but its candidate publish can be
+     * coalesced with the next composition's candidates. Remember it so the first publish
+     * after a clear binds from the beginning instead of reusing the previous scroll offset.
+     */
+    @Volatile
+    private var resetScrollOnNextPublish = false
+
     // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
     // single apply before the next traversal so the bar rebinds once, with the final
     // candidate list, in that same frame.
@@ -390,6 +398,7 @@ class CompactCandidateDelegate(override val di: DI) :
         }
         if (!LagDiagnostics.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
+        if (candidates.isEmpty()) resetScrollOnNextPublish = true
         val firstBatch = pendingCandidates.isEmpty()
         pendingCandidates = candidates
         pendingTotal = total
@@ -496,6 +505,11 @@ class CompactCandidateDelegate(override val di: DI) :
                     "suppressed=${Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed}"
             }
             val candidates = pendingCandidates
+            if (resetScrollOnNextPublish) {
+                resetScrollOnNextPublish = false
+                adapter.scrolling = false
+                if (!view.isComputingLayout) view.scrollToPosition(0)
+            }
             if (candidates.isEmpty()) {
                 adapter.updateItemWidths(emptyList())
                 adapter.updateFullWindow(null)
@@ -518,11 +532,13 @@ class CompactCandidateDelegate(override val di: DI) :
             val separator = separatorDrawable.intrinsicWidth
             // Typing rebinds the first screen only. A live scroll keeps one extra bar of
             // real views on each side, so the next items are already bound before they enter.
-            val window = if (adapter.scrolling && view.computeHorizontalScrollOffset() > 0) {
-                compactCandidateScrollWindow(widths, view.computeHorizontalScrollOffset(), barWidth, separator)
-            } else {
-                compactCandidateInitialWindow(widths, barWidth, separator)
-            }
+            val window = compactCandidatePublishWindow(
+                widths = widths,
+                scrolling = adapter.scrolling,
+                scrollOffset = view.computeHorizontalScrollOffset(),
+                barWidth = barWidth,
+                separatorWidth = separator,
+            )
             adapter.updateFullWindow(window)
             val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
             val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)

@@ -41,6 +41,42 @@ class CompactCandidateWindowTest :
             }
         }
 
+        given("a clear gesture that left the scroll state behind") {
+            val short = listOf(100, 100, 100)
+            then("a stale offset from the previous composition binds from the start") {
+                // Clear empties the row but the scroll listener can still report scrolling
+                // with the old offset. The fresh three-candidate row is 320px wide, so an
+                // offset of 660 cannot belong to it and must not hide candidates as spacers.
+                compactCandidatePublishWindow(
+                    widths = short,
+                    scrolling = true,
+                    scrollOffset = 660,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 0..1
+            }
+
+            then("an offset that still fits keeps the live scroll window") {
+                compactCandidatePublishWindow(
+                    widths = List(8) { 100 },
+                    scrolling = true,
+                    scrollOffset = 660,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 4..7
+            }
+
+            then("an idle bar ignores the offset") {
+                compactCandidatePublishWindow(
+                    widths = List(8) { 100 },
+                    scrolling = false,
+                    scrollOffset = 660,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe compactCandidateInitialWindow(List(8) { 100 }, 200, separator)
+            }
+        }
+
         given("no measured width yet") {
             then("the window stays open so the first publish cannot hide candidates") {
                 compactCandidateInitialWindow(emptyList(), barWidth = 200, separatorWidth = separator) shouldBe null

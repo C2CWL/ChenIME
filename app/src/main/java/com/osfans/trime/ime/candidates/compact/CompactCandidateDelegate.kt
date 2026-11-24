@@ -227,6 +227,17 @@ class CompactCandidateDelegate(override val di: DI) :
                 }
                 try {
                     super.onLayoutChildren(recycler, state)
+                    // The row never scrolls vertically, so a negative first top means
+                    // Flexbox kept a stale vertical anchor after the list was emptied
+                    // and repopulated. Children are bound but drawn above the bar;
+                    // pull them back into view before layout completes.
+                    val firstTop = if (childCount > 0) getChildAt(0)?.top ?: 0 else 0
+                    if (firstTop < 0) {
+                        offsetChildrenVertical(-firstTop)
+                        adapter.trace("vertical_repair") {
+                            "first_top=$firstTop corrected_top=${getChildAt(0)?.top} children=$childCount"
+                        }
+                    }
                 } finally {
                     if (startedAt != 0L) {
                         LagDiagnostics.duration(

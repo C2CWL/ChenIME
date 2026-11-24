@@ -148,7 +148,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
 
     private fun candidatesPager(): Pager<Int, IndexedCandidate> {
         val end = filterEnd
-        val total = compactCandidate.adapter.total
         return Pager(
             config = PagingConfig(
                 pageSize = 48,
@@ -163,7 +162,6 @@ abstract class BaseUnrolledCandidateWindow(di: DI) :
                 } else {
                     CandidatesPagingSource(
                         rime,
-                        total = total,
                         offset = 0,
                     )
                 }

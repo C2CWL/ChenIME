@@ -93,12 +93,39 @@ class TouchToCandidatesClockTest :
                 clock.onRimeFinished(1086L)
                 clock.onCandidateUpdate(empty = false, uptimeMs = 1094L)
                 val laidOut = clock.onCandidatesLaidOut(1116L)!!
+                // total starts at key-up (1062), not key-down (1000): physical hold is excluded.
+                laidOut.totalMs shouldBe 54L
                 laidOut.touchToDispatchMs shouldBe 70L
                 laidOut.downToUpMs shouldBe 62L
                 laidOut.upToDispatchMs shouldBe 8L
                 laidOut.details() shouldBe
                     "touch_to_dispatch_ms=70 down_to_up_ms=62 up_to_dispatch_ms=8 " +
                     "dispatch_to_rime_ms=4 rime_ms=12 rime_to_main_ms=8 main_to_layout_ms=22"
+                val drawn = clock.onFrameDrawn(1124L)!!
+                drawn.totalMs shouldBe 54L
+            }
+
+            then("physical key hold time is not counted as slow latency") {
+                val clock = TouchToCandidatesClock()
+                clock.onTouchDown(1000L)
+                // User holds the key for 88 ms; only 12 ms is spent after key-up.
+                clock.onTouchUp(1088L)
+                clock.onDispatched(1090L)
+                clock.onCandidateUpdate(empty = false, uptimeMs = 1092L)
+                val laidOut = clock.onCandidatesLaidOut(1100L)!!
+                laidOut.totalMs shouldBe 12L
+                laidOut.downToUpMs shouldBe 88L
+                laidOut.upToDispatchMs shouldBe 2L
+            }
+
+            then("total falls back to key-down when no key-up was recorded") {
+                val clock = TouchToCandidatesClock()
+                clock.onTouchDown(1000L)
+                clock.onDispatched(1010L)
+                clock.onCandidateUpdate(empty = false, uptimeMs = 1020L)
+                val laidOut = clock.onCandidatesLaidOut(1040L)!!
+                laidOut.totalMs shouldBe 40L
+                laidOut.downToUpMs shouldBe -1L
             }
 
             then("a missing dispatch is left out of the details, not reported as zero") {

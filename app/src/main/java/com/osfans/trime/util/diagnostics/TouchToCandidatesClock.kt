@@ -13,6 +13,11 @@ package com.osfans.trime.util.diagnostics
  * never counted. Hide/show clears any in-flight stamp so a layout after the
  * window comes back cannot inherit a touch from the previous session.
  *
+ * [PathTiming.totalMs] is measured from key-up when one was recorded, falling
+ * back to key-down otherwise. Physical hold time (key-down to key-up) is a
+ * user gesture, not software latency, so it is reported separately as
+ * [PathTiming.downToUpMs] and never folded into the slow-path threshold.
+ *
  * All timestamps are [android.os.SystemClock.uptimeMillis] values. A stage
  * that was not marked is reported as -1 and omitted from [PathTiming.details].
  */
@@ -70,7 +75,7 @@ class TouchToCandidatesClock {
         mainReceiveAt = uptimeMs
     }
 
-    /** @return elapsed ms from the paired touch, or null if this layout does not belong to one. */
+    /** @return elapsed ms from key-up (or key-down when no up was seen), or null if this layout does not belong to one. */
     @Synchronized
     internal fun onCandidatesLaidOut(nowUptimeMs: Long): PathTiming? {
         if (!awaitingLayout || touchAt == 0L) return null
@@ -105,8 +110,11 @@ class TouchToCandidatesClock {
 
     private fun snapshotLocked(drawAt: Long, includeDraw: Boolean): PathTiming {
         val touch = touchAt
+        // Physical hold time is a user gesture, not software latency. Start the
+        // slow-path clock at key-up when we saw one, falling back to key-down.
+        val start = touchUpAt.takeIf { it > 0L } ?: touch
         return PathTiming(
-            totalMs = (layoutAt - touch).coerceAtLeast(0L),
+            totalMs = (layoutAt - start).coerceAtLeast(0L),
             touchToDispatchMs = stage(touch, dispatchAt),
             downToUpMs = stage(touch, touchUpAt),
             upToDispatchMs = stage(touchUpAt, dispatchAt),

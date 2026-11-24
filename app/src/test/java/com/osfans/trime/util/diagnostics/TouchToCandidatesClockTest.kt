@@ -98,7 +98,7 @@ class TouchToCandidatesClockTest :
                 laidOut.upToDispatchMs shouldBe 8L
                 laidOut.details() shouldBe
                     "touch_to_dispatch_ms=70 down_to_up_ms=62 up_to_dispatch_ms=8 " +
-                        "dispatch_to_rime_ms=4 rime_ms=12 rime_to_main_ms=8 main_to_layout_ms=22"
+                    "dispatch_to_rime_ms=4 rime_ms=12 rime_to_main_ms=8 main_to_layout_ms=22"
             }
 
             then("a missing dispatch is left out of the details, not reported as zero") {

@@ -131,7 +131,6 @@ class CompactCandidateWindowTest :
                     separatorWidth = separator,
                 ) shouldBe 0..3
             }
-
         }
 
         given("no measured width yet") {

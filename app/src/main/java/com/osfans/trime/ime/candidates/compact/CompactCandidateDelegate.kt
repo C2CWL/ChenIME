@@ -409,10 +409,14 @@ class CompactCandidateDelegate(override val di: DI) :
             }
         }
 
-        if (LagDiagnostics.enabled && candidateUpdateAt == 0L && candidates.isNotEmpty()) {
+        // Re-anchor on every non-empty batch. A batch may be coalesced or skipped
+        // (identical fingerprint -> no layout), so leaving an earlier timestamp in
+        // place folds the idle gap up to the next real layout into candidate_layout.
+        if (!LagDiagnostics.enabled || candidates.isEmpty()) {
+            candidateUpdateAt = 0L
+        } else {
             candidateUpdateAt = System.nanoTime()
         }
-        if (!LagDiagnostics.enabled || candidates.isEmpty()) candidateUpdateAt = 0L
         adapter.updateLayoutParams(layoutMinWidth, layoutFlexGrow)
         if (candidates.isEmpty()) resetScrollOnNextPublish = true
         val firstBatch = pendingCandidates.isEmpty()

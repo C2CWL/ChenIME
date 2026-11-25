@@ -81,13 +81,45 @@ fun compactCandidateScrollWindow(
     if (widths.isEmpty() || barWidth <= 0) return null
     val offset = scrollOffset.coerceAtLeast(0)
     val first = itemAt(widths, offset, separatorWidth)
-    val last = fittingEnd(widths, first, barWidth, separatorWidth)
+    // The anchor item may already be partly past the measured edge. A full bar counted
+    // from its leading edge stops short, and the candidate sliding in on the right stays
+    // a spacer — the blank slot in the middle of the row.
+    val last = fittingEnd(
+        widths,
+        first,
+        coveredSpan(widths, first, offset, barWidth, separatorWidth),
+        separatorWidth,
+    )
     val prefetchStart = itemAt(widths, (offset - barWidth).coerceAtLeast(0), separatorWidth)
     val prefetchEnd = fittingEnd(widths, last, barWidth, separatorWidth)
     val start = minOf(first, prefetchStart)
     val end = maxOf(last, prefetchEnd)
     return if (start == 0 && end == widths.lastIndex) null else start..end
 }
+
+/** Content x of [index]'s leading edge, including separators before it. */
+private fun leadingEdge(widths: List<Int>, index: Int, separatorWidth: Int): Int {
+    if (index <= 0) return 0
+    var edge = 0
+    for (i in 0 until index) {
+        edge += widths[i] + separatorWidth
+    }
+    return edge
+}
+
+/**
+ * How far [fittingEnd] must look, starting at [anchor], to reach [distance] px past [edge].
+ * [edge] is the viewport's left edge and [anchor] is the item containing it, so the part of
+ * that item already off-screen has to be added back. Otherwise the candidate entering on the
+ * right stays outside the window.
+ */
+private fun coveredSpan(
+    widths: List<Int>,
+    anchor: Int,
+    edge: Int,
+    distance: Int,
+    separatorWidth: Int,
+): Int = distance + (edge - leadingEdge(widths, anchor, separatorWidth)).coerceAtLeast(0)
 
 private fun itemAt(widths: List<Int>, offset: Int, separatorWidth: Int): Int {
     var cursor = 0

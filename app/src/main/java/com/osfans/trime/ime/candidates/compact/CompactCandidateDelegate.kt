@@ -349,7 +349,15 @@ class CompactCandidateDelegate(override val di: DI) :
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dx != 0) postWindowUpgrade()
+                    if (dx == 0) return
+                    // onScrolled runs after this frame's layout, so the window can grow before
+                    // the next draw. Waiting for another frame leaves the entering cell as a spacer.
+                    if (recyclerView.isComputingLayout) {
+                        postWindowUpgrade()
+                    } else {
+                        cancelWindowUpgrade()
+                        upgradeVisibleWindow()
+                    }
                 }
             })
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->

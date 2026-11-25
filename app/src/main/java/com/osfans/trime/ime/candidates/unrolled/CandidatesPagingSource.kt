@@ -12,7 +12,6 @@ import timber.log.Timber
 
 class CandidatesPagingSource(
     val rime: RimeSession,
-    val total: Int,
     val offset: Int,
 ) : PagingSource<Int, IndexedCandidate>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, IndexedCandidate> {
@@ -25,14 +24,20 @@ class CandidatesPagingSource(
                 getCandidates(startIndex, pageSize)
             }
         val prevKey = if (startIndex - pageSize >= offset) startIndex - pageSize else null
-        val nextKey = if (total > 0) {
-            if (startIndex + candidates.size >= total) null else startIndex + pageSize
-        } else {
-            if (candidates.size < pageSize) null else startIndex + pageSize
-        }
+        // The compact candidate bar's total is only a snapshot of its own limited batch.
+        // In the expanded window it can be stale or smaller than what Rime actually returns,
+        // so only a short/empty page marks the real end; otherwise paging would stop early
+        // or keep appending blank pages forever.
+        val nextKey = candidatesNextKey(startIndex, pageSize, candidates.size)
         return LoadResult.Page(candidates.mapIndexed { i, candidate -> IndexedCandidate(startIndex + i, candidate) }, prevKey, nextKey)
     }
 
     // always reload from beginning
     override fun getRefreshKey(state: PagingState<Int, IndexedCandidate>) = null
 }
+
+internal fun candidatesNextKey(
+    startIndex: Int,
+    loadSize: Int,
+    loadedCount: Int,
+): Int? = if (loadedCount < loadSize) null else startIndex + loadSize

@@ -22,5 +22,6 @@ class SwitchOptionEntry(
         ConciseMode,
         Emoji,
         Handwriting,
+        QuickPhrase,
     }
 }

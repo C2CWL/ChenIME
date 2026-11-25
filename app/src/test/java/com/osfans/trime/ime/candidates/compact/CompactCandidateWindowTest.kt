@@ -41,39 +41,41 @@ class CompactCandidateWindowTest :
             }
         }
 
-        given("a clear gesture that left the scroll state behind") {
+        given("a fresh publish") {
             val short = listOf(100, 100, 100)
-            then("a stale offset from the previous composition binds from the start") {
-                // Clear empties the row but the scroll listener can still report scrolling
-                // with the old offset. The fresh three-candidate row is 320px wide, so an
-                // offset of 660 cannot belong to it and must not hide candidates as spacers.
+            then("a stale offset from a shorter row binds from the start") {
+                // The fresh three-candidate row is 320px wide, so an offset of 660 cannot
+                // belong to it and must not hide the new candidates as spacers.
                 compactCandidatePublishWindow(
                     widths = short,
-                    scrolling = true,
+                    forceStart = false,
                     scrollOffset = 660,
                     barWidth = 200,
                     separatorWidth = separator,
                 ) shouldBe 0..1
             }
 
-            then("an offset that still fits keeps the live scroll window") {
+            then("an explicit reset binds from the start even at a live offset") {
                 compactCandidatePublishWindow(
                     widths = List(8) { 100 },
-                    scrolling = true,
+                    forceStart = true,
+                    scrollOffset = 660,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 0..1
+            }
+
+            then("typing after an idle right swipe keeps the visible candidates real") {
+                // The swipe stopped at offset 660 with the bar idle. The next candidate batch
+                // must not collapse the window to the first screen, which would leave every
+                // currently visible position as a spacer and blank the whole bar.
+                compactCandidatePublishWindow(
+                    widths = List(8) { 100 },
+                    forceStart = false,
                     scrollOffset = 660,
                     barWidth = 200,
                     separatorWidth = separator,
                 ) shouldBe 4..7
-            }
-
-            then("an idle bar ignores the offset") {
-                compactCandidatePublishWindow(
-                    widths = List(8) { 100 },
-                    scrolling = false,
-                    scrollOffset = 660,
-                    barWidth = 200,
-                    separatorWidth = separator,
-                ) shouldBe compactCandidateInitialWindow(List(8) { 100 }, 200, separator)
             }
         }
 

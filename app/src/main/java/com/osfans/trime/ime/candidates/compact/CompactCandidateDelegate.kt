@@ -535,7 +535,8 @@ class CompactCandidateDelegate(override val di: DI) :
                     "suppressed=${Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && view.isLayoutSuppressed}"
             }
             val candidates = pendingCandidates
-            if (resetScrollOnNextPublish) {
+            val forceStart = resetScrollOnNextPublish
+            if (forceStart) {
                 resetScrollOnNextPublish = false
                 adapter.scrolling = false
                 if (!view.isComputingLayout) {
@@ -568,7 +569,7 @@ class CompactCandidateDelegate(override val di: DI) :
             // real views on each side, so the next items are already bound before they enter.
             val window = compactCandidatePublishWindow(
                 widths = widths,
-                scrolling = adapter.scrolling,
+                forceStart = forceStart,
                 scrollOffset = view.computeHorizontalScrollOffset(),
                 barWidth = barWidth,
                 separatorWidth = separator,

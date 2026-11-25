@@ -48,9 +48,30 @@ fun compactCandidatePublishWindow(
 }
 
 /**
- * Real views cover the current viewport plus one bar of prefetch on each side. The prefetch
- * is bound while the row is moving, so a fling does not reveal an unbound spacer.
+ * Chooses the window for a real scroll callback. The offset came from the view, so it stays
+ * authoritative after the gesture becomes idle. Falling back to the initial window here is
+ * what leaves visible positions as spacers when a right swipe stops mid-row.
+ *
+ * Real views cover the current viewport plus one bar of prefetch on each side, so a fling
+ * does not reveal an unbound spacer.
  */
+fun compactCandidateVisibleWindow(
+    widths: List<Int>,
+    scrollOffset: Int,
+    barWidth: Int,
+    separatorWidth: Int,
+): IntRange? {
+    if (widths.isEmpty() || barWidth <= 0) return null
+    if (scrollOffset <= 0) return compactCandidateInitialWindow(widths, barWidth, separatorWidth)
+    val contentWidth = widths.sum() + separatorWidth * (widths.size - 1).coerceAtLeast(0)
+    val maxScroll = (contentWidth - barWidth).coerceAtLeast(0)
+    return if (scrollOffset > maxScroll) {
+        compactCandidateInitialWindow(widths, barWidth, separatorWidth)
+    } else {
+        compactCandidateScrollWindow(widths, scrollOffset, barWidth, separatorWidth)
+    }
+}
+
 fun compactCandidateScrollWindow(
     widths: List<Int>,
     scrollOffset: Int,

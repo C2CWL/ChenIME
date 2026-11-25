@@ -107,6 +107,18 @@ class CompactCandidateWindowTest :
                     separatorWidth = separator,
                 ) shouldBe 0..1
             }
+
+            then("a fast right swipe promotes the items that have just entered") {
+                // A fling can move several bars before the next frame. The window at the new
+                // offset must cover the candidates now on screen, not only the ones that were
+                // visible when the gesture started.
+                compactCandidateVisibleWindow(
+                    widths = List(8) { 100 },
+                    scrollOffset = 440,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 4..6
+            }
         }
 
         given("no measured width yet") {

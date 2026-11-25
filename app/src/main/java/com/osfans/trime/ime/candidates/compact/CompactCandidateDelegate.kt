@@ -300,11 +300,11 @@ class CompactCandidateDelegate(override val di: DI) :
                     LagDiagnostics.candidatesLaidOut(getChildAt(0)?.parent as? View)
                     candidateUpdateAt = 0L
                 }
-                // A scroll can move spacers into view before the callback runs, and a posted
-                // upgrade can be dropped while layout is computing. Recheck after the next
-                // layout while the gesture is live; IDLE corrections come from the scroll
-                // listener, where the offset is known to belong to this gesture.
-                if (this@CompactCandidateDelegate.adapter.scrolling && windowWouldChange()) postWindowUpgrade()
+                // A fast swipe moves several bars before the next frame, and a posted upgrade can
+                // be dropped while layout is computing. Recompute after every layout while the
+                // gesture is live so spacers that just entered the screen become candidates.
+                // IDLE corrections come from the scroll listener.
+                if (this@CompactCandidateDelegate.adapter.scrolling) postWindowUpgrade()
             }
         }
     }
@@ -601,19 +601,6 @@ class CompactCandidateDelegate(override val di: DI) :
                 )
             }
         }
-    }
-
-    /** True when the current scroll offset would promote a different set of real views. */
-    private fun windowWouldChange(): Boolean {
-        val widths = adapter.itemWidths
-        if (widths.size != adapter.itemCount || view.width <= 0) return false
-        val window = compactCandidateVisibleWindow(
-            widths,
-            view.computeHorizontalScrollOffset(),
-            view.width,
-            separatorDrawable.intrinsicWidth,
-        )
-        return adapter.fullWindow != window
     }
 
     private fun postWindowUpgrade() {

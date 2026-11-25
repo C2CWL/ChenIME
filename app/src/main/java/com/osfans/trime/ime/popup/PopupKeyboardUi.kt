@@ -37,6 +37,20 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /**
+ * Popup grids use an odd column count when they are wide enough, so the focused
+ * column can be centered on the trigger key instead of leaving one extra column
+ * on either side.
+ */
+internal fun popupGridSize(keyCount: Int): Pair<Int, Int> {
+    if (keyCount <= 0) return 1 to 1
+    val rowCount = ceil(keyCount / 5f).toInt().coerceAtLeast(1)
+    var columnCount = (keyCount / rowCount.toFloat()).roundToInt().coerceAtLeast(1)
+    if (keyCount >= 7 && columnCount >= 4 && columnCount % 2 == 0) columnCount--
+    val adjustedRowCount = ceil(keyCount / columnCount.toFloat()).toInt()
+    return adjustedRowCount to columnCount
+}
+
+/**
  * @param ctx [Context]
  * @param scope [ThemeScope]
  * @param outerBounds bound [Rect] of [PopupDelegate] root view.
@@ -131,9 +145,9 @@ class PopupKeyboardUi(
     private val focusColumn: Int
 
     init {
-        val keyCount: Float = keys.size.toFloat()
-        rowCount = ceil(keyCount / 5).toInt()
-        columnCount = (keyCount / rowCount).roundToInt()
+        val (rows, columns) = popupGridSize(keys.size)
+        rowCount = rows
+        columnCount = columns
 
         focusRow = 0
         focusColumn = calcInitialFocusedColumn(columnCount, keyWidth, outerBounds, triggerBounds)

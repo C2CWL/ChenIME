@@ -322,8 +322,9 @@ class BuiltinThemeTest :
                     val period = keys.single { it.click == KeyActionToken.Plain(".") }
                     period.longClick shouldBe KeyActionToken.Plain("period")
                     period.popup shouldBe listOf(
-                        "period", "Literal_period", "exclam", "question", "Literal_ellipsis", "Literal_percent",
-                        "Literal_plus", "Literal_minus", "Literal_multiply", "Literal_divide", "Literal_equal",
+                        "Literal_chinese_period", "Literal_period", "exclam", "question", "Literal_ellipsis",
+                        "Literal_percent", "Literal_plus", "Literal_minus", "Literal_multiply", "Literal_divide",
+                        "Literal_equal",
                     )
                     for ((name, symbol) in mapOf(
                         "Literal_left_book" to "《",
@@ -334,6 +335,7 @@ class BuiltinThemeTest :
                         "Literal_right_double_quote" to "”",
                         "Literal_left_single_quote" to "‘",
                         "Literal_right_single_quote" to "’",
+                        "Literal_chinese_period" to "。",
                         "Literal_period" to ".",
                         "Literal_ellipsis" to "…",
                         "Literal_percent" to "%",

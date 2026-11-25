@@ -345,11 +345,11 @@ class CompactCandidateDelegate(override val di: DI) :
                     val scrolling = newState != RecyclerView.SCROLL_STATE_IDLE
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
                     // Restore around every state change, including IDLE at either edge.
-                    if (windowWouldChange()) postWindowUpgrade()
+                    postWindowUpgrade()
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dx != 0 && windowWouldChange()) postWindowUpgrade()
+                    if (dx != 0) postWindowUpgrade()
                 }
             })
             addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->

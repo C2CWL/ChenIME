@@ -119,6 +119,18 @@ class CompactCandidateWindowTest :
                     separatorWidth = separator,
                 ) shouldBe 2..6
             }
+
+            then("a half-hidden first item still covers the candidate entering on the right") {
+                // Item 0 is 50px off the left edge, so the viewport's right edge is at 250 and
+                // item 2 (leading edge 220) is already on screen. Measuring a full bar from
+                // item 0's leading edge would stop at item 1 and leave item 2 as a blank spacer.
+                compactCandidateVisibleWindow(
+                    widths = widths,
+                    scrollOffset = 50,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 0..3
+            }
         }
 
         given("no measured width yet") {

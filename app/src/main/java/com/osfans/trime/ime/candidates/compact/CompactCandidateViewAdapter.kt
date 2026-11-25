@@ -69,22 +69,28 @@ open class CompactCandidateViewAdapter(
         val previous = fullWindow
         fullWindow = window
         if (itemCount == 0) return false
-        notifyWindowMembershipChange(previous, window)
+        invalidateWindowMembership(previous, window)
         return true
     }
 
-    /** Only positions that switched between a real view and a spacer need a rebind. */
-    private fun notifyWindowMembershipChange(previous: IntRange?, next: IntRange?) {
-        var start = -1
-        var end = -1
+    /**
+     * View type is fixed when a ViewHolder is created. A fast swipe can put a spacer
+     * holder on screen before the window upgrade reaches this position; a plain
+     * `notifyItemRangeChanged` would rebind that holder but could never turn it into
+     * a real candidate, leaving the blank slot. Invalidate all holders so the new
+     * window recreates them with the correct view type.
+     */
+    private fun invalidateWindowMembership(previous: IntRange?, next: IntRange?) {
+        var changed = false
         for (position in 0 until itemCount) {
             val wasFull = previous == null || position in previous
             val isFull = next == null || position in next
-            if (wasFull == isFull) continue
-            if (start < 0) start = position
-            end = position
+            if (wasFull != isFull) {
+                changed = true
+                break
+            }
         }
-        if (start >= 0) notifyItemRangeChanged(start, end - start + 1)
+        if (changed) notifyDataSetChanged()
     }
 
     fun updateLayoutParams(minWidth: Int, flexGrow: Float) {

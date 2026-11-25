@@ -97,6 +97,11 @@ class SwitchOptionWindow(di: DI) :
                 R.drawable.ic_baseline_edit_24,
                 SwitchOptionEntry.Type.Handwriting,
             ),
+            SwitchOptionEntry(
+                context.getString(R.string.quick_phrase_title),
+                R.drawable.ic_baseline_list_alt_24,
+                SwitchOptionEntry.Type.QuickPhrase,
+            ),
         )
     }
 
@@ -174,6 +179,8 @@ class SwitchOptionWindow(di: DI) :
                     }
 
                     SwitchOptionEntry.Type.Handwriting -> windowManager.showHandwriting(HandwritingMode.Full)
+
+                    SwitchOptionEntry.Type.QuickPhrase -> windowManager.showQuickPhrase()
                 }
             }
         }

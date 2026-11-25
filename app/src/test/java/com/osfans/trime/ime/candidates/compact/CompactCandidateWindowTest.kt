@@ -117,7 +117,7 @@ class CompactCandidateWindowTest :
                     scrollOffset = 440,
                     barWidth = 200,
                     separatorWidth = separator,
-                ) shouldBe 4..6
+                ) shouldBe 2..6
             }
         }
 

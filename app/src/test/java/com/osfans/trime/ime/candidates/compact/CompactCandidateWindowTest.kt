@@ -77,6 +77,38 @@ class CompactCandidateWindowTest :
             }
         }
 
+        given("a horizontal swipe that stopped mid-row") {
+            then("the idle correction keeps the visible candidates real") {
+                // A right swipe can stop with offset 660 still reported. Scrolling is already
+                // false, but this offset came from a real scroll event, so items 4..7 must
+                // stay real instead of being replaced by spacers at the start.
+                compactCandidateVisibleWindow(
+                    widths = List(8) { 100 },
+                    scrollOffset = 660,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 4..7
+            }
+
+            then("an offset left over from a shorter row falls back to the start") {
+                compactCandidateVisibleWindow(
+                    widths = listOf(100, 100, 100),
+                    scrollOffset = 660,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 0..1
+            }
+
+            then("swiping all the way back restores the first candidates") {
+                compactCandidateVisibleWindow(
+                    widths = List(8) { 100 },
+                    scrollOffset = 0,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 0..1
+            }
+        }
+
         given("no measured width yet") {
             then("the window stays open so the first publish cannot hide candidates") {
                 compactCandidateInitialWindow(emptyList(), barWidth = 200, separatorWidth = separator) shouldBe null

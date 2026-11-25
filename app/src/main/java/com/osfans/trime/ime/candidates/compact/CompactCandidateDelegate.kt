@@ -109,7 +109,11 @@ class CompactCandidateDelegate(override val di: DI) :
     private val windowUpgradeCallback =
         Choreographer.FrameCallback {
             windowUpgradePosted = false
-            if (!view.isAttachedToWindow || view.isComputingLayout) return@FrameCallback
+            if (!view.isAttachedToWindow) return@FrameCallback
+            if (view.isComputingLayout) {
+                postWindowUpgrade()
+                return@FrameCallback
+            }
             upgradeVisibleWindow()
         }
     private val publishHandler = Handler(Looper.getMainLooper())
@@ -296,8 +300,10 @@ class CompactCandidateDelegate(override val di: DI) :
                     LagDiagnostics.candidatesLaidOut(getChildAt(0)?.parent as? View)
                     candidateUpdateAt = 0L
                 }
-                // A scroll can move spacers into view before the scroll callback runs.
-                // Keep correcting only while the gesture is live and the window would move.
+                // A scroll can move spacers into view before the callback runs, and a posted
+                // upgrade can be dropped while layout is computing. Recheck after the next
+                // layout while the gesture is live; IDLE corrections come from the scroll
+                // listener, where the offset is known to belong to this gesture.
                 if (this@CompactCandidateDelegate.adapter.scrolling && windowWouldChange()) postWindowUpgrade()
             }
         }
@@ -338,12 +344,8 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     val scrolling = newState != RecyclerView.SCROLL_STATE_IDLE
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
-                    // Promote at the start of the gesture, and once more when it stops so a
-                    // spacer that landed on screen is not left there. Skip frames where the
-                    // window would not move.
-                    if ((scrolling || recyclerView.computeHorizontalScrollOffset() > 0) && windowWouldChange()) {
-                        postWindowUpgrade()
-                    }
+                    // Restore around every state change, including IDLE at either edge.
+                    if (windowWouldChange()) postWindowUpgrade()
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -601,9 +603,8 @@ class CompactCandidateDelegate(override val di: DI) :
     private fun windowWouldChange(): Boolean {
         val widths = adapter.itemWidths
         if (widths.size != adapter.itemCount || view.width <= 0) return false
-        val window = compactCandidatePublishWindow(
+        val window = compactCandidateVisibleWindow(
             widths,
-            adapter.scrolling,
             view.computeHorizontalScrollOffset(),
             view.width,
             separatorDrawable.intrinsicWidth,
@@ -633,9 +634,8 @@ class CompactCandidateDelegate(override val di: DI) :
         if (widths.size != adapter.itemCount) return
         val barWidth = view.width
         if (barWidth <= 0) return
-        val window = compactCandidatePublishWindow(
+        val window = compactCandidateVisibleWindow(
             widths,
-            adapter.scrolling,
             view.computeHorizontalScrollOffset(),
             barWidth,
             separatorDrawable.intrinsicWidth,

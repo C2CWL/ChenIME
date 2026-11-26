@@ -60,7 +60,10 @@ fun compactCandidateVisibleWindow(
 ): IntRange? {
     if (widths.isEmpty() || barWidth <= 0) return null
     if (scrollOffset <= 0) return compactCandidateInitialWindow(widths, barWidth, separatorWidth)
-    val contentWidth = widths.sum() + separatorWidth * (widths.size - 1).coerceAtLeast(0)
+    // FlexboxVerticalDecoration adds a separator after every item, including the last
+    // one. Counting only n-1 separators underestimates the real scroll range, so a
+    // swipe to the end looks like a stale offset and falls back to the first screen.
+    val contentWidth = widths.sum() + separatorWidth * widths.size
     val maxScroll = (contentWidth - barWidth).coerceAtLeast(0)
     return if (scrollOffset > maxScroll) {
         compactCandidateInitialWindow(widths, barWidth, separatorWidth)

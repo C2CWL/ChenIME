@@ -92,6 +92,18 @@ class CompactCandidateWindowTest :
                 ) shouldBe 4..7
             }
 
+            then("a swipe to the real end keeps the last candidates real") {
+                // Five 100px items plus five 10px separators make 550px of content;
+                // the bar shows 200px, so the real end offset is 350. Counting only
+                // four separators made 350 look stale and blanked the whole bar.
+                compactCandidateVisibleWindow(
+                    widths = widths,
+                    scrollOffset = 350,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 1..4
+            }
+
             then("an offset left over from a shorter row falls back to the start") {
                 compactCandidateVisibleWindow(
                     widths = listOf(100, 100, 100),

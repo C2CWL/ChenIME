@@ -64,6 +64,81 @@
 
 local M = {}
 
+-- 空串表示未启用，"!" 表示逐字模式正等待辅码。辅码不写进 ctx.input，
+-- 因此原生部分候选可以只消耗自己的音节，Rime 也能按纯音码学习整词。
+local char_aux_property = "frost_char_aux"
+local waiting = "!"
+local char_processor = {}
+M.char_processor = char_processor
+
+function char_processor.init(env)
+    local config = env.engine.schema.config
+    local trigger = config:get_string("frost_aux_filter/char_trigger") or "``"
+    -- 双键引导的第一键必须是可进入组字缓冲的标点，如默认的反引号。
+    if #trigger == 2 and trigger:match("^%p%p$") then
+        env.lead, env.tail = trigger:sub(1, 1), trigger:byte(2)
+    end
+    local ctx = env.engine.context
+    env.char_select = ctx.select_notifier:connect(function(context)
+        local aux = context:get_property(char_aux_property)
+        if aux ~= "" and aux ~= waiting then
+            context:set_property(char_aux_property, waiting)
+        end
+    end, 0) -- 在引擎生成下一段候选前，清掉已选单字的辅码。
+    local function reset(context)
+        if context:get_property(char_aux_property) ~= "" then
+            context:set_property(char_aux_property, "")
+        end
+    end
+    env.char_commit = ctx.commit_notifier:connect(reset)
+    env.char_update = ctx.update_notifier:connect(function(context)
+        if context.input == "" then reset(context) end
+    end)
+end
+
+function char_processor.func(key, env)
+    -- 允许 Shift 打出标点；逐字辅码本身也统一按小写处理。
+    if not env.tail or (key.modifier ~= 0 and key.modifier ~= 1) then return 2 end
+    local ctx = env.engine.context
+    local code = key.keycode
+    local aux = ctx:get_property(char_aux_property)
+    if aux == "" then
+        if code == env.tail and not ctx:get_option("ascii_mode") and ctx.caret_pos == #ctx.input
+            and ctx.input:sub(-1) == env.lead and ctx.input:sub(1, -2):match("^[a-zA-Z';]+$") then
+            ctx:set_property(char_aux_property, waiting)
+            ctx:pop_input(1)
+            return 1
+        end
+        return 2
+    end
+    if ctx:get_option("ascii_mode") or code == 0xff1b then -- Escape 交还给 Rime。
+        ctx:set_property(char_aux_property, "")
+        ctx:refresh_non_confirmed_composition()
+        return 2
+    end
+    if code == 0xff08 then -- BackSpace：先删辅码，再退出逐字模式。
+        local remaining = aux == waiting and "" or (#aux == 1 and waiting or aux:sub(1, -2))
+        ctx:set_property(char_aux_property, remaining)
+        ctx:refresh_non_confirmed_composition()
+        return 1
+    end
+    if (code >= 97 and code <= 122) or (code >= 65 and code <= 90) then
+        if aux == waiting then aux = "" end
+        if #aux < 2 then
+            ctx:set_property(char_aux_property, aux .. string.char(code):lower())
+            ctx:refresh_non_confirmed_composition()
+        end
+        return 1
+    end
+    return 2
+end
+
+function char_processor.fini(env)
+    env.char_select:disconnect()
+    env.char_commit:disconnect()
+    env.char_update:disconnect()
+end
+
 local function escape_pattern(s)
     return (s:gsub("(%W)", "%%%1"))
 end
@@ -102,11 +177,14 @@ local function load_aux_table()
         local ch, code = line:match("^([^=]+)=(.+)$")
         if ch and code and code ~= "" then
             local codes = aux_table[ch]
+            -- 大多数汉字只有一码，不为每个字分配一个单元素表。
             if not codes then
-                codes = {}
-                aux_table[ch] = codes
+                aux_table[ch] = code
+            elseif type(codes) == "string" then
+                aux_table[ch] = { codes, code }
+            else
+                codes[#codes + 1] = code
             end
-            codes[#codes + 1] = code
         end
     end
     file:close()
@@ -131,6 +209,9 @@ local function char_matches_prefix(aux_table, ch, aux)
     local codes = aux_table[ch]
     if not codes then
         return false
+    end
+    if type(codes) == "string" then
+        return codes:sub(1, #aux) == aux
     end
     for _, code in ipairs(codes) do
         if code:sub(1, #aux) == aux then
@@ -164,12 +245,7 @@ end
 -- 它会扫描候选里的所有字：
 --   - 一码辅码：命中任意一个辅助码以该键开头的字；
 --   - 两码辅码：可以命中某个字的完整辅码，也可以跨字按顺序匹配。
-local function candidate_matches(aux_table, text, aux)
-    if text == "" or aux == "" then
-        return false
-    end
-
-    local chars = split_chars(text)
+local function candidate_matches(aux_table, chars, aux)
     for i = 1, #chars do
         if char_matches_prefix(aux_table, chars[i], aux) then
             return true
@@ -180,19 +256,6 @@ local function candidate_matches(aux_table, text, aux)
         return match_subsequence(aux_table, chars, aux)
     end
     return false
-end
-
--- 一次性消费候选流，并同时保存每个候选拆好的字数组。
--- Rime filter 的输入流不能倒回，所以后续多轮匹配都基于这个列表进行。
-local function collect_candidates(input)
-    local candidates = {}
-    for cand in input:iter() do
-        candidates[#candidates + 1] = {
-            cand = cand,
-            chars = split_chars(cand.text),
-        }
-    end
-    return candidates
 end
 
 -- 找出一组候选中发生差异的位置。
@@ -308,8 +371,28 @@ function M.fini(env)
     end
 end
 
+function M.tags_match(seg, env)
+    local aux = env.engine.context:get_property(char_aux_property)
+    if aux == "" then return true end
+    if not seg:has_tag("abc") then return false end
+    seg.prompt = aux == waiting and " 〔逐字〕" or " 〔逐字 " .. aux .. "〕"
+    return true
+end
+
 function M.func(input, env)
-    local input_code = env.engine.context.input
+    local context = env.engine.context
+    local char_aux = context:get_property(char_aux_property)
+    if char_aux ~= "" and char_aux ~= waiting then
+        local aux_table = load_aux_table()
+        for cand in input:iter() do
+            if (cand.type == "phrase" or cand.type == "user_phrase") and utf8.len(cand.text) == 1
+                and char_matches_prefix(aux_table, cand.text, char_aux) then
+                yield(cand)
+            end
+        end
+        return
+    end
+    local input_code = context.input
 
     -- 普通输入的快速路径。这里仍然有 Lua filter 的透传成本，
     -- 但不会加载辅码表，也不会扫描候选文本。
@@ -327,30 +410,73 @@ function M.func(input, env)
     end
 
     local aux_table = load_aux_table()
-    local candidates = collect_candidates(input)
-    local variant_group, variant_positions = find_variant_group(candidates)
-    local yielded = {}
-    local has_variant_match = false
+    local next_candidate, state, cursor = input:iter()
+    local candidates = {}
+    local first_chars, width, remaining
+    local differs = {}
+    for cand in next_candidate, state, cursor do
+        cursor = cand
+        local chars = split_chars(cand.text)
+        candidates[#candidates + 1] = { cand = cand, chars = chars }
+        if not first_chars and #chars > 0 then
+            first_chars, width, remaining = chars, #chars, #chars
+        elseif #chars == width then
+            for pos = 1, width do
+                if not differs[pos] and chars[pos] ~= first_chars[pos] then
+                    differs[pos] = true
+                    remaining = remaining - 1
+                end
+            end
+            if remaining == 0 then
+                -- 最早出现的非空长度组已经确定胜出，所有位置也都已产生差异。
+                -- 后续候选无法改变优先组或差异位置；沿用当前迭代器，按需筛选后页。
+                local fallback = {}
+                local function visit(candidate, candidate_chars)
+                    local same_width = #candidate_chars == width
+                    if (same_width or fallback) and candidate_matches(aux_table, candidate_chars, aux) then
+                        if same_width then
+                            fallback = nil
+                            yield(candidate)
+                        else
+                            fallback[#fallback + 1] = candidate
+                        end
+                    end
+                end
+                for _, item in ipairs(candidates) do
+                    visit(item.cand, item.chars)
+                end
+                candidates = nil
+                for next_cand in next_candidate, state, cursor do
+                    local text = next_cand.text
+                    if fallback or utf8.len(text) == width then
+                        visit(next_cand, split_chars(text))
+                    end
+                end
+                -- 整组始终未命中才使用兜底；精确命中时不追加其他长度组。
+                if fallback then
+                    for _, candidate in ipairs(fallback) do
+                        yield(candidate)
+                    end
+                end
+                return
+            end
+        end
+    end
 
-    -- 第一轮：如果可比较候选只在特定位置不同，就只按这些位置筛选。
-    -- 这一步用于提高整句纠错的精度。
-    if variant_group and variant_positions then
-        for i = 1, #variant_group do
-            local item = variant_group[i]
+    -- 第一组仍可能包含不变的位置，或不是最终胜出的组：保留原来的全局判定。
+    local variant_group, variant_positions = find_variant_group(candidates)
+    local has_variant_match = false
+    if variant_group then
+        for _, item in ipairs(variant_group) do
             if candidate_matches_positions(aux_table, item.chars, aux, variant_positions) then
-                yielded[item] = true
                 has_variant_match = true
                 yield(item.cand)
             end
         end
     end
-
-    -- 第二轮：如果没有差异位置命中，则退回到候选任意字匹配。
-    -- 如果已经有精确的差异位置命中，就不再追加无关的模糊命中结果。
-    for i = 1, #candidates do
-        local item = candidates[i]
-        if not yielded[item] then
-            if (not has_variant_match) and candidate_matches(aux_table, item.cand.text, aux) then
+    if not has_variant_match then
+        for _, item in ipairs(candidates) do
+            if candidate_matches(aux_table, item.chars, aux) then
                 yield(item.cand)
             end
         end

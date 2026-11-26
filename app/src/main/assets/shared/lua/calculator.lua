@@ -4,12 +4,12 @@ local M = {}
 
 function M.init(env)
   local config = env.engine.schema.config
-  env.name_space = env.name_space:gsub('^*', '')
-  M.prefix = config:get_string(env.name_space .. '/trigger') or 'V'
-  M.prefixes = { M.prefix }
-  local lowerPrefix = M.prefix:lower()
-  if lowerPrefix ~= M.prefix then
-    table.insert(M.prefixes, lowerPrefix)
+  local namespace = env.name_space:gsub('^%*', '')
+  local prefix = config:get_string(namespace .. '/trigger') or 'V'
+  env.prefixes = { prefix }
+  local lowerPrefix = prefix:lower()
+  if lowerPrefix ~= prefix then
+    table.insert(env.prefixes, lowerPrefix)
   end
 end
 
@@ -205,12 +205,13 @@ calcPlugin["var"] = variance
 
 -- 阶乘
 local function factorial(x)
-  -- 不能为负数
-  if x < 0 then return nil end
+  -- 不能为负数、非整数或超出 double 可表示范围（171! 起为 inf）
+  if x < 0 or x > 170 or math.floor(x) ~= x then return nil end
   if x == 0 or x == 1 then return 1 end
 
-  local result = 1
-  for i = 1, x do
+  -- 用浮点累乘，避免 Lua 5.4 下整数累乘在 21! 溢出为负数、66! 溢成 0
+  local result = 1.0
+  for i = 2, x do
     result = result * i
   end
 
@@ -226,8 +227,10 @@ end
 
 -- 简单计算器
 function M.func(input, seg, env)
+  -- 以方案的识别规则为准，避免把双拼的 v 声母当成计算器前缀。
+  if not seg:has_tag('calculator') then return end
   local prefix = nil
-  for _, candidatePrefix in ipairs(M.prefixes) do
+  for _, candidatePrefix in ipairs(env.prefixes) do
     if startsWith(input, candidatePrefix) then
       prefix = candidatePrefix
       break
@@ -247,9 +250,18 @@ function M.func(input, seg, env)
   local code = replaceToFactorial(express)
 
   local success, result = pcall(load("return " .. code, "calculate", "t", calcPlugin))
-  if success then
-    yield(Candidate(input, seg.start, seg._end, result, ""))
-    yield(Candidate(input, seg.start, seg._end, express .. "=" .. result, ""))
+  -- 只接受有限的数字结果：避免 sin/rdm 等函数名被输出成函数地址，
+  -- 以及 1/0、0/0 产生 inf/NaN 候选。
+  if success and type(result) == "number" and result == result
+      and result ~= math.huge and result ~= -math.huge then
+    local out
+    if math.floor(result) == result and math.abs(result) < 1e15 then
+      out = string.format("%.0f", result)
+    else
+      out = tostring(result)
+    end
+    yield(Candidate(input, seg.start, seg._end, out, ""))
+    yield(Candidate(input, seg.start, seg._end, express .. "=" .. out, ""))
   else
     yield(Candidate(input, seg.start, seg._end, express, "解析失败"))
     yield(Candidate(input, seg.start, seg._end, code, "入参"))

@@ -1,0 +1,83 @@
+name: Frost Update Bundle
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'app/src/main/assets/shared/cn_dicts/**'
+      - 'app/src/main/assets/shared/lua/**'
+      - 'app/src/main/assets/shared/rime_frost/**'
+      - 'app/data/rime-frost/opencc/**'
+      - 'tools/build_frost_update.py'
+      - '.github/workflows/frost-update-ci.yml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build the frost update bundle from'
+        required: false
+        default: develop
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frost-update-${{ github.event.inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish frost-update bundle
+    if: github.repository == 'C2CWL/ChenIME'
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build bundle
+        run: python3 tools/build_frost_update.py --out build/frost-update
+
+      - name: Verify bundle
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import zipfile
+
+          out = Path("build/frost-update")
+          manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+          zip_path = out / "frost-update.zip"
+          digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+          if digest != manifest["zipSha256"]:
+              raise SystemExit(f"zip SHA-256 mismatch: {digest} != {manifest['zipSha256']}")
+          with zipfile.ZipFile(zip_path) as archive:
+              bad = archive.testzip()
+              if bad is not None:
+                  raise SystemExit(f"corrupt zip entry: {bad}")
+              names = set(archive.namelist())
+              missing = [entry["path"] for entry in manifest["files"] if entry["path"] not in names]
+              if missing:
+                  raise SystemExit(f"missing zip entries: {missing}")
+          print(f"verified {manifest['version']}: {len(manifest['files'])} files, {zip_path.stat().st_size} bytes")
+          PY
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: build/frost-update
+          destination_dir: frost-update
+          keep_files: true
+          commit_message: "chore(frost): publish update bundle (${{ github.sha }})"
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com

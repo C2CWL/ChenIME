@@ -16,6 +16,8 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.SwitchPreferenceCompat
 import com.c2cwl.chenime.R
+import com.osfans.trime.core.FrostUpdateFetchResult
+import com.osfans.trime.core.RimeResourceUpdater
 import com.osfans.trime.core.data.DataManager
 import com.osfans.trime.core.data.DataStorageMode
 import com.osfans.trime.core.data.UserDataBackup
@@ -412,6 +414,61 @@ class ProfileSettingsFragment : PaddingPreferenceFragment() {
                         isEnabled = backgroundSyncEnable.getValue()
                     },
                 )
+            }
+            addCategory(R.string.frost_update_category) {
+                isIconSpaceReserved = false
+                val statusPreference =
+                    Preference(ctx).apply {
+                        isIconSpaceReserved = false
+                        setTitle(R.string.frost_update_check_now)
+                        summary = RimeResourceUpdater.statusSummary(ctx)
+                        setOnPreferenceClickListener { _ ->
+                            lifecycleScope.launch {
+                                withLoadingDialog(ctx) {
+                                    RimeResourceUpdater.recordChecking(ctx)
+                                    summary = RimeResourceUpdater.statusSummary(ctx)
+                                    var downloadingRecorded = false
+                                    runCatching {
+                                        val result =
+                                            withContext(Dispatchers.IO) {
+                                                RimeResourceUpdater.fetch(ctx) { message ->
+                                                    if (!downloadingRecorded && "下载" in message) {
+                                                        downloadingRecorded = true
+                                                        RimeResourceUpdater.recordDownloading(ctx)
+                                                    }
+                                                }
+                                            }
+                                        when (result) {
+                                            FrostUpdateFetchResult.UpToDate -> {
+                                                RimeResourceUpdater.recordUpToDate(ctx)
+                                                ctx.toast(R.string.frost_update_status_up_to_date)
+                                            }
+                                            is FrostUpdateFetchResult.Staged -> {
+                                                viewModel.rime.runOnReady {
+                                                    withUserDataClosed {
+                                                        RimeResourceUpdater.apply(ctx, result.update)
+                                                    }
+                                                    deploy()
+                                                }
+                                                ctx.toast(
+                                                    ctx.getString(
+                                                        R.string.frost_update_status_success,
+                                                        result.update.manifest.version,
+                                                    ),
+                                                )
+                                            }
+                                        }
+                                    }.onFailure {
+                                        RimeResourceUpdater.recordFailure(ctx, it)
+                                        ctx.toast(it)
+                                    }
+                                    summary = RimeResourceUpdater.statusSummary(ctx)
+                                }
+                            }
+                            true
+                        }
+                    }
+                addPreference(statusPreference)
             }
             addCategory(R.string.maintenance) {
                 isIconSpaceReserved = false

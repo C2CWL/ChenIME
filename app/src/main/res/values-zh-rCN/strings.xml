@@ -339,4 +339,13 @@
     <string name="quick_phrase_cancel">取消</string>
     <string name="quick_phrase_delete_confirm">删除这条常用语？</string>
     <string name="toolbar_button_quick_phrase">常用语</string>
+    <string name="frost_update_category">白霜资源</string>
+    <string name="frost_update_check_now">立即检查更新</string>
+    <string name="frost_update_status_idle">点击检查白霜资源更新</string>
+    <string name="frost_update_status_checking">正在检查更新…</string>
+    <string name="frost_update_status_downloading">正在下载更新…</string>
+    <string name="frost_update_status_up_to_date">已是最新版本</string>
+    <string name="frost_update_status_success">已更新至 %1$s</string>
+    <string name="frost_update_status_failed">更新失败：%1$s</string>
+    <string name="frost_update_status_last_updated">最后更新：%1$s</string>
 </resources>

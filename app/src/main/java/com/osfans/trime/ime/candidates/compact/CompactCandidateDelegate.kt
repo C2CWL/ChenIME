@@ -344,10 +344,10 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     val scrolling = newState != RecyclerView.SCROLL_STATE_IDLE
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
-                    adapter.trace("scroll_state") {
+                    this@CompactCandidateDelegate.adapter.trace("scroll_state") {
                         "state=$newState scrolling=$scrolling " +
                             "offset=${recyclerView.computeHorizontalScrollOffset()} " +
-                            "items=${adapter.itemCount} window=${adapter.fullWindow}"
+                            "items=${this@CompactCandidateDelegate.adapter.itemCount} window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // Restore around every state change, including IDLE at either edge.
                     postWindowUpgrade()
@@ -355,9 +355,9 @@ class CompactCandidateDelegate(override val di: DI) :
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dx == 0) return
-                    adapter.trace("scroll") {
+                    this@CompactCandidateDelegate.adapter.trace("scroll") {
                         "dx=$dx offset=${recyclerView.computeHorizontalScrollOffset()} " +
-                            "window=${adapter.fullWindow}"
+                            "window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // onScrolled runs after this frame's layout, so the window can grow before
                     // the next draw. Waiting for another frame leaves the entering cell as a spacer.

@@ -6,7 +6,6 @@
 package com.osfans.trime.ime.candidates.compact
 
 import android.content.Context
-import android.view.View
 import android.view.ViewGroup
 import com.chad.library.adapter4.BaseQuickAdapter
 import com.google.android.flexbox.FlexboxLayoutManager
@@ -61,36 +60,35 @@ open class CompactCandidateViewAdapter(
     }
 
     /**
-     * @return true when some position changed between a real view and a spacer.
-     * The caller notifies that change outside layout. Equal ranges compare by value.
+     * @return true when some position changed between showing its candidate and
+     * keeping a fixed-width placeholder. Equal ranges compare by value.
      */
     fun updateFullWindow(window: IntRange?): Boolean {
         if (fullWindow == window) return false
         val previous = fullWindow
         fullWindow = window
         if (itemCount == 0) return false
-        invalidateWindowMembership(previous, window)
+        notifyWindowMembership(previous, window)
         return true
     }
 
     /**
-     * View type is fixed when a ViewHolder is created. A fast swipe can put a spacer
-     * holder on screen before the window upgrade reaches this position; a plain
-     * `notifyItemRangeChanged` would rebind that holder but could never turn it into
-     * a real candidate, leaving the blank slot. Invalidate all holders so the new
-     * window recreates them with the correct view type.
+     * Every position uses the same view type. Rebind only the positions that
+     * entered or left the visible window. A structural notification during a
+     * swipe makes Flexbox drop the attached row and leave the bar blank.
      */
-    private fun invalidateWindowMembership(previous: IntRange?, next: IntRange?) {
-        var changed = false
-        for (position in 0 until itemCount) {
-            val wasFull = previous == null || position in previous
-            val isFull = next == null || position in next
-            if (wasFull != isFull) {
-                changed = true
-                break
+    private fun notifyWindowMembership(previous: IntRange?, next: IntRange?) {
+        var runStart = -1
+        for (position in 0..itemCount) {
+            val changed = position < itemCount &&
+                ((previous == null || position in previous) != (next == null || position in next))
+            if (changed && runStart < 0) {
+                runStart = position
+            } else if (!changed && runStart >= 0) {
+                notifyItemRangeChanged(runStart, position - runStart)
+                runStart = -1
             }
         }
-        if (changed) notifyDataSetChanged()
     }
 
     fun updateLayoutParams(minWidth: Int, flexGrow: Float) {
@@ -203,19 +201,13 @@ open class CompactCandidateViewAdapter(
         if (plan.removeCount > 0) notifyItemRangeRemoved(plan.removeStart, plan.removeCount)
     }
 
-    override fun getItemViewType(position: Int, list: List<CandidateProto>): Int = if (showsFullCandidate(position)) VIEW_TYPE_FULL else VIEW_TYPE_SPACER
+    override fun getItemViewType(position: Int, list: List<CandidateProto>): Int = VIEW_TYPE_CANDIDATE
 
     override fun onCreateViewHolder(
         context: Context,
         parent: ViewGroup,
         viewType: Int,
     ): CandidateViewHolder {
-        if (viewType == VIEW_TYPE_SPACER) {
-            val spacer = View(context)
-            spacer.isClickable = true
-            spacer.layoutParams = spacerLayoutParams(context, 1)
-            return CandidateViewHolder(spacer)
-        }
         if (LagDiagnostics.enabled) diagnosticCreates++
         val ui = CandidateItemUi(context, scope)
         ui.root.apply {
@@ -232,8 +224,8 @@ open class CompactCandidateViewAdapter(
     ) {
         item ?: return
         val ui = holder.ui
-        if (ui == null) {
-            bindSpacer(holder, position, item)
+        if (!showsFullCandidate(position)) {
+            bindPlaceholder(holder, ui, position, item)
             return
         }
         if (LagDiagnostics.enabled) diagnosticBinds++
@@ -285,28 +277,39 @@ open class CompactCandidateViewAdapter(
         }
     }
 
-    private fun bindSpacer(holder: CandidateViewHolder, position: Int, item: CandidateProto) {
-        val view = holder.itemView
+    /**
+     * Off-screen candidates stay in the adapter so the row can scroll, but they
+     * do not measure a full candidate layout. Hide the existing content and pin
+     * the same holder to the cached width.
+     */
+    private fun bindPlaceholder(
+        holder: CandidateViewHolder,
+        ui: CandidateItemUi,
+        position: Int,
+        item: CandidateProto,
+    ) {
+        val root = ui.root
         val width = itemWidths.getOrNull(position)?.takeIf { it > 0 } ?: 1
-        val params = view.layoutParams as? FlexboxLayoutManager.LayoutParams ?: spacerLayoutParams(view.context, width)
-        if (params.width != width || params.flexShrink != 0f || params.flexGrow != 0f) {
+        val params = root.layoutParams as? FlexboxLayoutManager.LayoutParams
+            ?: FlexboxLayoutManager.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT)
+        if (params.width != width || params.minWidth != 0 || params.maxWidth != width || params.flexShrink != 0f || params.flexGrow != 0f) {
             params.width = width
+            params.minWidth = 0
+            params.maxWidth = width
             params.flexShrink = 0f
             params.flexGrow = 0f
-            view.layoutParams = params
+            root.layoutParams = params
         }
+        if (root.minimumWidth != 0) root.minimumWidth = 0
+        ui.setContentVisible(false)
         holder.idx = position
         holder.text = item.text
         holder.comment = item.comment
-    }
-
-    private fun spacerLayoutParams(context: Context, width: Int) = FlexboxLayoutManager.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT).apply {
-        flexShrink = 0f
-        flexGrow = 0f
+        holder.highlighted = false
+        holder.bindGeneration = -1
     }
 
     private companion object {
-        const val VIEW_TYPE_FULL = 0
-        const val VIEW_TYPE_SPACER = 1
+        const val VIEW_TYPE_CANDIDATE = 0
     }
 }

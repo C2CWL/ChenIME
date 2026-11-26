@@ -55,7 +55,7 @@ open class PagingCandidateViewAdapter(
         val item = getItem(position) ?: return
         val idx = item.index
         val highlighted = idx == highlightedIndex
-        holder.ui!!.update(item.candidate, highlighted)
+        holder.ui.update(item.candidate, highlighted)
         holder.text = item.candidate.text
         holder.comment = item.candidate.comment
         holder.idx = idx

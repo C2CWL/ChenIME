@@ -270,8 +270,8 @@ class CompactCandidateDelegate(override val di: DI) :
                         val expected = adapter.items.getOrNull(position)
                         adapter.trace("child") {
                             "child=$i holder=${System.identityHashCode(holder)} position=$position bound_position=${holder.idx} " +
-                                "expected=${expected != null} text_match=${expected != null && holder.ui?.displayedText == expected.text} " +
-                                "comment_match=${expected != null && holder.ui?.displayedComment == expected.comment} " +
+                                "expected=${expected != null} text_match=${expected != null && holder.ui.displayedText == expected.text} " +
+                                "comment_match=${expected != null && holder.ui.displayedComment == expected.comment} " +
                                 "cache_match=${expected != null && holder.text == expected.text && holder.comment == expected.comment} " +
                                 "bounds=${child.left},${child.top},${child.right},${child.bottom} requested=${child.isLayoutRequested}"
                         }

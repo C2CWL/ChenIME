@@ -23,27 +23,24 @@ fun compactCandidateInitialWindow(
 }
 
 /**
- * Chooses the window for a fresh publish. A scroll window is only meaningful while the bar
- * is actually scrolling and the offset still belongs to the current content. After a clear
- * gesture the scroll listener can leave [scrolling] set and the RecyclerView can keep the
- * previous composition's offset; binding at that stale offset would turn the new candidates
- * into spacers and make the bar look blank. In that case bind from the start.
+ * Chooses the window for a fresh publish. Only an explicit [forceStart] (a clear gesture or a
+ * new composition) binds the first screen. Otherwise the view's offset is authoritative even
+ * after the gesture became idle: a swipe can stop mid-row and the next typed character
+ * publishes at that offset. Falling back to the first screen here turns every visible
+ * candidate into a spacer, leaving the bar blank until the next scroll.
  */
 fun compactCandidatePublishWindow(
     widths: List<Int>,
-    scrolling: Boolean,
+    forceStart: Boolean,
     scrollOffset: Int,
     barWidth: Int,
     separatorWidth: Int,
 ): IntRange? {
     if (widths.isEmpty() || barWidth <= 0) return null
-    val contentWidth = widths.sum() + separatorWidth * (widths.size - 1).coerceAtLeast(0)
-    val maxScroll = (contentWidth - barWidth).coerceAtLeast(0)
-    val staleOffset = scrollOffset > maxScroll
-    return if (scrolling && scrollOffset > 0 && !staleOffset) {
-        compactCandidateScrollWindow(widths, scrollOffset, barWidth, separatorWidth)
-    } else {
+    return if (forceStart) {
         compactCandidateInitialWindow(widths, barWidth, separatorWidth)
+    } else {
+        compactCandidateVisibleWindow(widths, scrollOffset, barWidth, separatorWidth)
     }
 }
 

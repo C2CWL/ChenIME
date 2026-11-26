@@ -215,11 +215,18 @@ class CandidateItemUi(
     private var backgroundContentColor: Int? = null
     private var backgroundCornerRadius: Float? = null
 
+    /** Hides candidate text while this row is only reserving scroll width. */
+    fun setContentVisible(visible: Boolean) {
+        val target = if (visible) View.VISIBLE else View.INVISIBLE
+        if (content.visibility != target) content.visibility = target
+    }
+
     @SuppressLint("UseKtx")
     fun update(
         item: CandidateProto,
         highlighted: Boolean,
     ) {
+        setContentVisible(true)
         val tColor = if (highlighted) hlTextColor else textColor
         val cColor = if (highlighted) hlCommentColor else commentColor
         val cornerRadius = ctx.dp(CornerRadiusOverrides.current().bar(theme.style.candidateCornerRadius))

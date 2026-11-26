@@ -1,9 +1,11 @@
 # 白霜拼音 / Rime Frost
 
 Chen IME bundles a curated offline subset of
-[gaboolic/rime-frost](https://github.com/gaboolic/rime-frost), revision
-`7ced7f8139d6fd11a1a15d6c1412f5c14ca0da3f`.
-Upstream authors include gaboolic, Dvel, and the contributors credited in the
+[gaboolic/rime-frost](https://github.com/gaboolic/rime-frost), based on revision
+`7ced7f8139d6fd11a1a15d6c1412f5c14ca0da3f` with selected updates from
+`caa8ac9d013307670f81b71b42b53b0296d3af05` (2026-11-26): hot words, Lua
+calculator/lunar/assist/select-character fixes, and the pin-cand de-duplication
+fix. Upstream authors include gaboolic, Dvel, and the contributors credited in the
 individual files. The upstream distribution is licensed under GPL-3.0; its full
 license is included at `app/src/main/assets/shared/rime_frost/LICENSE`.
 Preserve the individual dictionary, Lua, and OpenCC copyright/license notices.
@@ -25,6 +27,11 @@ Local adaptations:
 - The curated OpenCC source files live at `app/data/rime-frost/opencc/`.
   `installOpenCCData` copies them into the generated shared OpenCC directory
   after installing Trime's converters, including after `clean`.
+- `cn_dicts/others.dict.yaml` follows upstream hot-word updates but retains
+  entries that upstream moved into `cn_dicts_cell/`, which this subset omits.
+- `lua/pin_cand_filter.lua` wraps pinned candidates in `chen_pinned`
+  `ShadowCandidate`s; `lua/reduce_english_filter.lua` exempts `chen_pinned`
+  candidates. Keep both adaptations when merging upstream Lua changes.
 
 All other Frost files reside alongside the existing schemas under
 `app/src/main/assets/shared/`, retaining the paths expected by upstream.

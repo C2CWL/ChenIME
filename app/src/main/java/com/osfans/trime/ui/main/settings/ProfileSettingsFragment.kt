@@ -443,6 +443,7 @@ class ProfileSettingsFragment : PaddingPreferenceFragment() {
                                                 RimeResourceUpdater.recordUpToDate(ctx)
                                                 ctx.toast(R.string.frost_update_status_up_to_date)
                                             }
+
                                             is FrostUpdateFetchResult.Staged -> {
                                                 viewModel.rime.runOnReady {
                                                     withUserDataClosed {

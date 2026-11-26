@@ -344,12 +344,21 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     val scrolling = newState != RecyclerView.SCROLL_STATE_IDLE
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
+                    adapter.trace("scroll_state") {
+                        "state=$newState scrolling=$scrolling " +
+                            "offset=${recyclerView.computeHorizontalScrollOffset()} " +
+                            "items=${adapter.itemCount} window=${adapter.fullWindow}"
+                    }
                     // Restore around every state change, including IDLE at either edge.
                     postWindowUpgrade()
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dx == 0) return
+                    adapter.trace("scroll") {
+                        "dx=$dx offset=${recyclerView.computeHorizontalScrollOffset()} " +
+                            "window=${adapter.fullWindow}"
+                    }
                     // onScrolled runs after this frame's layout, so the window can grow before
                     // the next draw. Waiting for another frame leaves the entering cell as a spacer.
                     if (recyclerView.isComputingLayout) {
@@ -567,13 +576,18 @@ class CompactCandidateDelegate(override val di: DI) :
             val separator = separatorDrawable.intrinsicWidth
             // Typing rebinds the first screen only. A live scroll keeps one extra bar of
             // real views on each side, so the next items are already bound before they enter.
+            val scrollOffset = view.computeHorizontalScrollOffset()
             val window = compactCandidatePublishWindow(
                 widths = widths,
                 forceStart = forceStart,
-                scrollOffset = view.computeHorizontalScrollOffset(),
+                scrollOffset = scrollOffset,
                 barWidth = barWidth,
                 separatorWidth = separator,
             )
+            adapter.trace("publish_window") {
+                "forceStart=$forceStart offset=$scrollOffset bar=$barWidth items=${widths.size} " +
+                    "sum=${widths.sum()} sep=$separator window=$window"
+            }
             adapter.updateFullWindow(window)
             val widthsChanged = adapter.updateItemWidths(widths, lastEllipsized = false)
             val dataChanged = adapter.updateCandidates(candidates, pendingTotal, pendingHighlighted)
@@ -634,12 +648,13 @@ class CompactCandidateDelegate(override val di: DI) :
         if (widths.size != adapter.itemCount) return
         val barWidth = view.width
         if (barWidth <= 0) return
-        val window = compactCandidateVisibleWindow(
-            widths,
-            view.computeHorizontalScrollOffset(),
-            barWidth,
-            separatorDrawable.intrinsicWidth,
-        )
+        val offset = view.computeHorizontalScrollOffset()
+        val separator = separatorDrawable.intrinsicWidth
+        val window = compactCandidateVisibleWindow(widths, offset, barWidth, separator)
+        adapter.trace("window_upgrade") {
+            "offset=$offset bar=$barWidth items=${widths.size} sum=${widths.sum()} " +
+                "sep=$separator previous=${adapter.fullWindow} window=$window"
+        }
         adapter.updateFullWindow(window)
     }
 }

@@ -43,16 +43,16 @@ class CompactCandidateWindowTest :
 
         given("a fresh publish") {
             val short = listOf(100, 100, 100)
-            then("a stale offset from a shorter row binds from the start") {
-                // The fresh three-candidate row is 320px wide, so an offset of 660 cannot
-                // belong to it and must not hide the new candidates as spacers.
+            then("a stale offset from a shorter row never hides every candidate") {
+                // The fresh row cannot own offset 660. Clamping to its real end keeps the
+                // candidates on both edges real until the view reports its corrected offset.
                 compactCandidatePublishWindow(
                     widths = short,
                     forceStart = false,
                     scrollOffset = 660,
                     barWidth = 200,
                     separatorWidth = separator,
-                ) shouldBe 0..1
+                ) shouldBe null
             }
 
             then("an explicit reset binds from the start even at a live offset") {
@@ -104,13 +104,22 @@ class CompactCandidateWindowTest :
                 ) shouldBe 1..4
             }
 
-            then("an offset left over from a shorter row falls back to the start") {
+            then("an offset past the end keeps the row fully bound") {
                 compactCandidateVisibleWindow(
                     widths = listOf(100, 100, 100),
                     scrollOffset = 660,
                     barWidth = 200,
                     separatorWidth = separator,
-                ) shouldBe 0..1
+                ) shouldBe null
+            }
+
+            then("a few pixels past the end still keeps the last candidates real") {
+                compactCandidateVisibleWindow(
+                    widths = widths,
+                    scrollOffset = 360,
+                    barWidth = 200,
+                    separatorWidth = separator,
+                ) shouldBe 1..4
             }
 
             then("swiping all the way back restores the first candidates") {

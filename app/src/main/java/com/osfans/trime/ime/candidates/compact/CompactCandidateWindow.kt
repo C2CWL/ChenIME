@@ -65,11 +65,13 @@ fun compactCandidateVisibleWindow(
     // swipe to the end looks like a stale offset and falls back to the first screen.
     val contentWidth = widths.sum() + separatorWidth * widths.size
     val maxScroll = (contentWidth - barWidth).coerceAtLeast(0)
-    return if (scrollOffset > maxScroll) {
-        compactCandidateInitialWindow(widths, barWidth, separatorWidth)
-    } else {
-        compactCandidateScrollWindow(widths, scrollOffset, barWidth, separatorWidth)
-    }
+    // An offset past the estimate is not proof of a stale row: at the real end the view can
+    // report a few pixels more because the last separator is measured differently. Returning
+    // the initial window there hides every visible candidate. Clamp to the real end instead;
+    // a genuinely stale offset then binds the tail for one frame until scroll correction runs,
+    // which is still better than a blank bar.
+    val offset = scrollOffset.coerceAtMost(maxScroll)
+    return compactCandidateScrollWindow(widths, offset, barWidth, separatorWidth)
 }
 
 fun compactCandidateScrollWindow(

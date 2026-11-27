@@ -1,0 +1,183 @@
+{
+  "version": "a4d157522843-20261127030718",
+  "zipSha256": "41b1e494996b5163e9692d0ce63ee773d4186fc90c5435ad4a0114b9f5687f48",
+  "fileCount": 44,
+  "files": [
+    {
+      "path": "cn_dicts/8105.dict.yaml",
+      "sha256": "5a6bb545d07140406208728aeed70706e84279daeee132f10b069cd6387a042a"
+    },
+    {
+      "path": "cn_dicts/base.dict.yaml",
+      "sha256": "db5825b653107eb349627d39ae74833208e06d52eb0231ce10c3bb59b94e4f86"
+    },
+    {
+      "path": "cn_dicts/corrections.dict.yaml",
+      "sha256": "18161a6286a8751da2cae0777eafba3b8b4957dbacbe31ce2b3bfac90478cc2a"
+    },
+    {
+      "path": "cn_dicts/ext.dict.yaml",
+      "sha256": "44b78e4feb8a3b302298844061626aa4e2194901b8ed4ee6acec84261b6aa90d"
+    },
+    {
+      "path": "cn_dicts/others.dict.yaml",
+      "sha256": "f9910a45a758a9ad5bc9b25c6d567baa2db53aacc7e0074ea6b43d02a079a342"
+    },
+    {
+      "path": "lua/autocap_filter.lua",
+      "sha256": "8b1cb8d836d0e544cc63278f31ab0c6e32a877083972535aa88049b4a6b37663"
+    },
+    {
+      "path": "lua/aux_code/moqi_aux_code.txt",
+      "sha256": "2c8976793b99b2a033b7c0c2bd40ee03cd517fc7962ada8c0ceebf90f3fa8db4"
+    },
+    {
+      "path": "lua/aux_lookup_filter.lua",
+      "sha256": "99478fa3c93be8c438f0eed49a6cef0d7bffcb108219f44587c96fffca517ce0"
+    },
+    {
+      "path": "lua/calculator.lua",
+      "sha256": "a559c2731fc2daa89f9bf66e2f732f145198a23f5737a1398dae419d62d36ce1"
+    },
+    {
+      "path": "lua/chen_conservative_correction.lua",
+      "sha256": "28b98aa840b78081e41d7c01a08ed85c9693baa578935930efba95b4de9d693a"
+    },
+    {
+      "path": "lua/chen_custom_phrase_pos.lua",
+      "sha256": "88b015d1f3afb6b1ca02be4c0c826159a364e2c8dfeb0935c139d602f9d2d98e"
+    },
+    {
+      "path": "lua/chen_eng_case.lua",
+      "sha256": "2d22f2f7007158dc823b56d9b46f4b1d6d1078e2e0a85a726ed6d0ca64a93f84"
+    },
+    {
+      "path": "lua/chen_eng_processor.lua",
+      "sha256": "03d718cfa452f8ee1da81c82c393d3a27eabb54362c1fdf31b0b30241135bac0"
+    },
+    {
+      "path": "lua/chen_eng_translator.lua",
+      "sha256": "467b00887cbe3856a1fdfb24396f9457dc3541c2855dfe94892669222483d2c1"
+    },
+    {
+      "path": "lua/chen_timing.lua",
+      "sha256": "ad7072d3dc33d6b58821d3ed53d5d0f38de18f5fe598377af5e67dd9c18614dc"
+    },
+    {
+      "path": "lua/corrector.lua",
+      "sha256": "1d8fd9deda9e35e7fe6657f5883a3c02f95c93787ff9a92c25d9dc27017ae939"
+    },
+    {
+      "path": "lua/date_translator.lua",
+      "sha256": "e618d7ff9ef4cb1262b44e31904dcd3bc712884e4f6e5daac5d38114e6351884"
+    },
+    {
+      "path": "lua/force_gc.lua",
+      "sha256": "8f1718d6a0117f44f68740c4232cfb4d081c846383194f4541e21f89955697a4"
+    },
+    {
+      "path": "lua/is_in_user_dict.lua",
+      "sha256": "48ec0d1cb5ec11c06ea821ae42c13ebc610832c5bf3d1281e9a95179b0fcb824"
+    },
+    {
+      "path": "lua/lunar.lua",
+      "sha256": "c3240878a2d44b52dc19b53c012f5d5fbadcc86e23d8ec16e15a8cf980c25a77"
+    },
+    {
+      "path": "lua/number_translator.lua",
+      "sha256": "3baa0bc8cad962e31f1d453c69b096fdeca62027c71f7c1b7585a5e5a2698aca"
+    },
+    {
+      "path": "lua/pin_cand_filter.lua",
+      "sha256": "5f0d29c466361d2f7e47a2e9ca49866247b3e3402a24346e21e8505df8c7d61b"
+    },
+    {
+      "path": "lua/reduce_english_filter.lua",
+      "sha256": "6f5d419715734760733cf4d183f8dca9ac2908df9630b4a4d7306922b6c27882"
+    },
+    {
+      "path": "lua/select_character.lua",
+      "sha256": "2266f82f58a044337e0777aa3e62c9e4f09f216e6c842e64c12b0b7435de4110"
+    },
+    {
+      "path": "lua/unicode.lua",
+      "sha256": "d5ab0cfe8a168054ccb4c83d72b4b111a70fe5f93d58f69f9079b9ab010ee0d7"
+    },
+    {
+      "path": "lua/v_filter.lua",
+      "sha256": "6eaa3500db026aaa7f170467f38639ad4722d2a2a38eca8ffa59dc4af625f0a0"
+    },
+    {
+      "path": "opencc/chinese_english.json",
+      "sha256": "1bf5d8c34c113ab0e8add4ac0dd64158769d80403d0e8be6631ea8335d9ddb3a"
+    },
+    {
+      "path": "opencc/chinese_english.txt",
+      "sha256": "51730e3383a480c3f8bc11ca12972e65babbb7b6c7f489d41c364954552f6e61"
+    },
+    {
+      "path": "opencc/emoji.json",
+      "sha256": "83fff70ae6c1c18d140a58b330c0ea95a6a7baa270c658e0aad539ac6e81b4de"
+    },
+    {
+      "path": "opencc/emoji.txt",
+      "sha256": "bcff9976943d17d1d8783c9339e89c01d4e1ce57de4f3e56801472488b49c4b0"
+    },
+    {
+      "path": "opencc/english_chinese.txt",
+      "sha256": "8f6d9731c1fd2461933539c2f9f7067614e64fd49dba025006376fb169e26f9c"
+    },
+    {
+      "path": "opencc/frost_STCharacters.ocd2",
+      "sha256": "4c7398b4ceedf9b58b5ea77cdd911bc7807c50c7491111dc9b4073c68ad5a2bb"
+    },
+    {
+      "path": "opencc/frost_STPhrases.ocd2",
+      "sha256": "5e8d8289beacc7d4ab7baa7193ebb589f3d5a956449ed9c81ccff431ae503f6e"
+    },
+    {
+      "path": "opencc/frost_s2t.json",
+      "sha256": "483b8b176ccaa44e36281f7ebb230e68367a041dd718e7127de2c6afb3572ad9"
+    },
+    {
+      "path": "opencc/martian.json",
+      "sha256": "12da4e00952bcacdc6328509a2265512dccab3e6106668526feec19cd2ec27c6"
+    },
+    {
+      "path": "opencc/martian.txt",
+      "sha256": "04d5d186f61bea663613fab400b28e6b9f6bab63595adf8aaab7972105e29858"
+    },
+    {
+      "path": "opencc/others.txt",
+      "sha256": "1b6970521ac7271a5af26de12583484b565dd0a0819b50a542139c0a959fe71f"
+    },
+    {
+      "path": "rime_frost.dict.yaml",
+      "sha256": "b46d89df1a351f662683b3a62a8c8e0447f41e82dd8db74ad16f60c7fecab74d"
+    },
+    {
+      "path": "rime_frost.schema.yaml",
+      "sha256": "525bf19c7d80449ecfb65b9dcd408643412158be839363f3a34a2f60ca53b521"
+    },
+    {
+      "path": "rime_frost/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "rime_frost_aux.dict.yaml",
+      "sha256": "4856e1955ca6cc1eec04ae23a8235a6e47eee5e761333d9007e836e49d590e3b"
+    },
+    {
+      "path": "rime_frost_aux.schema.yaml",
+      "sha256": "da7fb6962b6bb882241266005670e061823563bb2774c4c102776ec61888c8ae"
+    },
+    {
+      "path": "symbols_v.yaml",
+      "sha256": "359e1b9076586e7399a77fe2fc4ce3eed6c0bfb1072da17f2e2b29aa3bae38bc"
+    },
+    {
+      "path": "zh-moqi.gram",
+      "sha256": "7b9a593ce9f58bd538048cef11f825c3cd86307030552726d58785dd87d98ae9"
+    }
+  ]
+}

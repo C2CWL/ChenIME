@@ -156,39 +156,6 @@ class CompactCandidateWindowTest :
             }
         }
 
-        given("a row whose reported scroll offset is stuck at zero") {
-            val row = List(4) { 200 }
-
-            then("a laid-out child reconstructs the live offset") {
-                // Item 2 starts at 2 * 200 + 2 * 10 = 420 inside the content. With 16px of
-                // padding, a child left edge of -64 means the row is scrolled by 500px.
-                compactCandidateScrollOffset(
-                    widths = row,
-                    separatorWidth = 10,
-                    paddingLeft = 16,
-                    adapterPosition = 2,
-                    childLeft = -64,
-                ) shouldBe 500
-                compactCandidateScrollOffset(
-                    widths = row,
-                    separatorWidth = 10,
-                    paddingLeft = 16,
-                    adapterPosition = 0,
-                    childLeft = -484,
-                ) shouldBe 500
-            }
-
-            then("an unbound child is ignored") {
-                compactCandidateScrollOffset(
-                    widths = row,
-                    separatorWidth = 10,
-                    paddingLeft = 16,
-                    adapterPosition = -1,
-                    childLeft = -64,
-                ) shouldBe null
-            }
-        }
-
         given("no measured width yet") {
             then("the window stays open so the first publish cannot hide candidates") {
                 compactCandidateInitialWindow(emptyList(), barWidth = 200, separatorWidth = separator) shouldBe null

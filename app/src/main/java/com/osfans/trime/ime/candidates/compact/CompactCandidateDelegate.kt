@@ -346,7 +346,7 @@ class CompactCandidateDelegate(override val di: DI) :
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
                     this@CompactCandidateDelegate.adapter.trace("scroll_state") {
                         "state=$newState scrolling=$scrolling " +
-                            "offset=${horizontalScrollOffset(this@CompactCandidateDelegate.adapter.itemWidths)} " +
+                            "offset=${recyclerView.computeHorizontalScrollOffset()} " +
                             "items=${this@CompactCandidateDelegate.adapter.itemCount} window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // Restore around every state change, including IDLE at either edge.
@@ -356,7 +356,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dx == 0) return
                     this@CompactCandidateDelegate.adapter.trace("scroll") {
-                        "dx=$dx offset=${horizontalScrollOffset(this@CompactCandidateDelegate.adapter.itemWidths)} " +
+                        "dx=$dx offset=${recyclerView.computeHorizontalScrollOffset()} " +
                             "window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // onScrolled runs after this frame's layout, so the window can grow before
@@ -576,9 +576,7 @@ class CompactCandidateDelegate(override val di: DI) :
             val separator = separatorDrawable.intrinsicWidth
             // Typing rebinds the first screen only. A live scroll keeps one extra bar of
             // real views on each side, so the next items are already bound before they enter.
-            // The attached children still describe the previous row, so derive the live
-            // offset with their widths, not with the widths measured for the new candidates.
-            val scrollOffset = horizontalScrollOffset(previousWidths)
+            val scrollOffset = view.computeHorizontalScrollOffset()
             val window = compactCandidatePublishWindow(
                 widths = widths,
                 forceStart = forceStart,
@@ -641,28 +639,6 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     /**
-     * FlexboxLayoutManager 3.0.0 may report 0 from computeHorizontalScrollOffset() in NOWRAP
-     * mode. Reconstruct the offset from a laid-out child instead; all attached children
-     * should agree, and the largest value is the safest estimate when cached widths differ
-     * slightly from the final measured row.
-     */
-    private fun horizontalScrollOffset(widths: List<Int>): Int {
-        val reported = view.computeHorizontalScrollOffset()
-        if (reported != 0 || widths.isEmpty() || widths.size != adapter.itemCount) return reported
-        val separator = separatorDrawable.intrinsicWidth
-        var derived: Int? = null
-        for (index in 0 until view.childCount) {
-            val child = view.getChildAt(index) ?: continue
-            val position = view.getChildViewHolder(child)?.bindingAdapterPosition ?: continue
-            val offset =
-                compactCandidateScrollOffset(widths, separator, view.paddingLeft, position, child.left)
-                    ?: continue
-            derived = if (derived == null) offset else maxOf(derived, offset)
-        }
-        return derived ?: reported
-    }
-
-    /**
      * Promotes items about to enter the viewport and keeps one bar of real views behind it.
      * Runs outside layout, so the view-type change cannot re-enter Flexbox.
      */
@@ -672,8 +648,8 @@ class CompactCandidateDelegate(override val di: DI) :
         if (widths.size != adapter.itemCount) return
         val barWidth = view.width
         if (barWidth <= 0) return
+        val offset = view.computeHorizontalScrollOffset()
         val separator = separatorDrawable.intrinsicWidth
-        val offset = horizontalScrollOffset(widths)
         val window = compactCandidateVisibleWindow(widths, offset, barWidth, separator)
         adapter.trace("window_upgrade") {
             "offset=$offset bar=$barWidth items=${widths.size} sum=${widths.sum()} " +

@@ -88,11 +88,6 @@ class CompactCandidateDelegate(override val di: DI) :
     @Volatile
     private var resetScrollOnNextPublish = false
 
-    // NOWRAP FlexboxLayoutManager may keep computeHorizontalScrollOffset() at zero.
-    // Accumulate the real deltas so the visible window does not depend on flex-grown
-    // child widths, which can make the reconstructed offset far too small.
-    private var trackedScrollOffset = 0
-
     // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
     // single apply before the next traversal so the bar rebinds once, with the final
     // candidate list, in that same frame.
@@ -359,7 +354,6 @@ class CompactCandidateDelegate(override val di: DI) :
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dx != 0) trackedScrollOffset = (trackedScrollOffset + dx).coerceAtLeast(0)
                     if (dx == 0) return
                     this@CompactCandidateDelegate.adapter.trace("scroll") {
                         "dx=$dx offset=${horizontalScrollOffset(this@CompactCandidateDelegate.adapter.itemWidths)} " +
@@ -553,7 +547,6 @@ class CompactCandidateDelegate(override val di: DI) :
             val forceStart = resetScrollOnNextPublish
             if (forceStart) {
                 resetScrollOnNextPublish = false
-                trackedScrollOffset = 0
                 adapter.scrolling = false
                 if (!view.isComputingLayout) {
                     view.scrollToPosition(0)
@@ -649,19 +642,13 @@ class CompactCandidateDelegate(override val di: DI) :
 
     /**
      * FlexboxLayoutManager 3.0.0 may report 0 from computeHorizontalScrollOffset() in NOWRAP
-     * mode. Prefer accumulated scroll deltas: unlike child.left they are unaffected by
-     * AUTO_FILL flex growth, which otherwise makes the reconstructed offset too small and
-     * collapses the window back to the first screen. Fall back to a laid-out child only
-     * before any real scroll delta has been observed.
+     * mode. Reconstruct the offset from a laid-out child instead; all attached children
+     * should agree, and the largest value is the safest estimate when cached widths differ
+     * slightly from the final measured row.
      */
     private fun horizontalScrollOffset(widths: List<Int>): Int {
         val reported = view.computeHorizontalScrollOffset()
-        if (reported != 0) {
-            trackedScrollOffset = reported
-            return reported
-        }
-        if (trackedScrollOffset > 0) return trackedScrollOffset
-        if (widths.isEmpty() || widths.size != adapter.itemCount) return reported
+        if (reported != 0 || widths.isEmpty() || widths.size != adapter.itemCount) return reported
         val separator = separatorDrawable.intrinsicWidth
         var derived: Int? = null
         for (index in 0 until view.childCount) {

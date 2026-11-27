@@ -107,6 +107,7 @@ object DataManager {
         )
         val marker = File(dataDir, "custom-phrase-runtime.sha256")
         val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val updaterManagedPaths = FrostUpdateStateStore.read(appContext)?.paths?.toSet().orEmpty()
         val contents = paths.associateWith { appContext.assets.open("shared/$it").use { input -> input.readBytes() } }
         contents.values.forEach { digest.update(it) }
         val revision = digest.digest().joinToString("") { "%02x".format(it) }
@@ -115,6 +116,10 @@ object DataManager {
         }
         contents.forEach { (path, bytes) ->
             val target = File(userDataDir, path)
+            if (path in updaterManagedPaths && target.isFile) {
+                Timber.d("Skipping app-owned runtime file managed by frost updater: $path")
+                return@forEach
+            }
             target.parentFile?.mkdirs()
             target.writeBytes(bytes)
         }

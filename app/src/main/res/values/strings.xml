@@ -340,4 +340,13 @@
     <string name="quick_phrase_cancel">取消</string>
     <string name="quick_phrase_delete_confirm">删除这条常用语？</string>
     <string name="toolbar_button_quick_phrase">常用语</string>
+    <string name="frost_update_category">White Frost resources</string>
+    <string name="frost_update_check_now">Check for updates</string>
+    <string name="frost_update_status_idle">Tap to check for White Frost resource updates</string>
+    <string name="frost_update_status_checking">Checking for updates…</string>
+    <string name="frost_update_status_downloading">Downloading update…</string>
+    <string name="frost_update_status_up_to_date">Already up to date</string>
+    <string name="frost_update_status_success">Updated to %1$s</string>
+    <string name="frost_update_status_failed">Update failed: %1$s</string>
+    <string name="frost_update_status_last_updated">Last updated: %1$s</string>
 </resources>

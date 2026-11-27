@@ -346,7 +346,7 @@ class CompactCandidateDelegate(override val di: DI) :
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
                     this@CompactCandidateDelegate.adapter.trace("scroll_state") {
                         "state=$newState scrolling=$scrolling " +
-                            "offset=${horizontalScrollOffset(adapter.itemWidths)} " +
+                            "offset=${horizontalScrollOffset(this@CompactCandidateDelegate.adapter.itemWidths)} " +
                             "items=${this@CompactCandidateDelegate.adapter.itemCount} window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // Restore around every state change, including IDLE at either edge.
@@ -356,7 +356,7 @@ class CompactCandidateDelegate(override val di: DI) :
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dx == 0) return
                     this@CompactCandidateDelegate.adapter.trace("scroll") {
-                        "dx=$dx offset=${horizontalScrollOffset(adapter.itemWidths)} " +
+                        "dx=$dx offset=${horizontalScrollOffset(this@CompactCandidateDelegate.adapter.itemWidths)} " +
                             "window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // onScrolled runs after this frame's layout, so the window can grow before

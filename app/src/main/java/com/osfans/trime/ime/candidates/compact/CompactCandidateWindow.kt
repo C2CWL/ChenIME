@@ -99,24 +99,6 @@ fun compactCandidateScrollWindow(
     return if (start == 0 && end == widths.lastIndex) null else start..end
 }
 
-/**
- * Reconstructs scroll offset from an attached child's adapter position and left edge.
- * FlexboxLayoutManager in NOWRAP mode can report 0 from computeHorizontalScrollOffset()
- * even after the row scrolled; using the reported value then makes the visible range fall
- * back to the first screen and every visible candidate becomes a spacer.
- */
-fun compactCandidateScrollOffset(
-    widths: List<Int>,
-    separatorWidth: Int,
-    paddingLeft: Int,
-    adapterPosition: Int,
-    childLeft: Int,
-): Int? {
-    if (adapterPosition !in widths.indices) return null
-    return (paddingLeft + leadingEdge(widths, adapterPosition, separatorWidth) - childLeft)
-        .coerceAtLeast(0)
-}
-
 /** Content x of [index]'s leading edge, including separators before it. */
 private fun leadingEdge(widths: List<Int>, index: Int, separatorWidth: Int): Int {
     if (index <= 0) return 0

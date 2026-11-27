@@ -88,11 +88,6 @@ class CompactCandidateDelegate(override val di: DI) :
     @Volatile
     private var resetScrollOnNextPublish = false
 
-    // NOWRAP FlexboxLayoutManager may keep computeHorizontalScrollOffset() at zero.
-    // Accumulate the real deltas so the visible window does not depend on flex-grown
-    // child widths, which can make the reconstructed offset far too small.
-    private var trackedScrollOffset = 0
-
     // One key press can produce 2-3 rime candidate callbacks. Coalesce them into a
     // single apply before the next traversal so the bar rebinds once, with the final
     // candidate list, in that same frame.
@@ -351,7 +346,7 @@ class CompactCandidateDelegate(override val di: DI) :
                     this@CompactCandidateDelegate.adapter.scrolling = scrolling
                     this@CompactCandidateDelegate.adapter.trace("scroll_state") {
                         "state=$newState scrolling=$scrolling " +
-                            "offset=${horizontalScrollOffset(this@CompactCandidateDelegate.adapter.itemWidths)} " +
+                            "offset=${recyclerView.computeHorizontalScrollOffset()} " +
                             "items=${this@CompactCandidateDelegate.adapter.itemCount} window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // Restore around every state change, including IDLE at either edge.
@@ -359,10 +354,9 @@ class CompactCandidateDelegate(override val di: DI) :
                 }
 
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dx != 0) trackedScrollOffset = (trackedScrollOffset + dx).coerceAtLeast(0)
                     if (dx == 0) return
                     this@CompactCandidateDelegate.adapter.trace("scroll") {
-                        "dx=$dx offset=${horizontalScrollOffset(this@CompactCandidateDelegate.adapter.itemWidths)} " +
+                        "dx=$dx offset=${recyclerView.computeHorizontalScrollOffset()} " +
                             "window=${this@CompactCandidateDelegate.adapter.fullWindow}"
                     }
                     // onScrolled runs after this frame's layout, so the window can grow before
@@ -553,7 +547,6 @@ class CompactCandidateDelegate(override val di: DI) :
             val forceStart = resetScrollOnNextPublish
             if (forceStart) {
                 resetScrollOnNextPublish = false
-                trackedScrollOffset = 0
                 adapter.scrolling = false
                 if (!view.isComputingLayout) {
                     view.scrollToPosition(0)
@@ -583,9 +576,7 @@ class CompactCandidateDelegate(override val di: DI) :
             val separator = separatorDrawable.intrinsicWidth
             // Typing rebinds the first screen only. A live scroll keeps one extra bar of
             // real views on each side, so the next items are already bound before they enter.
-            // The attached children still describe the previous row, so derive the live
-            // offset with their widths, not with the widths measured for the new candidates.
-            val scrollOffset = horizontalScrollOffset(previousWidths)
+            val scrollOffset = view.computeHorizontalScrollOffset()
             val window = compactCandidatePublishWindow(
                 widths = widths,
                 forceStart = forceStart,
@@ -648,34 +639,6 @@ class CompactCandidateDelegate(override val di: DI) :
     }
 
     /**
-     * FlexboxLayoutManager 3.0.0 may report 0 from computeHorizontalScrollOffset() in NOWRAP
-     * mode. Prefer accumulated scroll deltas: unlike child.left they are unaffected by
-     * AUTO_FILL flex growth, which otherwise makes the reconstructed offset too small and
-     * collapses the window back to the first screen. Fall back to a laid-out child only
-     * before any real scroll delta has been observed.
-     */
-    private fun horizontalScrollOffset(widths: List<Int>): Int {
-        val reported = view.computeHorizontalScrollOffset()
-        if (reported != 0) {
-            trackedScrollOffset = reported
-            return reported
-        }
-        if (trackedScrollOffset > 0) return trackedScrollOffset
-        if (widths.isEmpty() || widths.size != adapter.itemCount) return reported
-        val separator = separatorDrawable.intrinsicWidth
-        var derived: Int? = null
-        for (index in 0 until view.childCount) {
-            val child = view.getChildAt(index) ?: continue
-            val position = view.getChildViewHolder(child)?.bindingAdapterPosition ?: continue
-            val offset =
-                compactCandidateScrollOffset(widths, separator, view.paddingLeft, position, child.left)
-                    ?: continue
-            derived = if (derived == null) offset else maxOf(derived, offset)
-        }
-        return derived ?: reported
-    }
-
-    /**
      * Promotes items about to enter the viewport and keeps one bar of real views behind it.
      * Runs outside layout, so the view-type change cannot re-enter Flexbox.
      */
@@ -685,8 +648,8 @@ class CompactCandidateDelegate(override val di: DI) :
         if (widths.size != adapter.itemCount) return
         val barWidth = view.width
         if (barWidth <= 0) return
+        val offset = view.computeHorizontalScrollOffset()
         val separator = separatorDrawable.intrinsicWidth
-        val offset = horizontalScrollOffset(widths)
         val window = compactCandidateVisibleWindow(widths, offset, barWidth, separator)
         adapter.trace("window_upgrade") {
             "offset=$offset bar=$barWidth items=${widths.size} sum=${widths.sum()} " +
